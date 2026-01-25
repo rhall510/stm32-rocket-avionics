@@ -1,0 +1,27 @@
+# STM32 build files
+*.elf
+*.bin
+*.hex
+*.map
+*.o
+*.obj
+*.dep
+/firmware/*/Debug/
+/firmware/*/Release/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# KiCad
+*.kicad_prl
+*.kicad_net
+*.backup
+*.kicad_pcb-bak
+fp-info-cache
+
+
+# Other
+docs/datasheets/
