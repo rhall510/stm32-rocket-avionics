@@ -109,7 +109,7 @@ The ground station will consist of a central 2.4GHz high gain antenna with two 8
 
 The antenna array will be mounted on a motorised base that allows it to point towards any location in the sky. Azimuth will be controlled by a stepper motor to allow 360-degree movement, while elevation will be controlled by a servo motor.
 
-The 2.4GHz antenna is connected directly to the ground station MCU (STM32 NUCLEO-G431KB) via a LAMBDA80 transceiver. The 868MHz antennas are both connected to 868MHz SAW filters followed by 20-30db gain LNAs, then both LNA outputs are connected to an AD8302 module with its phase angle output connected the MCU. The MCU will use telemetry transmissions received on the 2.4GHz and measure phase differences on the 868MHz band so track the rocket as it moves. Rocket position data can be used to set expected azimuth and elevation angles while phase angle readings can be used to more precisely tune the azimuth angle. The MCU also passes all of this information on to the control center.
+The 2.4GHz antenna is connected directly to the ground station MCU (STM32 NUCLEO-G431KB) via a LAMBDA80 transceiver. The 868MHz antennas are both connected to 868MHz SAW filters followed by 20-30dB gain LNAs, then both LNA outputs are connected to an AD8302 module with its phase angle output connected the MCU. The MCU will use telemetry transmissions received on the 2.4GHz and measure phase differences on the 868MHz band so track the rocket as it moves. Rocket position data can be used to set expected azimuth and elevation angles while phase angle readings can be used to more precisely tune the azimuth angle. The MCU also passes all of this information on to the control center.
 
 <br>
 
@@ -166,75 +166,75 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 
 ##### 1\. RF link validation and range tests
 
-* Model and 3D print antenna testing enclosures.
-* Assemble SX1262 (LAMBDA62 module - 868MHz) and SX1280 (LAMBDA80 module - 2.4GHz) test rigs with 1/4 wave ground plane monopole antennas (driven by Arduinos while STM32s are on backorder) and perform range tests to validate feasibility and collect field data for RSSI and SNR at distance.
+* [x] Model and 3D print antenna testing enclosures.
+* [ ] Assemble SX1262 (LAMBDA62 module - 868MHz) and SX1280 (LAMBDA80 module - 2.4GHz) test rigs with 1/4 wave ground plane monopole antennas (driven by Arduinos while STM32s are on backorder) and perform range tests to validate feasibility and collect field data for RSSI and SNR at distance.
 
 
 
 ##### 2\. Avionics unit
 
-* Acquire STM32 NUCLEO-G474RE, NAND flash chip (W25N01GV), and sensors - IMU (LSM6DSO), high range accelerometer (ADXL375) pressure and temperature (BMP390), magnetic heading (QMC5883L), GPS (MAX-M10S-00B).
-* Design avionics unit development PCB with convenience features like line test pads, 0 ohm resistors, spaced out components etc. Assemble all components on to it. STM32 and transceivers are used as modules plugged into the PCB (later to be soldered permanently) while all sensors and NAND flash are used as bare chips soldered directly to the PCB via hotplate reflow. Also include power management IC and safety arming switch for parachute deployment system.
-* Write sensor drivers for STM32.
-* Test sensor data acquisition and accuracy.
-* Write NAND flash chip driver for STM32. Implement LittleFS.
-* Test storage of sensor data on NAND flash.
-* Implement FreeRTOS on the STM32.
-* Implement task to write all collected sensor data to NAND flash chip without interrupting critical sensor reading tasks.
-* Write SX1280 and SX1262 drivers for STM32.
-* Implement and test periodic transmission of collected sensor data through the SX1280 (lowest priority).
-* Implement and test sensor fusion and data integration algorithms to accurately track positional data over time.
-* Implement and test parachute deployment logic.
-* Design compacted avionics unit PCB which integrates any changes and removes development features.
-* Switch periodic transmission to send integrated data and do final test of full system.
+* [ ] Acquire STM32 NUCLEO-G474RE, NAND flash chip (W25N01GV), and sensors - IMU (LSM6DSO), high range accelerometer (ADXL375) pressure and temperature (BMP390), magnetic heading (QMC5883L), GPS (MAX-M10S-00B).
+* [ ] Design avionics unit development PCB with convenience features like line test pads, 0 ohm resistors, spaced out components etc. Assemble all components on to it. STM32 and transceivers are used as modules plugged into the PCB (later to be soldered permanently) while all sensors and NAND flash are used as bare chips soldered directly to the PCB via hotplate reflow. Also include power management IC and safety arming switch for parachute deployment system.
+* [ ] Write sensor drivers for STM32.
+* [ ] Test sensor data acquisition and accuracy.
+* [ ] Write NAND flash chip driver for STM32. Implement LittleFS.
+* [ ] Test storage of sensor data on NAND flash.
+* [ ] Implement FreeRTOS on the STM32.
+* [ ] Implement task to write all collected sensor data to NAND flash chip without interrupting critical sensor reading tasks.
+* [ ] Write SX1280 and SX1262 drivers for STM32.
+* [ ] Implement and test periodic transmission of collected sensor data through the SX1280 (lowest priority).
+* [ ] Implement and test sensor fusion and data integration algorithms to accurately track positional data over time.
+* [ ] Implement and test parachute deployment logic.
+* [ ] Design compacted avionics unit PCB which integrates any changes and removes development features.
+* [ ] Switch periodic transmission to send integrated data and do final test of full system.
 
 
 
 ##### 3\. Motorised antenna base
 
-* Build motorised portion of antenna base with stepper driving azimuth and servo driving elevation (no antenna mountings yet).
-* Add STM32 NUCLEO-G431KB (with FreeRTOS) and write drivers for it to drive the motors.
-* Implement and test algorithm to enable the STM32 to drive the base to point at any angle in the sky using PID controller.
-* Upgrade algorithm to take a location and point at it by determining the relative angle.
-* Build, test, and mount the 2.4GHz main telemetry antenna onto the base.
-* Hook up antenna to SX1280 driven by the STM32 and test receiving of periodic telemetry transmissions from the avionics unit.
-* Add calibration routine for the base to set it's initial offset from signal source.
-* Test moving the antenna base to constantly point at the received location data (may be best done by mounting the avionics unit on a drone).
+* [ ] Build motorised portion of antenna base with stepper driving azimuth and servo driving elevation (no antenna mountings yet).
+* [ ] Add STM32 NUCLEO-G431KB (with FreeRTOS) and write drivers for it to drive the motors.
+* [ ] Implement and test algorithm to enable the STM32 to drive the base to point at any angle in the sky using PID controller.
+* [ ] Upgrade algorithm to take a location and point at it by determining the relative angle.
+* [ ] Build, test, and mount the 2.4GHz main telemetry antenna onto the base.
+* [ ] Hook up antenna to SX1280 driven by the STM32 and test receiving of periodic telemetry transmissions from the avionics unit.
+* [ ] Add calibration routine for the base to set it's initial offset from signal source.
+* [ ] Test moving the antenna base to constantly point at the received location data (may be best done by mounting the avionics unit on a drone).
 
 
 
 ##### 4\. Adding PDOA tracking
 
-* Build and test 868MHz antennas.
-* Build small testing rig for the AD8302 module with SAW filters and LNA amplifiers.
-* Test feasibility and accuracy of signal angle measurement using AD8302 horizontally and vertically.
-* Add SX1262 (LAMBDA62) to the avionics unit and add task to transmit a beacon signal periodically.
-* Mount 868MHz antennas horizontally flanking the main telemetry antenna on the base and hook up AD8302, filters, and amplifiers to STM32.
-* Add calibration routine for PDOA signal.
-* Test signal angle measurement using the full setup.
-* Upgrade base tracking algorithm to use PDOA data in combination with the received location data.
-* Test base tracking with both telemetry and beacon signal transmissions active simultaneously.
-* Add 'failure' modes to the base tracking algorithm. Ignore PDOA signal if strength is too low and if neither signal is received fall back to following the predicted path of the rocket based on the last reliably received data.
+* [ ] Build and test 868MHz antennas.
+* [ ] Build small testing rig for the AD8302 module with SAW filters and LNA amplifiers.
+* [ ] Test feasibility and accuracy of signal angle measurement using AD8302 horizontally and vertically.
+* [ ] Add SX1262 (LAMBDA62) to the avionics unit and add task to transmit a beacon signal periodically.
+* [ ] Mount 868MHz antennas horizontally flanking the main telemetry antenna on the base and hook up AD8302, filters, and amplifiers to STM32.
+* [ ] Add calibration routine for PDOA signal.
+* [ ] Test signal angle measurement using the full setup.
+* [ ] Upgrade base tracking algorithm to use PDOA data in combination with the received location data.
+* [ ] Test base tracking with both telemetry and beacon signal transmissions active simultaneously.
+* [ ] Add 'failure' modes to the base tracking algorithm. Ignore PDOA signal if strength is too low and if neither signal is received fall back to following the predicted path of the rocket based on the last reliably received data.
 
 
 
 ##### 5\. Control center
 
-* Implement task on antenna base STM32 to periodically send relevant data to control center computer via serial connection.
-* Build basic control center GUI to display received data (simulated or real) in text.
-* Test GUI with fake injected data and real field data.
-* Implement bidirectional communication between ground station and avionics unit through 2.4GHz.
-* Implement command line into GUI to issue commands to the antenna base through serial connection.
-* Expand GUI to add in 3D graphics of rockets position and orientation.
-* Test all systems with fake and live data.
+* [ ] Implement task on antenna base STM32 to periodically send relevant data to control center computer via serial connection.
+* [ ] Build basic control center GUI to display received data (simulated or real) in text.
+* [ ] Test GUI with fake injected data and real field data.
+* [ ] Implement bidirectional communication between ground station and avionics unit through 2.4GHz.
+* [ ] Implement command line into GUI to issue commands to the antenna base through serial connection.
+* [ ] Expand GUI to add in 3D graphics of rockets position and orientation.
+* [ ] Test all systems with fake and live data.
 
 
 
 ##### 6\. Rocket
 
-* Build and test model rocket with no avionics.
-* Build and test model rocket with weights equivalent to avionics.
-* Integrate avionics PCB into rocket.
-* Integrate and test parachute deployment.
-* Final tests of full system with fake and live data.
-* Launch.
+* [ ] Build and test model rocket with no avionics.
+* [ ] Build and test model rocket with weights equivalent to avionics.
+* [ ] Integrate avionics PCB into rocket.
+* [ ] Integrate and test parachute deployment.
+* [ ] Final tests of full system with fake and live data.
+* [ ] Launch.

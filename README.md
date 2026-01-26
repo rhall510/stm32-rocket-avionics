@@ -3,7 +3,7 @@
 ![Status](https://img.shields.io/badge/Status-Early_development-yellow) ![License](https://img.shields.io/badge/License-MIT-blue)
 
 > **⚠️ NOTE: This project is currently in early active development.**
-> See the [Project plan](docs/PROJECT_PLAN.md) for a detailed roadmap and the [Daily log](docs/DAILY_LOG.md) for regular progress updates.
+> See the [project plan](docs/PROJECT_PLAN.md) for a detailed roadmap and the [development log](docs/DEVELOPMENT_LOG.md) for regular progress updates.
 
 ---
 
@@ -79,7 +79,7 @@ flowchart TB
 - [x] Model and 3D print antenna testing enclosures.
 - [ ] Assemble SX1262 and SX1280 test rigs with 1/4 wave ground plane monopole antennas and perform range tests to validate feasibility and collect field data for RSSI and SNR at distance.
 
-*For a day-to-day breakdown of progress, check the [Daily log](docs/DAILY_LOG.md).*
+*For an up to date breakdown of progress, check the [development log](docs/DEVELOPMENT_LOG.md).*
 
 ---
 *Created by Ryan Hall. Documented as part of a portfolio transition into embedded systems engineering.*
