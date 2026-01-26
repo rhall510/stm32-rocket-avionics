@@ -12,7 +12,7 @@ This project aims to build a robust avionics unit for high power model rocketry.
 
 The system relies on sensor fusion for onboard state estimation and uses a hybrid RF tracking method combining position/movement telemetry and Phase Difference of Arrival (PDOA) signal analysis.
 
-## Key Features
+## Key features
 * **Dual-band telemetry:**
     * **2.4GHz (SX1280):** High bandwidth telemetry and command link.
     * **868MHz (SX1262):** Beacon signal for precise PDOA angle tracking.
@@ -74,12 +74,13 @@ flowchart TB
 * `mechanical/`: Model files for making various non-electrical parts of the project.
 * `software/`: Source code for the control center GUI application.
 
-## Current Status
-**Part 1: RF link validation and range tests** (In progress)
-- [x] Model and 3D print antenna testing enclosures.
-- [ ] Assemble SX1262 and SX1280 test rigs with 1/4 wave ground plane monopole antennas and perform range tests to validate feasibility and collect field data for RSSI and SNR at distance.
+## Current status
+Goals from the [project plan](docs/PROJECT_PLAN.md) that are currently being worked on:
+##### 1\. RF link validation and range tests
+* [ ] Assemble SX1262 (LAMBDA62 module - 868MHz) and SX1280 (LAMBDA80 module - 2.4GHz) test rigs with 1/4 wave ground plane monopole antennas (driven by Arduinos while STM32s are on backorder) and perform range tests to validate feasibility and collect field data for RSSI and SNR at distance.
+
+##### 2\. Avionics unit
+* [ ] Acquire STM32 NUCLEO-G474RE, NAND flash chip (W25N01GV), and sensors - IMU (LSM6DSO), high range accelerometer (ADXL375) pressure and temperature (BMP390), magnetic heading (QMC5883L), GPS (MAX-M10S-00B).
+* [ ] Design avionics unit development PCB with convenience features like line test pads, 0 ohm resistors, spaced out components etc. Assemble all components on to it. STM32 and transceivers are used as modules plugged into the PCB (later to be soldered permanently) while all sensors and NAND flash are used as bare chips soldered directly to the PCB via hotplate reflow. Also include power management IC and safety arming switch for parachute deployment system.
 
 *For an up to date breakdown of progress, check the [development log](docs/DEVELOPMENT_LOG.md).*
-
----
-*Created by Ryan Hall. Documented as part of a portfolio transition into embedded systems engineering.*
