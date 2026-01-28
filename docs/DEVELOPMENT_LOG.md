@@ -7,6 +7,24 @@ Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
 
+### Jan 28th 2026
+
+Started designing the development PCB for the avionics unit, beginning with the power source. This utilises a TPS563201 buck converter to provide a stable 3.3V DC source from a 4.5V-17V input. Component values were taken from the datasheet specifications with resistor R2 being 33kΩ to get a 3.3V output. A space for capacitor C4 was added despite likely being unneeded so that the pads are there for easy addition later if testing shows it is needed. A switch was also added between the positive terminal input and the TPS563201 enable pin to allow the power source to be easily switched on and off. Temporary footprints have been used for the moment until actual component models are decided.
+
+#### Schematic view
+
+![Avionics dev board schematic view](./images/avionics_dev_buckconv.png)
+
+#### PCB view
+
+![Avionics dev board PCB view](./images/avionics_dev_buckconv2.png)
+
+#### 3D view
+
+![Avionics dev board 3D view](./images/avionics_dev_buckconv3.png)
+
+---
+
 ### Dec 2025 - Jan 2026
 
 This is a summary of the progress made in the first couple months of the project before I started taking logging more seriously.
