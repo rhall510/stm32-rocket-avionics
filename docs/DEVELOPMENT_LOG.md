@@ -7,6 +7,21 @@ Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
 
+### Feb 1st 2026
+
+The issue causing miscounting of packet sequence numbers by the receiver in the LAMBDA62 rangetest setup has been identified and fixed. Testing confirmed this was caused by the transmitter repeatedly resetting and starting the transmission counter from 0 again. The 9V battery powering the transmitter was outputting a much lower voltage than expected (around 7V, while the receiver battery output almost 9V) so a fresh battery was used. This fixed the issue and transmission was able to continue uninterrupted while the receiver correctly counted each packet. To mitigate the chance of this issue happening in the field spare batteries will be brought.
+
+Component selections for the avionics unit have been finalised. Changes from the previous selections are detailed below:
+
+- MCU = STM32G474RET6; The chip will be used rather than a nucleo board for compactness and to reduce cost.
+- Storage = W25Q256JVEIQ; NOR flash will be used instead of NAND flash to increase reliability for storing critical flight data. This still offers more than enough storage capacity to write flight data for multiple long launches if needed.
+- IMU = LSM6DSR; Switched to the R variant for lower risk of gyro saturation for negligible increase in cost.
+- Pressure/temp = BMP581; Mainly due to lack of availability of the BMP390, but also slightly increased sensitivity.
+- Magnetometer = MMC5983MA; Highly improved performance with degaussing option to remove offsets caused by other nearby components.
+
+---
+
+
 ### Jan 28th 2026
 
 Started designing the development PCB for the avionics unit, beginning with the power source. This utilises a TPS563201 buck converter to provide a stable 3.3V DC source from a 4.5V-17V input. Component values were taken from the datasheet specifications with resistor R2 being 33kΩ to get a 3.3V output. A space for capacitor C4 was added despite likely being unneeded so that the pads are there for easy addition later if testing shows it is needed. A switch was also added between the positive terminal input and the TPS563201 enable pin to allow the power source to be easily switched on and off. Temporary footprints have been used for the moment until actual component models are decided.

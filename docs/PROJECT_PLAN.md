@@ -30,7 +30,7 @@ flowchart TB
  subgraph Rocket["Avionics Unit"]
         MCU_R["MCU<br>STM32G474"]
         Sensors["Sensors<br>IMU, GPS, Baro"]
-        NAND["NAND flash"]
+        NOR["NOR flash"]
         RKT_24["SX1280<br>2.4GHz telemetry"]
         RKT_868["SX1262<br>868MHz beacon"]
         Parachute["Parachute<br>deployment"]
@@ -48,7 +48,7 @@ flowchart TB
     MCU_R -- SPI --> RKT_868
     MCU_R <-- SPI --> RKT_24
     MCU_R -- GPIO --> Parachute
-    MCU_R -- SPI --> NAND
+    MCU_R -- SPI --> NOR
     RKT_24 -. Telemetry .-> GS_24
     GS_24 -. Cmd .-> RKT_24
     RKT_868 -. CW tone .-> GS_PDOA
@@ -65,33 +65,33 @@ The rocket will have an onboard avionics unit containing multiple sensors, trans
 
 
 
-* MCU = STM32 NUCLEO-G474RE
+* MCU = STM32G474RET6
 
-* NAND flash = W25N01GV
+* NOR flash = W25Q256JVEIQ
 
-* IMU = LSM6DSO
+* IMU = LSM6DSR
 
-* High range accelerometer = ADXL375
+* High range accelerometer = ADXL375BCCZ
 
-* Pressure/temperature sensor = BMP390
+* Pressure/temperature sensor = BMP581
 
-* Magnetometer = QMC5883L
+* Magnetometer = MMC5983MA
 
 * GPS = MAX-M10S-00B
 
-* 868MHz LoRa transceiver = LAMBDA62
+* 868MHz LoRa transceiver = SX1262 (LAMBDA62)
 
-* 2.4GHz LoRa transceiver = LAMBDA80
+* 2.4GHz LoRa transceiver = SX1280 (LAMBDA80)
 
 
 
 Two transceivers will be present on the rocket with their respective antennas – the SX1262 (868MHz, LAMBDA62 module), and the SX1280 (2.4GHz, LAMBDA80 module). The 868MHz band will be used to emit a pure sine wave tone for 20ms at 10Hz which will be used by the ground station to provide accurate azimuth tracking by PDOA. The 2.4GHz band will be used to transmit telemetry data at 10Hz. Transmitted data will include the rockets calculated position, velocity, acceleration, orientation, and temperature/pressure.
 
-A central MCU (STM32 NUCLEO-G474RE) will be used to control everything in the avionics unit. It will:
+A central MCU (STM32G474RET6) will be used to control everything in the avionics unit. It will:
 
 * Interface with the sensors and collect data from them.
 
-* Write the raw data to a NAND flash chip (W25N01GV) for later in-depth analysis.
+* Write the raw data to a NOR flash chip (W25Q256JVEIQ) for later in-depth analysis.
 
 * Integrate the raw data into accurate estimates of position (IMU, GPS), angle (IMU, magnetometer) etc.
 
@@ -109,7 +109,7 @@ The ground station will consist of a central 2.4GHz high gain antenna with two 8
 
 The antenna array will be mounted on a motorised base that allows it to point towards any location in the sky. Azimuth will be controlled by a stepper motor to allow 360-degree movement, while elevation will be controlled by a servo motor.
 
-The 2.4GHz antenna is connected directly to the ground station MCU (STM32 NUCLEO-G431KB) via a LAMBDA80 transceiver. The 868MHz antennas are both connected to 868MHz SAW filters followed by 20-30dB gain LNAs, then both LNA outputs are connected to an AD8302 module with its phase angle output connected the MCU. The MCU will use telemetry transmissions received on the 2.4GHz and measure phase differences on the 868MHz band so track the rocket as it moves. Rocket position data can be used to set expected azimuth and elevation angles while phase angle readings can be used to more precisely tune the azimuth angle. The MCU also passes all of this information on to the control center.
+The 2.4GHz antenna is connected directly to the ground station MCU (STM32G431KBT6U) via a LAMBDA80 transceiver. The 868MHz antennas are both connected to 868MHz SAW filters followed by 20-30dB gain LNAs, then both LNA outputs are connected to an AD8302 module with its phase angle output connected the MCU. The MCU will use telemetry transmissions received on the 2.4GHz and measure phase differences on the 868MHz band so track the rocket as it moves. Rocket position data can be used to set expected azimuth and elevation angles while phase angle readings can be used to more precisely tune the azimuth angle. The MCU also passes all of this information on to the control center.
 
 <br>
 
@@ -173,19 +173,18 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 
 ##### 2\. Avionics unit
 
-* [ ] Acquire STM32 NUCLEO-G474RE, NAND flash chip (W25N01GV), and sensors - IMU (LSM6DSO), high range accelerometer (ADXL375) pressure and temperature (BMP390), magnetic heading (QMC5883L), GPS (MAX-M10S-00B).
-* [ ] Design avionics unit development PCB with convenience features like line test pads, 0 ohm resistors, spaced out components etc. Assemble all components on to it. STM32 and transceivers are used as modules plugged into the PCB (later to be soldered permanently) while all sensors and NAND flash are used as bare chips soldered directly to the PCB via hotplate reflow. Also include power management IC and safety arming switch for parachute deployment system.
+* [ ] Design avionics unit development PCB with convenience features like line test pads, 0 ohm resistors etc. Transceivers are used as modules plugged into the PCB (later to be soldered permanently) while everything else is used as bare chips soldered directly to the PCB via hotplate reflow. Also include power management IC and safety arming switch for parachute deployment system.
+* [ ] Acquire parts for avionics development PCB and assemble it.
 * [ ] Write sensor drivers for STM32.
 * [ ] Test sensor data acquisition and accuracy.
-* [ ] Write NAND flash chip driver for STM32. Implement LittleFS.
-* [ ] Test storage of sensor data on NAND flash.
+* [ ] Write NOR flash chip driver for STM32. Implement LittleFS.
+* [ ] Test storage of sensor data on NOR flash.
 * [ ] Implement FreeRTOS on the STM32.
-* [ ] Implement task to write all collected sensor data to NAND flash chip without interrupting critical sensor reading tasks.
+* [ ] Implement task to write all collected sensor data to NOR flash chip without interrupting critical sensor reading tasks.
 * [ ] Write SX1280 and SX1262 drivers for STM32.
 * [ ] Implement and test periodic transmission of collected sensor data through the SX1280 (lowest priority).
 * [ ] Implement and test sensor fusion and data integration algorithms to accurately track positional data over time.
 * [ ] Implement and test parachute deployment logic.
-* [ ] Design compacted avionics unit PCB which integrates any changes and removes development features.
 * [ ] Switch periodic transmission to send integrated data and do final test of full system.
 
 
@@ -193,7 +192,7 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 ##### 3\. Motorised antenna base
 
 * [ ] Build motorised portion of antenna base with stepper driving azimuth and servo driving elevation (no antenna mountings yet).
-* [ ] Add STM32 NUCLEO-G431KB (with FreeRTOS) and write drivers for it to drive the motors.
+* [ ] Add STM32G431KB (with FreeRTOS) and write drivers for it to drive the motors.
 * [ ] Implement and test algorithm to enable the STM32 to drive the base to point at any angle in the sky using PID controller.
 * [ ] Upgrade algorithm to take a location and point at it by determining the relative angle.
 * [ ] Build, test, and mount the 2.4GHz main telemetry antenna onto the base.
@@ -234,6 +233,7 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 
 * [ ] Build and test model rocket with no avionics.
 * [ ] Build and test model rocket with weights equivalent to avionics.
+* [ ] Design compacted avionics unit PCB which integrates any changes and removes development features.
 * [ ] Integrate avionics PCB into rocket.
 * [ ] Integrate and test parachute deployment.
 * [ ] Final tests of full system with fake and live data.

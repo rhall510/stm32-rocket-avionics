@@ -25,7 +25,7 @@ The system relies on sensor fusion for onboard state estimation and uses a hybri
 ## System architecture
 The project is divided into three main subsystems:
 
-1.  **Avionics (Rocket):** Onboard PCB with flight sensors, NAND flash logging, and RF transceivers controlled by a STM32 NUCLEO-G474RE microcontroller.
+1.  **Avionics (Rocket):** Onboard PCB with flight sensors, NOR flash logging, and RF transceivers controlled by a STM32G474 microcontroller.
 2.  **Ground station:** Antenna array with motorised tracking base utilizing position telemetry and PDOA data to maintain a high gain link with the rocket.
 3.  **Control center:** PC based GUI for live data visualization and controlling the ground station and avionics unit.
 
@@ -39,7 +39,7 @@ flowchart TB
  subgraph Rocket["Avionics Unit"]
         MCU_R["MCU<br>STM32G474"]
         Sensors["Sensors<br>IMU, GPS, Baro"]
-        NAND["NAND flash"]
+        NOR["NOR flash"]
         RKT_24["SX1280<br>2.4GHz telemetry"]
         RKT_868["SX1262<br>868MHz beacon"]
         Parachute["Parachute<br>deployment"]
@@ -57,7 +57,7 @@ flowchart TB
     MCU_R -- SPI --> RKT_868
     MCU_R <-- SPI --> RKT_24
     MCU_R -- GPIO --> Parachute
-    MCU_R -- SPI --> NAND
+    MCU_R -- SPI --> NOR
     RKT_24 -. Telemetry .-> GS_24
     GS_24 -. Cmd .-> RKT_24
     RKT_868 -. CW tone .-> GS_PDOA
@@ -80,7 +80,6 @@ Goals from the [project plan](docs/PROJECT_PLAN.md) that are currently being wor
 * [ ] Assemble SX1262 (LAMBDA62 module - 868MHz) and SX1280 (LAMBDA80 module - 2.4GHz) test rigs with 1/4 wave ground plane monopole antennas (driven by Arduinos while STM32s are on backorder) and perform range tests to validate feasibility and collect field data for RSSI and SNR at distance.
 
 ##### 2\. Avionics unit
-* [ ] Acquire STM32 NUCLEO-G474RE, NAND flash chip (W25N01GV), and sensors - IMU (LSM6DSO), high range accelerometer (ADXL375) pressure and temperature (BMP390), magnetic heading (QMC5883L), GPS (MAX-M10S-00B).
-* [ ] Design avionics unit development PCB with convenience features like line test pads, 0 ohm resistors, spaced out components etc. Assemble all components on to it. STM32 and transceivers are used as modules plugged into the PCB (later to be soldered permanently) while all sensors and NAND flash are used as bare chips soldered directly to the PCB via hotplate reflow. Also include power management IC and safety arming switch for parachute deployment system.
+* [ ] Design avionics unit development PCB with convenience features like line test pads, 0 ohm resistors etc. Transceivers are used as modules plugged into the PCB (later to be soldered permanently) while everything else is used as bare chips soldered directly to the PCB via hotplate reflow. Also include power management IC and safety arming switch for parachute deployment system.
 
 *For an up to date breakdown of progress, check the [development log](docs/DEVELOPMENT_LOG.md).*

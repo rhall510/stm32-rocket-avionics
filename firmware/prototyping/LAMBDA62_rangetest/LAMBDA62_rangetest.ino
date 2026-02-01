@@ -5,7 +5,7 @@ Run 'SerialMonitor.py' script on computer connected to the receiver arduino to f
 */ 
 
 #include <SPI.h>
-#include "../../shared/LAMBDA62.h"
+#include "C:/Dev/Avionics/firmware/shared/LAMBDA62.h"
 
 // Pin numbers
 uint8_t nSEL_pin = 10;
@@ -16,7 +16,7 @@ uint8_t DIO1_pin = 5;
 uint8_t RESET_pin = 6;
 
 // General config
-bool receiver = true;
+bool receiver = false;
 const uint16_t aggNumPackets = 50;
 
 // Packet config
