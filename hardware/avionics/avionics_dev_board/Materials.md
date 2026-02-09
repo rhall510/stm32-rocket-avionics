@@ -28,12 +28,12 @@
 **OTHER:**
 
 * 2.2uH inductor         x1	https://www.mouser.co.uk/ProductDetail/TAIYO-YUDEN/LSQEA201212T2R2M?qs=sGAEpiMZZMv126LJFLh8y1p%2FKJOOdqdHlw%252BwVtG%252BN4U%3D
-* Sliding switch         x3
-* Push switch            x1
+* Sliding switch         x3 https://www.lcsc.com/product-detail/C7431054.html
+* Push switch            x1 https://www.lcsc.com/product-detail/C7450623.html
 * 16MHz crystal          x1	https://www.mouser.co.uk/ProductDetail/ABRACON/ABM8G-16.000MHZ-4Y-T3?qs=hxOQwdLlgerw9VxLMu5o8A%3D%3D
 * N-MOSFET               x1	https://www.mouser.co.uk/ProductDetail/Diodes-Incorporated/DMG4466SSS-13?qs=sJ%252BpcIzCtBiZrDaWKxeDlA%3D%3D
 * 1x2 screw terminal     x3	https://www.mouser.co.uk/ProductDetail/Phoenix-Contact/5442206?qs=sGAEpiMZZMvPvGwLNS6716QgUnUQZzqIx9YVFcjVrXw%3D
-* 2A fuse                x1	https://www.mouser.co.uk/ProductDetail/YAGEO/JB06F2001R?qs=sGAEpiMZZMsIz3CjQ1xegZx2pdJYlyprkxWNoaEAfySC1euIOHMEQQ%3D%3D
+* 1A fuse                x1	https://www.mouser.co.uk/ProductDetail/YAGEO/JB06F1001R?qs=iLKYxzqNS752SsUEEkcV%2FA%3D%3D
 * Diode                  x1	https://www.mouser.co.uk/ProductDetail/Diodes-Incorporated/MBR230S1F-7?qs=sGAEpiMZZMtbRapU8LlZD2AzG6mm2P2ZBfv9044yKIh7KrBZfzNDhQ%3D%3D
 * 120R ferrite bead      x1	https://www.mouser.co.uk/ProductDetail/TE-Connectivity-Sigma-Inductors/BMC-Q1JY0120H?qs=sGAEpiMZZMt1hubY80%2Fs8KH3ycnB7WcGc%2FcSUtObKOLmj4JvfvR2Cw%3D%3D
 * LED                    x1	https://www.mouser.co.uk/ProductDetail/LITEON/LTST-C194KRKT?qs=sGAEpiMZZMusoohG2hS%252B125BSguLzCM3%252B28gAtlU3DE%3D
