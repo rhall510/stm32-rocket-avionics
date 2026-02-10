@@ -2141,6 +2141,113 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Connector:TestPoint"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0.762)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "TP"
+				(at 0 6.858 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "TestPoint"
+				(at 0 5.08 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 5.08 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 5.08 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "test point"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "test point tp"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "Pin* Test*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "TestPoint_0_1"
+				(circle
+					(center 0 3.302)
+					(radius 0.762)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "TestPoint_1_1"
+				(pin passive line
+					(at 0 0 90)
+					(length 2.54)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "Connector_Generic:Conn_02x07_Odd_Even"
 			(pin_names
 				(offset 1.016)
@@ -9677,6 +9784,10 @@
 		(uuid "0eea9522-bfbb-4cbe-8e9d-09b14c1df9c2")
 	)
 	(no_connect
+		(at 577.85 603.25)
+		(uuid "106aa6db-e856-476b-818f-7141b82e6bdb")
+	)
+	(no_connect
 		(at 819.15 574.04)
 		(uuid "1e0a1b64-3ff3-4edc-853f-1c54a024b93a")
 	)
@@ -9687,6 +9798,10 @@
 	(no_connect
 		(at 621.03 382.27)
 		(uuid "28bcf0b2-b472-4854-9b34-2938891f116b")
+	)
+	(no_connect
+		(at 313.69 354.33)
+		(uuid "2f8f5b01-75fa-49ae-9cab-1234a39ffcd8")
 	)
 	(no_connect
 		(at 585.47 420.37)
@@ -9771,6 +9886,10 @@
 	(no_connect
 		(at 793.75 368.3)
 		(uuid "cde9dcde-4478-48b5-8569-f4a0975d30c8")
+	)
+	(no_connect
+		(at 660.4 448.31)
+		(uuid "d622dbcf-ddea-4662-b223-aad352589164")
 	)
 	(no_connect
 		(at 538.48 562.61)
@@ -13736,6 +13855,73 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 359.41 450.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "0974bc41-4642-4006-8870-0b14aa0ddb91")
+		(property "Reference" "TP9"
+			(at 359.41 446.278 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 361.95 448.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 364.49 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 364.49 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 359.41 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "64f26af8-4e90-466f-b1f6-749077e0ed34")
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "TP9")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Connector:Screw_Terminal_01x02")
 		(at 599.44 589.28 90)
 		(unit 1)
@@ -13745,7 +13931,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "0b5dde75-a5cb-4951-b00b-1e75ae55a8f8")
-		(property "Reference" "J9"
+		(property "Reference" "J9-NICH1"
 			(at 604.52 588.0099 90)
 			(effects
 				(font
@@ -13799,7 +13985,7 @@
 		(instances
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "J9")
+					(reference "J9-NICH1")
 					(unit 1)
 				)
 			)
@@ -13886,7 +14072,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "0d37a93c-f683-40e3-86cc-f4127cc5a3d8")
-		(property "Reference" "U4"
+		(property "Reference" "BMP1"
 			(at 789.94 524.51 0)
 			(effects
 				(font
@@ -14053,7 +14239,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "U4")
+					(reference "BMP1")
 					(unit 1)
 				)
 			)
@@ -14138,7 +14324,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "0d81183a-f415-43b2-9de1-6526ab6a6e2e")
-		(property "Reference" "J3"
+		(property "Reference" "L62-2"
 			(at 535.686 543.814 0)
 			(effects
 				(font
@@ -14209,7 +14395,7 @@
 		(instances
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "J3")
+					(reference "L62-2")
 					(unit 1)
 				)
 			)
@@ -14698,7 +14884,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1f601db8-e05a-4aba-8b94-d2869108801b")
-		(property "Reference" "U2"
+		(property "Reference" "MMC1"
 			(at 793.75 462.28 0)
 			(effects
 				(font
@@ -14913,7 +15099,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "U2")
+					(reference "MMC1")
 					(unit 1)
 				)
 			)
@@ -15333,6 +15519,73 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 336.55 450.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "2869f2b5-2257-4305-9409-74ec2800326b")
+		(property "Reference" "TP3"
+			(at 336.55 446.278 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 339.09 448.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 341.63 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 341.63 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 336.55 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "60b2667f-7db8-469c-acaa-c9754d140f0d")
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "TP3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C")
 		(at 796.29 403.86 0)
 		(mirror y)
@@ -15413,7 +15666,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "2a075616-7d94-4097-bf55-67ee9b66cf3d")
-		(property "Reference" "SW5"
+		(property "Reference" "PWR_SW1"
 			(at 308.61 342.9 0)
 			(effects
 				(font
@@ -15468,7 +15721,7 @@
 		(instances
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "SW5")
+					(reference "PWR_SW1")
 					(unit 1)
 				)
 			)
@@ -16585,7 +16838,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "47c6617b-3b1e-4e25-84d7-06a9d25f2db2")
-		(property "Reference" "J1"
+		(property "Reference" "J1-MBAT1"
 			(at 297.18 347.98 0)
 			(effects
 				(font
@@ -16637,7 +16890,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "J1")
+					(reference "J1-MBAT1")
 					(unit 1)
 				)
 			)
@@ -16718,8 +16971,8 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "4bfe44de-bb63-449a-9696-67f2d08c40b9")
-		(property "Reference" "J4"
-			(at 514.477 584.708 0)
+		(property "Reference" "L80-1"
+			(at 512.826 584.708 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16790,7 +17043,7 @@
 		(instances
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "J4")
+					(reference "L80-1")
 					(unit 1)
 				)
 			)
@@ -16992,6 +17245,73 @@
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
 					(reference "#PWR031")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 328.93 450.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "501c29e7-db19-4ae4-bbd4-cecfcd44502f")
+		(property "Reference" "TP1"
+			(at 328.93 446.278 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 331.47 448.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 334.01 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 334.01 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 328.93 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "a63a4805-2aef-4f02-ad24-b82b0fcfbe51")
+		)
+		(instances
+			(project ""
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "TP1")
 					(unit 1)
 				)
 			)
@@ -17203,6 +17523,73 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 347.98 450.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "5c044e6d-8ed7-408f-bbcb-5bfe43838675")
+		(property "Reference" "TP6"
+			(at 347.98 446.278 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 350.52 448.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 353.06 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 353.06 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 347.98 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "36ef3990-b2cd-4b4a-a651-ea583415eda2")
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "TP6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Connector:Conn_Coaxial")
 		(at 458.47 547.37 0)
 		(mirror y)
@@ -17212,7 +17599,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "5c527db7-d72d-4d6f-9b59-8c5197af482e")
-		(property "Reference" "J7"
+		(property "Reference" "ANT_868"
 			(at 454.66 546.3931 0)
 			(effects
 				(font
@@ -17266,7 +17653,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "J7")
+					(reference "ANT_868")
 					(unit 1)
 				)
 			)
@@ -17550,7 +17937,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "6bce125c-2af7-440c-a9d1-d3435d960f54")
-		(property "Reference" "IC2"
+		(property "Reference" "W25Q1"
 			(at 659.13 537.21 0)
 			(effects
 				(font
@@ -17794,7 +18181,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "IC2")
+					(reference "W25Q1")
 					(unit 1)
 				)
 			)
@@ -18010,7 +18397,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "7035762e-b816-4c87-994a-96e930103922")
-		(property "Reference" "SW4"
+		(property "Reference" "RST1"
 			(at 507.746 391.16 90)
 			(effects
 				(font
@@ -18064,7 +18451,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "SW4")
+					(reference "RST1")
 					(unit 1)
 				)
 			)
@@ -18558,7 +18945,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "7b15fe4b-3b0e-43f8-ab02-3fabdfc8ff41")
-		(property "Reference" "J5"
+		(property "Reference" "L80-2"
 			(at 535.686 584.454 0)
 			(effects
 				(font
@@ -18629,7 +19016,7 @@
 		(instances
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "J5")
+					(reference "L80-2")
 					(unit 1)
 				)
 			)
@@ -18696,6 +19083,73 @@
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
 					(reference "#PWR040")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 351.79 450.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "7f550231-3726-42d6-8a2d-e504f12e45ff")
+		(property "Reference" "TP7"
+			(at 351.79 446.278 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 354.33 448.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 356.87 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 356.87 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 351.79 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "abc9b58e-396a-42a8-8876-8afb4b28bbc7")
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "TP7")
 					(unit 1)
 				)
 			)
@@ -18835,6 +19289,140 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 340.36 450.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "82da19c1-8d70-4e02-9e2e-2ad9414c6b41")
+		(property "Reference" "TP4"
+			(at 340.36 446.278 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 342.9 448.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 345.44 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 345.44 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 340.36 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "0b0af131-efc4-41d2-b98e-81e47b37f811")
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "TP4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 355.6 450.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "82ef6040-6de1-4671-ab45-996347b3f718")
+		(property "Reference" "TP8"
+			(at 355.6 446.278 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 358.14 448.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 360.68 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 360.68 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 355.6 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "61dad483-577c-4eff-a659-2c4806bca025")
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "TP8")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Mechanical:MountingHole")
 		(at 547.37 505.46 0)
 		(unit 1)
@@ -18909,7 +19497,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "86d8a682-98ff-44b0-b8f2-491aecc3c2b5")
-		(property "Reference" "U3"
+		(property "Reference" "LSM6"
 			(at 758.19 398.78 0)
 			(effects
 				(font
@@ -19078,7 +19666,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "U3")
+					(reference "LSM6")
 					(unit 1)
 				)
 			)
@@ -20180,7 +20768,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "99b9f140-1373-4215-8602-6c2b507a22b6")
-		(property "Reference" "U7"
+		(property "Reference" "MCU1"
 			(at 607.9333 468.63 0)
 			(effects
 				(font
@@ -20421,7 +21009,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "U7")
+					(reference "MCU1")
 					(unit 1)
 				)
 			)
@@ -20713,7 +21301,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a255983c-0ca1-498d-bed3-c349cc934ae5")
-		(property "Reference" "D1"
+		(property "Reference" "PWR_LED1"
 			(at 436.88 366.0774 90)
 			(effects
 				(font
@@ -20729,6 +21317,7 @@
 					(size 1.27 1.27)
 				)
 				(justify right)
+				(hide yes)
 			)
 		)
 		(property "Footprint" "LED_SMD:LED_0603_1608Metric"
@@ -20776,7 +21365,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "D1")
+					(reference "PWR_LED1")
 					(unit 1)
 				)
 			)
@@ -21463,7 +22052,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "be3d08f6-70a2-49a5-9414-5ef5c56e1f95")
-		(property "Reference" "SW2"
+		(property "Reference" "BOOT_SW1"
 			(at 669.036 453.898 0)
 			(effects
 				(font
@@ -21520,7 +22109,7 @@
 		(instances
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "SW2")
+					(reference "BOOT_SW1")
 					(unit 1)
 				)
 			)
@@ -21536,7 +22125,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "bf02ea5e-8249-4db1-85aa-b97f46f2a340")
-		(property "Reference" "J6"
+		(property "Reference" "SWD_INT1"
 			(at 599.44 543.56 0)
 			(effects
 				(font
@@ -21624,7 +22213,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "J6")
+					(reference "SWD_INT1")
 					(unit 1)
 				)
 			)
@@ -21844,8 +22433,8 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "c5287db7-8f9f-4971-8052-123dc493aed2")
-		(property "Reference" "U6"
-			(at 796.29 614.68 0)
+		(property "Reference" "M10S1"
+			(at 796.29 558.8 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -21853,7 +22442,7 @@
 			)
 		)
 		(property "Value" "MAX-M10S-00B"
-			(at 796.29 612.14 0)
+			(at 796.29 561.34 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -21861,12 +22450,11 @@
 			)
 		)
 		(property "Footprint" "MAX-M10S-00B:XCVR_MAX-M10S-00B"
-			(at 796.29 589.28 0)
+			(at 796.29 563.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify bottom)
 			)
 		)
 		(property "Datasheet" ""
@@ -22074,7 +22662,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "U6")
+					(reference "M10S1")
 					(unit 1)
 				)
 			)
@@ -22091,22 +22679,22 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "c5982bac-fb74-4e8c-bfab-0fc917ce1fee")
-		(property "Reference" "IC1"
-			(at 766.2067 342.9 0)
+		(property "Reference" "ADXL1"
+			(at 771.4681 342.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
+				(justify right)
 			)
 		)
 		(property "Value" "ADXL375BCCZ"
-			(at 766.2067 345.44 0)
+			(at 771.4681 345.44 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
+				(justify right)
 			)
 		)
 		(property "Footprint" "ADXL375:CC-14-1"
@@ -22253,7 +22841,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "IC1")
+					(reference "ADXL1")
 					(unit 1)
 				)
 			)
@@ -22608,7 +23196,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d0475688-88d7-4721-b51f-97b9f27e6d2b")
-		(property "Reference" "U1"
+		(property "Reference" "BUCK1"
 			(at 369.57 341.63 0)
 			(effects
 				(font
@@ -22673,7 +23261,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "U1")
+					(reference "BUCK1")
 					(unit 1)
 				)
 			)
@@ -22823,8 +23411,8 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "d4ac0b49-3edc-463f-9595-e043073d5935")
-		(property "Reference" "J2"
-			(at 514.477 544.068 0)
+		(property "Reference" "L62-1"
+			(at 512.826 544.068 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -22895,7 +23483,7 @@
 		(instances
 			(project ""
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "J2")
+					(reference "L62-1")
 					(unit 1)
 				)
 			)
@@ -23117,7 +23705,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "d893121f-2a7c-4718-a718-4c24789b1b2e")
-		(property "Reference" "J8"
+		(property "Reference" "ANT_24"
 			(at 454.66 584.4931 0)
 			(effects
 				(font
@@ -23171,7 +23759,141 @@
 		(instances
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "J8")
+					(reference "ANT_24")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 367.03 450.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "da73d53f-a2ff-45d9-b01f-bc7c2b1481ef")
+		(property "Reference" "TP11"
+			(at 367.03 446.278 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 369.57 448.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 372.11 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 372.11 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 367.03 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "fd4968af-9ad8-41e7-b6c0-6cfd16ec43d3")
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "TP11")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 344.17 450.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "dc527977-0135-46b5-bcbd-4648c07cd01f")
+		(property "Reference" "TP5"
+			(at 344.17 446.278 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 346.71 448.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 349.25 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 349.25 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 344.17 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "b1dc6cdc-a13c-4382-80a4-68c5d985db1a")
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "TP5")
 					(unit 1)
 				)
 			)
@@ -23186,8 +23908,8 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "dc8b5ac2-987e-473e-b1bf-f48eb961128d")
-		(property "Reference" "SW3"
-			(at 588.518 599.948 90)
+		(property "Reference" "PARA_ARM1"
+			(at 589.788 599.948 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -23243,7 +23965,7 @@
 		(instances
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "SW3")
+					(reference "PARA_ARM1")
 					(unit 1)
 				)
 			)
@@ -23890,6 +24612,73 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 363.22 450.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "e8ac4e33-fd04-462d-b1e5-76a844f516d6")
+		(property "Reference" "TP10"
+			(at 363.22 446.278 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 365.76 448.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 368.3 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 368.3 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 363.22 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "b7b2f172-9d3a-4937-9cee-85f6dd718575")
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "TP10")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Connector:Screw_Terminal_01x02")
 		(at 617.22 599.44 0)
 		(unit 1)
@@ -23899,7 +24688,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "ea3875d5-843f-4361-a765-bb8c9eb91457")
-		(property "Reference" "J10"
+		(property "Reference" "J10-PBAT1"
 			(at 619.76 599.4399 0)
 			(effects
 				(font
@@ -23953,7 +24742,7 @@
 		(instances
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
-					(reference "J10")
+					(reference "J10-PBAT1")
 					(unit 1)
 				)
 			)
@@ -24020,6 +24809,73 @@
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
 					(reference "#PWR050")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 332.74 450.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "ed910fe3-7cfa-49b5-8b90-7f5f98087c8e")
+		(property "Reference" "TP2"
+			(at 332.74 446.278 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 335.28 448.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
+			(at 337.82 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 337.82 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 332.74 450.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "0972b5e6-7fa7-47ea-ab2f-079ba94155fa")
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "TP2")
 					(unit 1)
 				)
 			)
