@@ -7062,6 +7062,89 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Mechanical:MountingHole"
+			(pin_names
+				(offset 1.016)
+			)
+			(exclude_from_sim no)
+			(in_bom no)
+			(on_board yes)
+			(property "Reference" "H"
+				(at 0 5.08 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "MountingHole"
+				(at 0 3.175 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Mounting Hole without connection"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "mounting hole"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "MountingHole*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "MountingHole_0_1"
+				(circle
+					(center 0 0)
+					(radius 1.27)
+					(stroke
+						(width 1.27)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "Regulator_Switching:TPS563200"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -9610,6 +9693,10 @@
 		(uuid "3744b691-eec5-4666-8495-82d063b0b92b")
 	)
 	(no_connect
+		(at 538.48 605.79)
+		(uuid "3f0076db-becc-4542-8a36-b18bc843595e")
+	)
+	(no_connect
 		(at 538.48 600.71)
 		(uuid "3f7045e0-b525-463a-94b9-f19c9292e551")
 	)
@@ -9624,6 +9711,10 @@
 	(no_connect
 		(at 773.43 589.28)
 		(uuid "5683dca6-0f5f-4cf0-b0ee-df796b3fcc66")
+	)
+	(no_connect
+		(at 585.47 440.69)
+		(uuid "6109226e-5ce8-44f4-87ec-14e0bb8bb0fe")
 	)
 	(no_connect
 		(at 605.79 549.91)
@@ -9646,12 +9737,20 @@
 		(uuid "7b0cfef4-f34b-4830-9573-300bc5b42900")
 	)
 	(no_connect
+		(at 621.03 445.77)
+		(uuid "80fcf8b7-f3c4-4765-a841-0203c5193fa2")
+	)
+	(no_connect
 		(at 742.95 368.3)
 		(uuid "9a3ab3a4-40e9-4441-935c-329dd5e1b49e")
 	)
 	(no_connect
 		(at 819.15 579.12)
 		(uuid "9b9f7f6a-1619-443e-8e9e-6fa9367dd5e0")
+	)
+	(no_connect
+		(at 538.48 565.15)
+		(uuid "a13d9cd5-0369-42c5-8a1e-22e738f6c475")
 	)
 	(no_connect
 		(at 585.47 422.91)
@@ -11911,16 +12010,6 @@
 	)
 	(wire
 		(pts
-			(xy 601.98 599.44) (xy 601.98 594.36)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ddc47ff4-5b0f-43cb-a4ab-8c9b95a3d916")
-	)
-	(wire
-		(pts
 			(xy 393.7 367.03) (xy 384.81 367.03)
 		)
 		(stroke
@@ -12141,6 +12230,16 @@
 	)
 	(wire
 		(pts
+			(xy 601.98 594.36) (xy 601.98 599.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ea3df8ae-ab93-4e89-b59d-36d448274f5f")
+	)
+	(wire
+		(pts
 			(xy 646.43 453.39) (xy 651.51 453.39)
 		)
 		(stroke
@@ -12339,6 +12438,16 @@
 		)
 		(uuid "fb80acfb-63d2-477e-a7e7-6892b1c832cb")
 	)
+	(label "L80_DIO2"
+		(at 513.08 605.79 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "00110752-7bbd-4684-bcdf-d9bb75257afb")
+	)
 	(label "INT1_ADXL"
 		(at 621.03 422.91 0)
 		(effects
@@ -12378,16 +12487,6 @@
 			(justify right bottom)
 		)
 		(uuid "02e15db3-eaad-4d7c-9679-e581bd7a6a2e")
-	)
-	(label "L80_DIO2"
-		(at 621.03 445.77 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "071688d6-148b-454e-8589-f7178f93b991")
 	)
 	(label "VCP_TX"
 		(at 605.79 565.15 0)
@@ -12448,16 +12547,6 @@
 			(justify left bottom)
 		)
 		(uuid "1a3837bc-169f-4518-985e-f3661cc4f119")
-	)
-	(label "L62_DIO3"
-		(at 538.48 565.15 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "1da339af-090f-41da-afb7-82e2dadef5d2")
 	)
 	(label "L80_ANT"
 		(at 463.55 585.47 0)
@@ -12579,16 +12668,6 @@
 		)
 		(uuid "3b8249e9-2be2-452a-910e-e84a0ebd90a1")
 	)
-	(label "L80_DIO2"
-		(at 513.08 605.79 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "3d48a897-df89-4bd2-b53d-2e4d88854fcd")
-	)
 	(label "SWCLK"
 		(at 621.03 415.29 0)
 		(effects
@@ -12688,6 +12767,16 @@
 			(justify right bottom)
 		)
 		(uuid "53145f09-67df-47fd-9615-67e0ddbdf349")
+	)
+	(label "L62_DIO2"
+		(at 513.08 565.15 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "570b9b3e-3365-4df2-ad6a-c06fe7aab47d")
 	)
 	(label "LSM6_INT2"
 		(at 585.47 415.29 180)
@@ -12799,16 +12888,6 @@
 		)
 		(uuid "6882346d-3c2e-4533-b87c-d294aa93d2b6")
 	)
-	(label "L62_DIO2"
-		(at 513.08 565.15 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "6d161d3c-451a-42a9-82c4-9a54679a8a00")
-	)
 	(label "I2C2_SCL"
 		(at 773.43 574.04 180)
 		(effects
@@ -12879,16 +12958,6 @@
 		)
 		(uuid "7e821d6a-3d60-49e4-9751-74902625525c")
 	)
-	(label "L80_DIO3"
-		(at 585.47 410.21 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "7e90f32b-2ae8-4dcd-a9d4-6aa35bd4a449")
-	)
 	(label "INT_BMP"
 		(at 777.24 542.29 180)
 		(effects
@@ -12908,6 +12977,16 @@
 			(justify left bottom)
 		)
 		(uuid "8513f26a-94e7-4f23-b84e-ddb68848cb5f")
+	)
+	(label "L62_DIO2"
+		(at 585.47 407.67 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8699d032-254d-401a-a57b-0ea9fcd8c04d")
 	)
 	(label "SWDIO"
 		(at 605.79 552.45 0)
@@ -12960,7 +13039,7 @@
 		(uuid "94a8cf87-d846-41b2-8f8d-14cb1a2114dc")
 	)
 	(label "CS_ADXL"
-		(at 621.03 387.35 0)
+		(at 621.03 389.89 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -13018,16 +13097,6 @@
 			(justify right bottom)
 		)
 		(uuid "9e86c228-74b9-4e49-8654-5b45bf6863c3")
-	)
-	(label "L62_DIO2"
-		(at 585.47 440.69 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "a330bafa-cbc3-48ce-8e6e-245b925d6afd")
 	)
 	(label "SPI1_SCK"
 		(at 768.35 342.9 0)
@@ -13239,6 +13308,16 @@
 		)
 		(uuid "d635e9b2-0f92-452d-8222-d7f33164e8ad")
 	)
+	(label "PARA_PWR"
+		(at 601.98 594.36 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d6e8b7f6-df01-4f35-b6eb-c7835880384b")
+	)
 	(label "NRST"
 		(at 585.47 384.81 180)
 		(effects
@@ -13289,16 +13368,6 @@
 		)
 		(uuid "e86a7192-56d6-4eb8-b0ee-72a6166d1294")
 	)
-	(label "L62_DIO3"
-		(at 585.47 407.67 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "eaf2f9d7-1d78-4011-9832-a2a90b34f0ad")
-	)
 	(label "L62_TXSW"
 		(at 513.08 557.53 180)
 		(effects
@@ -13319,16 +13388,6 @@
 		)
 		(uuid "f2d8a1a7-73b4-4bb2-8187-38af7245de3e")
 	)
-	(label "L80_DIO3"
-		(at 538.48 605.79 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "f449e5db-c91b-4611-aa81-3726de33b7d9")
-	)
 	(label "SPI1_MOSI"
 		(at 742.95 419.1 180)
 		(effects
@@ -13340,7 +13399,7 @@
 		(uuid "f4886a0a-e891-43f4-ad2a-d9d2b5de2561")
 	)
 	(label "CS_LSM6"
-		(at 621.03 389.89 0)
+		(at 621.03 387.35 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -13379,6 +13438,16 @@
 		)
 		(uuid "fad0b9c5-0ace-407b-bc88-3e948aff4885")
 	)
+	(label "PARA_GND"
+		(at 599.44 594.36 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "fbe41fe8-8b75-4c12-bb4a-dfa07bdcf1fc")
+	)
 	(label "I2C2_SDA"
 		(at 773.43 480.06 180)
 		(effects
@@ -13388,6 +13457,16 @@
 			(justify right bottom)
 		)
 		(uuid "fd51cd9d-96dd-4a32-b62d-c1b6e00e49d8")
+	)
+	(label "L80_DIO2"
+		(at 585.47 410.21 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "ff9bf27b-8c89-445b-bb6d-d85a53b33cf0")
 	)
 	(symbol
 		(lib_id "power:+3V3")
@@ -13451,6 +13530,70 @@
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
 					(reference "#PWR039")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 547.37 511.81 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "04115477-dd20-494b-95fa-09b6ca740b2f")
+		(property "Reference" "H1"
+			(at 549.91 510.5399 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "MountingHole"
+			(at 549.91 513.0799 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2"
+			(at 547.37 511.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 547.37 511.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 547.37 511.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project ""
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "H1")
 					(unit 1)
 				)
 			)
@@ -17130,6 +17273,70 @@
 		)
 	)
 	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 567.69 505.46 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "5dbb115a-f40c-49e2-bdfd-22c09929ee4d")
+		(property "Reference" "H3"
+			(at 570.23 504.1899 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "MountingHole"
+			(at 570.23 506.7299 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2"
+			(at 567.69 505.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 567.69 505.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 567.69 505.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "H3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C")
 		(at 586.74 618.49 0)
 		(unit 1)
@@ -18628,6 +18835,70 @@
 		)
 	)
 	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 547.37 505.46 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "84696d23-c3f2-40b6-890c-aa99b3e1e0d8")
+		(property "Reference" "H2"
+			(at 549.91 504.1899 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "MountingHole"
+			(at 549.91 506.7299 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2"
+			(at 547.37 505.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 547.37 505.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 547.37 505.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "H2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "LSM6DSR:LSM6DSR")
 		(at 758.19 426.72 0)
 		(mirror y)
@@ -19562,6 +19833,70 @@
 			(project "avionics_dev_board"
 				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
 					(reference "#PWR05")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 567.69 511.81 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "956d39b4-25cd-4268-bdcc-505891561a74")
+		(property "Reference" "H4"
+			(at 570.23 510.5399 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "MountingHole"
+			(at 570.23 513.0799 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2"
+			(at 567.69 511.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 567.69 511.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 567.69 511.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "avionics_dev_board"
+				(path "/2bd6b0e6-bba1-4cfc-b1c2-515c7f750bbe"
+					(reference "H4")
 					(unit 1)
 				)
 			)
