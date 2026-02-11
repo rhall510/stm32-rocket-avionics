@@ -1,3 +1,15 @@
+**SENSORS/ICs**
+* MMC5983MA     https://www.mouser.co.uk/ProductDetail/MEMSIC/MMC5983MA?qs=B6kkDfuK7%2FD5qasHMdEt2g%3D%3D
+* BMP581        https://www.mouser.co.uk/ProductDetail/Bosch-Sensortec/BMP581?qs=Li%252BoUPsLEntPL9tlFmcgXg%3D%3D
+* LSM6DSRTR     https://www.mouser.co.uk/ProductDetail/STMicroelectronics/LSM6DSRTR?qs=vLWxofP3U2yp6%252BOD3KzrKQ%3D%3D
+* W25Q256JVEIQ  https://www.mouser.co.uk/ProductDetail/Winbond/W25Q256JVEIQ?qs=qSfuJ%252Bfl%2Fd4o%2FNFUf7yCgA%3D%3D
+* ADXL375BCCZ   https://www.lcsc.com/product-detail/C579466.html
+* MAX-M10S-00B  https://www.lcsc.com/product-detail/C4153167.html
+* STM32G474RET6 https://www.lcsc.com/product-detail/C521608.html?s_z=n_STM32G474RET6
+
+
+
+
 **CAPACITORS:**
 
 * 12pF   x2	https://www.mouser.co.uk/ProductDetail/Samsung-Electro-Mechanics/CL10C120JB8NNNC?qs=349EhDEZ59q%252BsXw6lhqGjQ%3D%3D
@@ -37,3 +49,10 @@
 * Diode                  x1	https://www.mouser.co.uk/ProductDetail/Diodes-Incorporated/MBR230S1F-7?qs=sGAEpiMZZMtbRapU8LlZD2AzG6mm2P2ZBfv9044yKIh7KrBZfzNDhQ%3D%3D
 * 120R ferrite bead      x1	https://www.mouser.co.uk/ProductDetail/TE-Connectivity-Sigma-Inductors/BMC-Q1JY0120H?qs=sGAEpiMZZMt1hubY80%2Fs8KH3ycnB7WcGc%2FcSUtObKOLmj4JvfvR2Cw%3D%3D
 * LED                    x1	https://www.mouser.co.uk/ProductDetail/LITEON/LTST-C194KRKT?qs=sGAEpiMZZMusoohG2hS%252B125BSguLzCM3%252B28gAtlU3DE%3D
+* TPS563201DDCR          x1 https://www.mouser.co.uk/ProductDetail/Texas-Instruments/TPS563201DDCR?qs=G55MHhPmvtJ%2FRbVAaIIbqw%3D%3D
+* CGGP.25.4.A.02         x1 https://www.mouser.co.uk/ProductDetail/Taoglas/CGGP.25.4.A.02?qs=QpZVHcK7GhSAV47sa7%2Fgcg%3D%3D
+
+
+
+
+
