@@ -76,10 +76,8 @@ flowchart TB
 
 ## Current status
 Goals from the [project plan](docs/PROJECT_PLAN.md) that are currently being worked on:
-##### 1\. RF link validation and range tests
-* [ ] Assemble SX1262 (LAMBDA62 module - 868MHz) and SX1280 (LAMBDA80 module - 2.4GHz) test rigs with 1/4 wave ground plane monopole antennas (driven by Arduinos while STM32s are on backorder) and perform range tests to validate feasibility and collect field data for RSSI and SNR at distance.
 
 ##### 2\. Avionics unit
-* [ ] Design avionics unit development PCB with convenience features like line test pads, 0 ohm resistors etc. Transceivers are used as modules plugged into the PCB (later to be soldered permanently) while everything else is used as bare chips soldered directly to the PCB via hotplate reflow. Also include power management IC and safety arming switch for parachute deployment system.
+* [ ] Acquire parts for avionics development PCB and assemble it. Iterate design as required.
 
 *For an up to date breakdown of progress, check the [development log](docs/DEVELOPMENT_LOG.md).*

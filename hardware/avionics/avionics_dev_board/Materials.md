@@ -30,7 +30,7 @@
 * 100    x1	https://www.mouser.co.uk/ProductDetail/YAGEO/RC0603JR-13100RL?qs=sGAEpiMZZMtlubZbdhIBIAQgR8I6PBLBrJIXKjiqrsQ%3D
 * 1k     x1	https://www.mouser.co.uk/ProductDetail/YAGEO/RC0603FR-101KL?qs=sGAEpiMZZMtlubZbdhIBIHvQf5egq9lv5WuapZo15J4%3D
 * 2.7k   x2	https://www.mouser.co.uk/ProductDetail/YAGEO/AC0603FR-102K7L?qs=sGAEpiMZZMtlubZbdhIBIMHZ5gvv1VGtHY9R6eAnJ8w%3D
-* 10k    x3	https://www.mouser.co.uk/ProductDetail/YAGEO/AC0603JR-0710KL?qs=sGAEpiMZZMtlubZbdhIBIEWKOXN0akj16e5O1kzK9uk%3D
+* 10k    x6	https://www.mouser.co.uk/ProductDetail/YAGEO/AC0603JR-0710KL?qs=sGAEpiMZZMtlubZbdhIBIEWKOXN0akj16e5O1kzK9uk%3D
 * 33k    x1	https://www.mouser.co.uk/ProductDetail/YAGEO/RC0603FR-1033KL?qs=sGAEpiMZZMtlubZbdhIBIHvQf5egq9lvh39n1j2MzKs%3D
 
 

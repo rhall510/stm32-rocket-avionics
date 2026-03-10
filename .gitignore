@@ -26,3 +26,4 @@ fp-info-cache
 # Other
 docs/datasheets/
 *-backups/
+*untracked/
