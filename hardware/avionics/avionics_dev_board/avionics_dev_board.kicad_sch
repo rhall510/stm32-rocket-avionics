@@ -15307,7 +15307,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_0603_1608Metric"
+		(property "Footprint" "LED_SMD:LED_0805_2012Metric"
 			(at 561.34 443.23 0)
 			(effects
 				(font
@@ -22483,7 +22483,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_0603_1608Metric"
+		(property "Footprint" "LED_SMD:LED_0805_2012Metric"
 			(at 433.07 365.76 0)
 			(effects
 				(font
@@ -24238,7 +24238,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Fuse:Fuse_0603_1608Metric"
+		(property "Footprint" "Fuse:Fuse_1206_3216Metric"
 			(at 322.58 351.028 90)
 			(effects
 				(font
