@@ -1,0 +1,29 @@
+#ifndef LAMBDA62_H_
+#define LAMBDA62_H_
+
+
+// MCU connected pins
+#define L62_CS_PORT GPIOA
+#define L62_CS_PIN GPIO_PIN_15
+
+#define L62_DIO1_PORT GPIOB
+#define L62_DIO1_PIN GPIO_PIN_4
+
+#define L62_DIO2_PORT GPIOC
+#define L62_DIO2_PIN GPIO_PIN_2
+
+#define L62_BUSY_PORT GPIOB
+#define L62_BUSY_PIN GPIO_PIN_5
+
+#define L62_RST_PORT GPIOC
+#define L62_RST_PIN GPIO_PIN_13
+
+#define L62_RXSW_PORT GPIOC
+#define L62_RXSW_PIN GPIO_PIN_0
+
+#define L62_TXSW_PORT GPIOC
+#define L62_TXSW_PIN GPIO_PIN_1
+
+
+
+#endif /* LAMBDA62_H_ */
