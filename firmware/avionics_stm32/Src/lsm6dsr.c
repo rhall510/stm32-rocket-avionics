@@ -5,7 +5,9 @@
 extern SPI_HandleTypeDef hspi1_acc;
 
 
-void InitialiseLSM6DSR(uint16_t WatermarkWords) {
+void InitialiseLSM6DSR(uint16_t WatermarkReads) {
+	uint16_t WatermarkWords = WatermarkReads * LSM6_FIFO_DATA_BLOCK_SIZE;
+
 	// Software reset
 	uint8_t tx[2] = {LSM6_CTRL3_C, 0b00000001U};
 
@@ -17,8 +19,8 @@ void InitialiseLSM6DSR(uint16_t WatermarkWords) {
 
 	// Wake up accelerometer
 	tx[0] = LSM6_CTRL1_XL;
-//	tx[1] = 0b01000100U;   // 104Hz, +/-16g, first stage filtering
-	tx[1] = 0b00010100U;   // 12.5Hz, +/-16g, first stage filtering
+	tx[1] = 0b01000100U;   // 104Hz, +/-16g, first stage filtering
+//	tx[1] = 0b00010100U;   // 12.5Hz, +/-16g, first stage filtering
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
@@ -26,8 +28,8 @@ void InitialiseLSM6DSR(uint16_t WatermarkWords) {
 
 	// Wake up gyroscope
 	tx[0] = LSM6_CTRL2_G;
-//	tx[1] = 0b01001100U;   // 104Hz, +/-200dps
-	tx[1] = 0b00011100U;   // 12.5Hz, +/-200dps
+	tx[1] = 0b01001100U;   // 104Hz, +/-200dps
+//	tx[1] = 0b00011100U;   // 12.5Hz, +/-200dps
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
@@ -35,7 +37,7 @@ void InitialiseLSM6DSR(uint16_t WatermarkWords) {
 
 	// Set up FIFO
 	tx[0] = LSM6_FIFO_CTRL4;
-	tx[1] = 0b00000110U;   // FIFO continuous mode (new data overwrites old when full)
+	tx[1] = 0b01000110U;   // FIFO continuous mode with full timestamp writing
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
@@ -43,8 +45,16 @@ void InitialiseLSM6DSR(uint16_t WatermarkWords) {
 
 	// Set Acc/Gyr write rates
 	tx[0] = LSM6_FIFO_CTRL3;
-//	tx[1] = 0b01000100U;   // 104Hz
-	tx[1] = 0b00010001U;   // 12.5Hz
+	tx[1] = 0b01000100U;   // 104Hz
+//	tx[1] = 0b00010001U;   // 12.5Hz
+
+	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
+
+	// Enable timestamp
+	tx[0] = LSM6_CTRL10_C;
+	tx[1] = 0b00100000U;
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
@@ -125,7 +135,9 @@ struct Vector3 LSM6DSR_ReadInstGyroData() {
 }
 
 
-void LSM6DSR_ReadFIFOData(volatile uint8_t (*buff)[7], uint16_t words) {
+void LSM6DSR_ReadFIFOData(volatile struct TS_Vec3 *accbuff, volatile struct TS_Vec3 *gyrbuff, uint16_t readnum) {
+	uint16_t words = readnum * LSM6_FIFO_DATA_BLOCK_SIZE;
+
 	for (int word = 0; word < words; word++) {
 		// Request data from the 7 contiguous FIFO registers
 		uint8_t tx[8] = {LSM6_FIFO_DATA_OUT | (1U << 7), 0, 0, 0, 0, 0, 0, 0};
@@ -135,8 +147,35 @@ void LSM6DSR_ReadFIFOData(volatile uint8_t (*buff)[7], uint16_t words) {
 		HAL_SPI_TransmitReceive(&hspi1_acc, tx, rx, 8, HAL_MAX_DELAY);
 		HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
-		for (int i = 0; i < 7; i++) {
-			buff[word][i] = rx[i + 1];
+		// Decode tag byte
+		uint8_t type = (rx[1] & 0b11111000U) >> 3;
+
+		if (type == 0x1U) {   // Gyroscope word
+			// Combine into raw 16-bit readings
+			int16_t gx_raw = (int16_t)((rx[3] << 8) | rx[2]);
+			int16_t gy_raw = (int16_t)((rx[5] << 8) | rx[4]);
+			int16_t gz_raw = (int16_t)((rx[7] << 8) | rx[6]);
+
+			// Convert to dps
+			gyrbuff[(int)(word / LSM6_FIFO_DATA_BLOCK_SIZE)].X = (gx_raw * 70.0f) / 1000.0f;
+			gyrbuff[(int)(word / LSM6_FIFO_DATA_BLOCK_SIZE)].Y = (gy_raw * 70.0f) / 1000.0f;
+			gyrbuff[(int)(word / LSM6_FIFO_DATA_BLOCK_SIZE)].Z = (gz_raw * 70.0f) / 1000.0f;
+		} else if (type == 0x2U) {   // Accelerometer word
+			// Combine into raw 16-bit readings
+			int16_t ax_raw = (int16_t)((rx[3] << 8) | rx[2]);
+			int16_t ay_raw = (int16_t)((rx[5] << 8) | rx[4]);
+			int16_t az_raw = (int16_t)((rx[7] << 8) | rx[6]);
+
+			// Convert to gs
+			accbuff[(int)(word / LSM6_FIFO_DATA_BLOCK_SIZE)].X = (ax_raw * 0.488f) / 1000.0f;
+			accbuff[(int)(word / LSM6_FIFO_DATA_BLOCK_SIZE)].Y = (ay_raw * 0.488f) / 1000.0f;
+			accbuff[(int)(word / LSM6_FIFO_DATA_BLOCK_SIZE)].Z = (az_raw * 0.488f) / 1000.0f;
+		} else if (type == 0x4U) {   // Timestamp word
+			uint32_t ts_raw = (uint32_t)((rx[5] << 24) | (rx[4] << 16) | (rx[3] << 8) | rx[2]);
+			float ts = ts_raw * 0.000025f;   // 25us per LSB
+
+			accbuff[(int)(word / LSM6_FIFO_DATA_BLOCK_SIZE)].Timestamp = ts;
+			gyrbuff[(int)(word / LSM6_FIFO_DATA_BLOCK_SIZE)].Timestamp = ts;
 		}
 	}
 }

@@ -3,12 +3,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "datatypes.h"
 
-struct Vector3 {
-	float X;
-	float Y;
-	float Z;
-};
 
 // MCU connected pins
 #define LSM6_CS_PORT GPIOA
@@ -26,6 +22,7 @@ struct Vector3 {
 #define LSM6_CTRL1_XL 0x10U
 #define LSM6_CTRL2_G 0x11U
 #define LSM6_CTRL3_C 0x12U
+#define LSM6_CTRL10_C 0x19U
 #define LSM6_FIFO_CTRL1 0x07U
 #define LSM6_FIFO_CTRL2 0x08U
 #define LSM6_FIFO_CTRL3 0x09U
@@ -39,13 +36,17 @@ struct Vector3 {
 #define LSM6_FIFO_STATUS 0x3A   // 2 contiguous registers for full FIFO status
 
 
+// Other
+#define LSM6_FIFO_DATA_BLOCK_SIZE 3
+
+
 // Functions
-void InitialiseLSM6DSR(uint16_t WatermarkWords);
+void InitialiseLSM6DSR(uint16_t WatermarkReads);
 
 struct Vector3 LSM6DSR_ReadInstAccelData();
 struct Vector3 LSM6DSR_ReadInstGyroData();
 
-void LSM6DSR_ReadFIFOData(volatile uint8_t (*buff)[7], uint16_t words);
+void LSM6DSR_ReadFIFOData(volatile struct TS_Vec3 *accbuff, volatile struct TS_Vec3 *gyrbuff, uint16_t readnum);
 uint16_t LSM6DSR_GetFIFOStatus();
 
 
