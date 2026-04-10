@@ -1,23 +1,14 @@
 #include "main.h"
 
 
-volatile struct TS_Vec3 accbuff[LSM6_FIFO_READNUM];
-volatile struct TS_Vec3 gyrbuff[LSM6_FIFO_READNUM];
-
-volatile uint16_t FIFOStatus;
+volatile struct TS_Vec3 lsm_accbuff[LSM6_FIFO_READNUM];
+volatile struct TS_Vec3 lsm_gyrbuff[LSM6_FIFO_READNUM];
+volatile struct TS_Vec3 adxl_accbuff[ADXL_FIFO_READNUM];
 
 volatile bool lsm_data_ready = false;
-
-
-const int lsm_cal_samples = 200;
-
-volatile struct TS_Vec3 acc_cal_buff[200];
-volatile struct TS_Vec3 gyr_cal_buff[200];
-
-volatile struct Vector3 acc_offset;
-volatile struct Vector3 gyr_offset;
-
-volatile bool lsm_calibrated = false;
+volatile float lsm_data_time = 0.0f;
+volatile bool adxl_data_ready = false;
+volatile float adxl_data_time = 0.0f;
 
 
 int main(void) {
@@ -31,32 +22,18 @@ int main(void) {
 	__enable_irq();
 
 	InitialiseLSM6DSR(LSM6_FIFO_READNUM);
+	InitialiseADXL375(ADXL_FIFO_READNUM);
 
-	int CalAccumSamples = 0;
 
 	while (1) {
-// 		FIFOStatus = LSM6DSR_GetFIFOStatus();
-
 		if (lsm_data_ready) {
 			lsm_data_ready = false;
-			LSM6DSR_ReadFIFOData(accbuff, gyrbuff, LSM6_FIFO_READNUM);
-
-			if (lsm_calibrated) {
-				Process_IMU_FIFO(accbuff, gyrbuff, LSM6_FIFO_READNUM);
-				ULED_TOGGLE
-			} else {
-				for (int i = 0; i < LSM6_FIFO_READNUM; i++) {
-					acc_cal_buff[i + CalAccumSamples] = accbuff[i];
-					gyr_cal_buff[i + CalAccumSamples] = gyrbuff[i];
-				}
-
-				CalAccumSamples += LSM6_FIFO_READNUM;
-
-				if (CalAccumSamples >= lsm_cal_samples) {
-					CalcLSM6Offsets(acc_cal_buff, gyr_cal_buff, lsm_cal_samples);
-					lsm_calibrated = true;
-				}
-			}
+			LSM6DSR_ReadFIFOData(lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM, lsm_data_time);
+		}
+		if (adxl_data_ready) {
+			adxl_data_ready = false;
+			ADXL375_ReadFIFOData(adxl_accbuff, ADXL_FIFO_READNUM, adxl_data_time);
+			ULED_TOGGLE
 		}
 
 		HAL_Delay(10);
@@ -64,91 +41,6 @@ int main(void) {
 
 	for(;;);
 }
-
-
-
-void CalcLSM6Offsets(volatile struct TS_Vec3* accel_buffer, volatile struct TS_Vec3* gyro_buffer, uint8_t num_samples) {
-	struct Vector3 accel_accum;
-	struct Vector3 gyr_accum;
-
-	accel_accum.X = 0.0f;
-	accel_accum.Y = 0.0f;
-	accel_accum.Z = 0.0f;
-
-	gyr_accum.X = 0.0f;
-	gyr_accum.Y = 0.0f;
-	gyr_accum.Z = 0.0f;
-
-	for (int i = 50; i < num_samples; i++) {
-		accel_accum.X += accel_buffer[i].X;
-		accel_accum.Y += accel_buffer[i].Y;
-		accel_accum.Z += accel_buffer[i].Z;
-
-		gyr_accum.X += gyro_buffer[i].X;
-		gyr_accum.Y += gyro_buffer[i].Y;
-		gyr_accum.Z += gyro_buffer[i].Z;
-	}
-
-	acc_offset.X = accel_accum.X / (num_samples - 50);
-	acc_offset.Y = accel_accum.Y / (num_samples - 50);
-	acc_offset.Z = accel_accum.Z / (num_samples - 50);
-
-	gyr_offset.X = gyr_accum.X / (num_samples - 50);
-	gyr_offset.Y = gyr_accum.Y / (num_samples - 50);
-	gyr_offset.Z = gyr_accum.Z / (num_samples - 50);
-}
-
-
-// State Variables (Global or Static)
-float roll = 0, pitch = 0, yaw = 0;
-float pos_z = 0, vel_z = 0;
-const float dt = 0.009615f; // 1/104 Hz
-const float gravity = 1.0f; // Adjust based on your sensor's LSB/g scaling
-
-// Call this in your EXTI / FIFO Interrupt
-void Process_IMU_FIFO(volatile struct TS_Vec3* accel_buffer, volatile struct TS_Vec3* gyro_buffer, uint8_t num_samples) {
-    for (int i = 0; i < num_samples; i++) {
-        // 1. Extract current sample (assuming interleaved or structured data)
-        float gx = gyro_buffer[i].X - gyr_offset.X; // radians/sec
-        float gy = gyro_buffer[i].Y - gyr_offset.Y;
-        float gz = gyro_buffer[i].Z - gyr_offset.Z;
-
-        float ax = accel_buffer[i].X - acc_offset.X; // m/s^2
-        float ay = accel_buffer[i].Y - acc_offset.Y;
-        float az = accel_buffer[i].Z - acc_offset.Z;
-
-        // 2. Integrate Gyro (Orientation)
-        roll  += gx * dt;
-        pitch += gy * dt;
-        yaw   += gz * dt;
-
-        // 3. Simple Z-Axis Gravity Compensation
-        // Using small angle approximations or standard trig
-        float a_earth_z = az * cosf(roll) * cosf(pitch);// - gravity;
-
-        // 4. Deadband filter (Optional but highly recommended for "dirty" tests)
-        // If acceleration is just noise, ignore it to reduce drift
-//        if (fabs(a_earth_z) < 0.15f) {
-//            a_earth_z = 0;
-//        }
-
-        // 5. Integrate Acceleration (Velocity & Position)
-        vel_z += a_earth_z * dt;
-
-        // Optional: Velocity decay to prevent infinite floating away on your desk
-//        vel_z *= 0.99f;
-
-        pos_z += vel_z * dt;
-    }
-}
-
-
-
-
-
-
-
-
 
 
 
@@ -237,7 +129,7 @@ void InitialiseSPI() {
 	// Initialise SPI1 (accelerometers)
     GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -246,10 +138,10 @@ void InitialiseSPI() {
 	hspi1_acc.Init.Mode = SPI_MODE_MASTER;
 	hspi1_acc.Init.Direction = SPI_DIRECTION_2LINES;   // Standard full-duplex SPI
 	hspi1_acc.Init.DataSize = SPI_DATASIZE_8BIT;
-	hspi1_acc.Init.CLKPolarity = SPI_POLARITY_LOW;   // Clock is low when idle
-	hspi1_acc.Init.CLKPhase = SPI_PHASE_1EDGE;   // Data is read on the rising edge of the clock
+	hspi1_acc.Init.CLKPolarity = SPI_POLARITY_HIGH;   // Clock is high when idle
+	hspi1_acc.Init.CLKPhase = SPI_PHASE_2EDGE;   // Data is read on the rising edge of the clock
 	hspi1_acc.Init.NSS = SPI_NSS_SOFT;   // CS pins must be manually controlled
-	hspi1_acc.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+	hspi1_acc.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;   // Must be low enough for ADXL 5MHz limit
 	hspi1_acc.Init.FirstBit = SPI_FIRSTBIT_MSB;
 	hspi1_acc.Init.TIMode = SPI_TIMODE_DISABLE;
 	hspi1_acc.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;   // Disable CRC check to save processing time
@@ -398,6 +290,12 @@ void InitialiseGPIO() {
 
 
 // External interrupt handlers
+void EXTI0_IRQHandler(void) {
+	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_0);
+	adxl_data_ready = true;
+	adxl_data_time = (float)uwTick / 1000.0f;
+}
+
 void EXTI1_IRQHandler(void) {
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_1);
 }
@@ -413,6 +311,7 @@ void EXTI3_IRQHandler(void) {
 void EXTI4_IRQHandler(void) {
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_4);
 	lsm_data_ready = true;
+	lsm_data_time = (float)uwTick / 1000.0f;
 }
 
 void EXTI9_5_IRQHandler(void) {

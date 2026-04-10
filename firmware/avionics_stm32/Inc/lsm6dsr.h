@@ -22,6 +22,8 @@
 #define LSM6_CTRL1_XL 0x10U
 #define LSM6_CTRL2_G 0x11U
 #define LSM6_CTRL3_C 0x12U
+#define LSM6_CTRL4_C 0x13U
+#define LSM6_CTRL9_XL 0x18U
 #define LSM6_CTRL10_C 0x19U
 #define LSM6_FIFO_CTRL1 0x07U
 #define LSM6_FIFO_CTRL2 0x08U
@@ -46,7 +48,7 @@ void InitialiseLSM6DSR(uint16_t WatermarkReads);
 struct Vector3 LSM6DSR_ReadInstAccelData();
 struct Vector3 LSM6DSR_ReadInstGyroData();
 
-void LSM6DSR_ReadFIFOData(volatile struct TS_Vec3 *accbuff, volatile struct TS_Vec3 *gyrbuff, uint16_t readnum);
+void LSM6DSR_ReadFIFOData(volatile struct TS_Vec3 *accbuff, volatile struct TS_Vec3 *gyrbuff, uint16_t readnum, float readytime);
 uint16_t LSM6DSR_GetFIFOStatus();
 
 

@@ -17,7 +17,8 @@ SPI_HandleTypeDef hspi2_str;
 SPI_HandleTypeDef hspi3_rf;
 
 
-#define LSM6_FIFO_READNUM 10
+#define LSM6_FIFO_READNUM 4
+#define ADXL_FIFO_READNUM 4
 
 void Process_IMU_FIFO(volatile struct TS_Vec3* accel_buffer, volatile struct TS_Vec3* gyro_buffer, uint8_t num_samples);
 void CalcLSM6Offsets(volatile struct TS_Vec3* accel_buffer, volatile struct TS_Vec3* gyro_buffer, uint8_t num_samples);

@@ -174,7 +174,7 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 ##### 2\. Avionics unit
 
 * [x] Design avionics unit development PCB with convenience features like line test pads, 0 ohm resistors etc. Transceivers are used as modules plugged into the PCB (later to be soldered permanently) while everything else is used as bare chips soldered directly to the PCB via hotplate reflow. Also include power management IC and safety arming switch for parachute deployment system.
-* [ ] Acquire parts for avionics development PCB and assemble it. Iterate design as required.
+* [x] Acquire parts for avionics development PCB and assemble it. Iterate design as required.
 * [ ] Write sensor drivers for STM32.
 * [ ] Test sensor data acquisition and accuracy.
 * [ ] Write NOR flash chip driver for STM32. Implement LittleFS.
@@ -184,6 +184,7 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 * [ ] Write SX1280 and SX1262 drivers for STM32.
 * [ ] Implement and test periodic transmission of collected sensor data through the SX1280 (lowest priority).
 * [ ] Implement and test sensor fusion and data integration algorithms to accurately track positional data over time.
+* [ ] Implement a flight stage state machine which controls which sensors to use for position tracking over time.
 * [ ] Implement and test parachute deployment logic.
 * [ ] Switch periodic transmission to send integrated data and do final test of full system.
 

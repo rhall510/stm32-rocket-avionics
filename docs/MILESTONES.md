@@ -6,5 +6,5 @@ All major milestones achieved and when.
 
 
 
-\[DD/MM/YY] Milestone description.
+\[03/04/26] First working avionics PCB assembled.
 

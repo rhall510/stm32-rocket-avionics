@@ -78,6 +78,7 @@ flowchart TB
 Goals from the [project plan](docs/PROJECT_PLAN.md) that are currently being worked on:
 
 ##### 2\. Avionics unit
-* [ ] Acquire parts for avionics development PCB and assemble it. Iterate design as required.
+* [ ] Write sensor drivers for STM32.
+* [ ] Test sensor data acquisition and accuracy.
 
 *For an up to date breakdown of progress, check the [development log](docs/DEVELOPMENT_LOG.md).*
