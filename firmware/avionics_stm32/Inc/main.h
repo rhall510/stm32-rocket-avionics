@@ -5,6 +5,7 @@
 #include "debug_peripherals.h"
 #include "adxl375.h"
 #include "lsm6dsr.h"
+#include "bmp581.h"
 #include "datatypes.h"
 #include <math.h>
 #include <stdint.h>
@@ -19,6 +20,7 @@ SPI_HandleTypeDef hspi3_rf;
 
 #define LSM6_FIFO_READNUM 4
 #define ADXL_FIFO_READNUM 4
+#define BMP_FIFO_READNUM 1
 
 void Process_IMU_FIFO(volatile struct TS_Vec3* accel_buffer, volatile struct TS_Vec3* gyro_buffer, uint8_t num_samples);
 void CalcLSM6Offsets(volatile struct TS_Vec3* accel_buffer, volatile struct TS_Vec3* gyro_buffer, uint8_t num_samples);

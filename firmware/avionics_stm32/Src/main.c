@@ -1,14 +1,22 @@
 #include "main.h"
+#include <stdio.h>
 
 
 volatile struct TS_Vec3 lsm_accbuff[LSM6_FIFO_READNUM];
 volatile struct TS_Vec3 lsm_gyrbuff[LSM6_FIFO_READNUM];
-volatile struct TS_Vec3 adxl_accbuff[ADXL_FIFO_READNUM];
-
 volatile bool lsm_data_ready = false;
 volatile float lsm_data_time = 0.0f;
+
+volatile struct TS_Vec3 adxl_accbuff[ADXL_FIFO_READNUM];
 volatile bool adxl_data_ready = false;
 volatile float adxl_data_time = 0.0f;
+
+volatile struct TS_PressTemp bmp_buff[BMP_FIFO_READNUM];
+volatile bool bmp_data_ready = false;
+volatile float bmp_data_time = 0.0f;
+
+float press = 0.0f;
+float temp = 0.0f;
 
 
 int main(void) {
@@ -23,6 +31,26 @@ int main(void) {
 
 	InitialiseLSM6DSR(LSM6_FIFO_READNUM);
 	InitialiseADXL375(ADXL_FIFO_READNUM);
+	if (!InitialiseBMP581(BMP_FIFO_READNUM)) {
+		Error_Handler();
+	}
+
+
+//	HAL_StatusTypeDef ret = HAL_I2C_Mem_Read(&hi2c, mmc_address, reg_addr, I2C_MEMADD_SIZE_8BIT, &product_id, 1, 100);
+//
+//	if (ret == HAL_OK) {
+//	    if (product_id == 0x30) {
+//	        printf("SUCCESS: MMC5983MA is ALIVE! Product ID: 0x%02X\n", product_id);
+//	    } else {
+//	        printf("WARNING: Device at 0x30 responded, but gave wrong ID: 0x%02X\n", product_id);
+//	    }
+//	} else {
+//	    // Print the HAL error code (0=OK, 1=ERROR, 2=BUSY, 3=TIMEOUT)
+//	    printf("FAILURE: Dead silence. HAL Status Code: %d\n", ret);
+//	}
+
+
+
 
 
 	while (1) {
@@ -33,6 +61,14 @@ int main(void) {
 		if (adxl_data_ready) {
 			adxl_data_ready = false;
 			ADXL375_ReadFIFOData(adxl_accbuff, ADXL_FIFO_READNUM, adxl_data_time);
+		}
+		if (bmp_data_ready) {
+			bmp_data_ready = false;
+			BMP581_ReadFIFOData(bmp_buff, BMP_FIFO_READNUM, bmp_data_time);
+
+			press = bmp_buff[0].Press;
+			temp = bmp_buff[0].Temp;
+
 			ULED_TOGGLE
 		}
 
@@ -285,6 +321,16 @@ void InitialiseGPIO() {
 
 	HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
 	HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
+
+	// BMP581 pins
+	GPIO_InitStruct.Pin = BMP_INT_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(BMP_INT_PORT, &GPIO_InitStruct);
+
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
 
@@ -333,6 +379,8 @@ void EXTI15_10_IRQHandler(void) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_10);
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_11) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_11);
+		bmp_data_ready = true;
+		bmp_data_time = (float)uwTick / 1000.0f;
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_12) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_12);
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_13) != RESET) {

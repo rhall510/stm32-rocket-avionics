@@ -15,4 +15,12 @@ struct TS_Vec3 {
 	float Z;
 };
 
+
+struct TS_PressTemp {
+	float Timestamp;
+	float Press;
+	float Temp;
+};
+
+
 #endif /* DATATYPES_H_ */

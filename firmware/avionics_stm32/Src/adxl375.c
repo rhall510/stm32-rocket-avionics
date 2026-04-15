@@ -108,7 +108,7 @@ void ADXL375_ReadFIFOData(volatile struct TS_Vec3 *accbuff, uint8_t readnum, flo
 		out.X = acc.X;
 		out.Y = acc.Y;
 		out.Z = acc.Z;
-		out.Timestamp = readytime - (readnum - word - 1) * (1.0f / ADXL_DR_FREQ);
+		out.Timestamp = readytime - (readnum - word - 1) * (1.0f / ADXL_DR_FREQ);   // Interpolate timestamp based on data rate
 
 		accbuff[word] = out;
 
