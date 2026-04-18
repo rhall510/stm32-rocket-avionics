@@ -15,8 +15,15 @@ volatile struct TS_PressTemp bmp_buff[BMP_FIFO_READNUM];
 volatile bool bmp_data_ready = false;
 volatile float bmp_data_time = 0.0f;
 
-float press = 0.0f;
-float temp = 0.0f;
+volatile struct TS_Vec3 mmc_buff;
+volatile bool mmc_data_ready = false;
+volatile float mmc_data_time = 0.0f;
+
+volatile struct TS_GPS m10s_data = {0};
+volatile bool m10s_data_ready = false;
+volatile float m10s_data_time = 0.0f;
+static char line_buffer[M10S_LINE_BUFFER_SIZE];
+static uint8_t line_len = 0;
 
 
 int main(void) {
@@ -29,28 +36,19 @@ int main(void) {
 
 	__enable_irq();
 
+
+	ScanI2CBus();
+
+
 	InitialiseLSM6DSR(LSM6_FIFO_READNUM);
 	InitialiseADXL375(ADXL_FIFO_READNUM);
 	if (!InitialiseBMP581(BMP_FIFO_READNUM)) {
 		Error_Handler();
 	}
-
-
-//	HAL_StatusTypeDef ret = HAL_I2C_Mem_Read(&hi2c, mmc_address, reg_addr, I2C_MEMADD_SIZE_8BIT, &product_id, 1, 100);
-//
-//	if (ret == HAL_OK) {
-//	    if (product_id == 0x30) {
-//	        printf("SUCCESS: MMC5983MA is ALIVE! Product ID: 0x%02X\n", product_id);
-//	    } else {
-//	        printf("WARNING: Device at 0x30 responded, but gave wrong ID: 0x%02X\n", product_id);
-//	    }
-//	} else {
-//	    // Print the HAL error code (0=OK, 1=ERROR, 2=BUSY, 3=TIMEOUT)
-//	    printf("FAILURE: Dead silence. HAL Status Code: %d\n", ret);
-//	}
-
-
-
+	if (!InitialiseMMC5983MA()) {
+		Error_Handler();
+	}
+	InitialiseMAXM10S();
 
 
 	while (1) {
@@ -65,18 +63,96 @@ int main(void) {
 		if (bmp_data_ready) {
 			bmp_data_ready = false;
 			BMP581_ReadFIFOData(bmp_buff, BMP_FIFO_READNUM, bmp_data_time);
-
-			press = bmp_buff[0].Press;
-			temp = bmp_buff[0].Temp;
-
+		}
+		if (mmc_data_ready) {
+			mmc_data_ready = false;
+			MMC5983MA_ReadData(&mmc_buff, mmc_data_time);
 			ULED_TOGGLE
 		}
+
+		Poll_MAXM10S();
 
 		HAL_Delay(10);
 	}
 
 	for(;;);
 }
+
+
+
+
+static void ProcessNMEASentence(const char *sentence) {
+	// minmea_sentence_id parses the $Gxxxx header
+	switch (minmea_sentence_id(sentence, false)) {
+		case MINMEA_SENTENCE_RMC: {
+			struct minmea_sentence_rmc frame;
+			if (minmea_parse_rmc(&frame, sentence)) {
+				m10s_data.HasFix = frame.valid;
+
+				if (frame.valid) {
+					// Convert fixed-point minmea format to standard floats
+					m10s_data.Latitude = minmea_tocoord(&frame.latitude);
+					m10s_data.Longitude = minmea_tocoord(&frame.longitude);
+					m10s_data.Speed = minmea_tofloat(&frame.speed);
+
+					// Flag that a position update occurred and record the time
+					m10s_data_ready = true;
+					m10s_data_time = (float)HAL_GetTick() / 1000.0f;
+				}
+			}
+			break;
+		}
+		case MINMEA_SENTENCE_GGA: {
+			struct minmea_sentence_gga frame;
+			if (minmea_parse_gga(&frame, sentence)) {
+				if (frame.fix_quality > 0) {
+					m10s_data.Altitude = minmea_tofloat(&frame.altitude);
+					m10s_data.Satellites = frame.satellites_tracked;
+				}
+			}
+			break;
+		}
+		default:
+			// Ignore other sentences (VTG, GSA, GSV, etc.)
+			break;
+	}
+}
+
+
+static void FeedI2CDataToParser(uint8_t *i2c_data, uint16_t length) {
+	for (uint16_t i = 0; i < length; i++) {
+		char c = (char)i2c_data[i];
+
+		// Fill buffer, preventing overflow
+		if (line_len < M10S_LINE_BUFFER_SIZE - 1) {
+			line_buffer[line_len++] = c;
+		}
+
+		// \n indicates the end of a complete NMEA sentence
+		if (c == '\n') {
+			line_buffer[line_len] = '\0'; // Null terminate
+			ProcessNMEASentence(line_buffer);
+			line_len = 0; // Reset for next sentence
+		}
+	}
+}
+
+
+// --- I2C POLLING FUNCTION ---
+// Call this function periodically from your main loop (e.g. every 50-100ms)
+void Poll_MAXM10S(void) {
+	uint16_t bytes_available = MAXM10S_GetAvailableBytes();
+
+	if (bytes_available > 0) {
+		// Variable Length Array (Supported in standard C99)
+		uint8_t i2c_data[bytes_available];
+
+		if (MAXM10S_ReadStream(i2c_data, bytes_available)) {
+			FeedI2CDataToParser(i2c_data, bytes_available);
+		}
+	}
+}
+
 
 
 
@@ -331,6 +407,16 @@ void InitialiseGPIO() {
 
 	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+
+	// MMC5983MA pins
+	GPIO_InitStruct.Pin = MMC_INT_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(MMC_INT_PORT, &GPIO_InitStruct);
+
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
 
@@ -377,6 +463,8 @@ void EXTI9_5_IRQHandler(void) {
 void EXTI15_10_IRQHandler(void) {
 	if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_10) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_10);
+		mmc_data_ready = true;
+		mmc_data_time = (float)uwTick / 1000.0f;
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_11) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_11);
 		bmp_data_ready = true;

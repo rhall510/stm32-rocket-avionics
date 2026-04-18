@@ -23,4 +23,15 @@ struct TS_PressTemp {
 };
 
 
+struct TS_GPS {
+	float Timestamp;
+	float Latitude;
+	float Longitude;
+	float Altitude;
+	float Speed;
+	uint8_t Satellites;
+	bool HasFix;
+};
+
+
 #endif /* DATATYPES_H_ */

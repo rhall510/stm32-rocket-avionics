@@ -6,7 +6,11 @@
 #include "adxl375.h"
 #include "lsm6dsr.h"
 #include "bmp581.h"
+#include "mmc5983.h"
+#include "m10s.h"
 #include "datatypes.h"
+#include "minmea.h"
+#include "misc.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -22,8 +26,8 @@ SPI_HandleTypeDef hspi3_rf;
 #define ADXL_FIFO_READNUM 4
 #define BMP_FIFO_READNUM 1
 
-void Process_IMU_FIFO(volatile struct TS_Vec3* accel_buffer, volatile struct TS_Vec3* gyro_buffer, uint8_t num_samples);
-void CalcLSM6Offsets(volatile struct TS_Vec3* accel_buffer, volatile struct TS_Vec3* gyro_buffer, uint8_t num_samples);
+
+void Poll_MAXM10S();
 
 void SystemClockConfig(void);
 
