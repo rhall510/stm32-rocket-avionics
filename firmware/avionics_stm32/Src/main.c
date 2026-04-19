@@ -29,6 +29,11 @@ static uint8_t line_len = 0;
 int main(void) {
 	HAL_Init();
 
+	m10s_data.HasFix = true;
+	m10s_data.Longitude = 10.0f;
+	m10s_data.Satellites = 5;
+
+
 	SystemClockConfig();
 	InitialiseGPIO();
 	InitialiseI2C();
@@ -67,7 +72,6 @@ int main(void) {
 		if (mmc_data_ready) {
 			mmc_data_ready = false;
 			MMC5983MA_ReadData(&mmc_buff, mmc_data_time);
-			ULED_TOGGLE
 		}
 
 		Poll_MAXM10S();
@@ -82,7 +86,6 @@ int main(void) {
 
 
 static void ProcessNMEASentence(const char *sentence) {
-	// minmea_sentence_id parses the $Gxxxx header
 	switch (minmea_sentence_id(sentence, false)) {
 		case MINMEA_SENTENCE_RMC: {
 			struct minmea_sentence_rmc frame;
@@ -90,14 +93,12 @@ static void ProcessNMEASentence(const char *sentence) {
 				m10s_data.HasFix = frame.valid;
 
 				if (frame.valid) {
-					// Convert fixed-point minmea format to standard floats
+					// Convert to standard floats
 					m10s_data.Latitude = minmea_tocoord(&frame.latitude);
 					m10s_data.Longitude = minmea_tocoord(&frame.longitude);
 					m10s_data.Speed = minmea_tofloat(&frame.speed);
 
-					// Flag that a position update occurred and record the time
-					m10s_data_ready = true;
-					m10s_data_time = (float)HAL_GetTick() / 1000.0f;
+					m10s_data.Timestamp = (float)HAL_GetTick() / 1000.0f;
 				}
 			}
 			break;
@@ -113,8 +114,7 @@ static void ProcessNMEASentence(const char *sentence) {
 			break;
 		}
 		default:
-			// Ignore other sentences (VTG, GSA, GSV, etc.)
-			break;
+			break;   // Ignore other sentences
 	}
 }
 
@@ -123,29 +123,28 @@ static void FeedI2CDataToParser(uint8_t *i2c_data, uint16_t length) {
 	for (uint16_t i = 0; i < length; i++) {
 		char c = (char)i2c_data[i];
 
-		// Fill buffer, preventing overflow
+		// Fill buffer
 		if (line_len < M10S_LINE_BUFFER_SIZE - 1) {
 			line_buffer[line_len++] = c;
 		}
 
-		// \n indicates the end of a complete NMEA sentence
+		// Wait for end of a sentence (\n)
 		if (c == '\n') {
-			line_buffer[line_len] = '\0'; // Null terminate
+			line_buffer[line_len] = '\0';   // Add null terminator
 			ProcessNMEASentence(line_buffer);
-			line_len = 0; // Reset for next sentence
+			line_len = 0;
 		}
 	}
 }
 
 
-// --- I2C POLLING FUNCTION ---
-// Call this function periodically from your main loop (e.g. every 50-100ms)
+
 void Poll_MAXM10S(void) {
 	uint16_t bytes_available = MAXM10S_GetAvailableBytes();
 
 	if (bytes_available > 0) {
-		// Variable Length Array (Supported in standard C99)
 		uint8_t i2c_data[bytes_available];
+		ULED_TOGGLE
 
 		if (MAXM10S_ReadStream(i2c_data, bytes_available)) {
 			FeedI2CDataToParser(i2c_data, bytes_available);

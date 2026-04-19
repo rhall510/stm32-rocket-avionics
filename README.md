@@ -78,7 +78,7 @@ flowchart TB
 Goals from the [project plan](docs/PROJECT_PLAN.md) that are currently being worked on:
 
 ##### 2\. Avionics unit
-* [ ] Write sensor drivers for STM32.
-* [ ] Test sensor data acquisition and accuracy.
+* [ ] Write NOR flash chip driver.
+* [ ] Test storage of sensor data on NOR flash.
 
 *For an up to date breakdown of progress, check the [development log](docs/DEVELOPMENT_LOG.md).*

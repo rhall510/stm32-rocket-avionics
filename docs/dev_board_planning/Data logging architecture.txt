@@ -1,0 +1,9 @@
+Buffers fill up with raw data that has been collected since the last write. Data is logged at 10Hz, at which point whatever is in the buffers is concatenated into a 'packet' that is sent to be written to storage. Each packet has a packet header with a sync word and information about the contents of the packet, followed by each piece of data which have their own headers containing information on the size and type of data they represent.
+
+Packet structure:
+>> 4 Byte start sync word (AABBBBAA)
+>> 4 byte header: Total number of readings in packet [31:24], Total number of bytes in packet [23:8], Checksum [7:0]
+[[[
+>> 2 byte header: Data type [15:12], Total number of bytes in data [11:0]
+>> Raw data (variable length)
+]]] x N

@@ -42,4 +42,5 @@ struct Vector3 ADXL375_ReadSingleAccelData();
 void ADXL375_ReadFIFOData(volatile struct TS_Vec3 *accbuff, uint8_t readnum, float readytime);
 uint8_t ADXL375_GetFIFOStatus();
 
+
 #endif /* ADXL375_H_ */

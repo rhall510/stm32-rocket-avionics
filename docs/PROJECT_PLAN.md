@@ -133,8 +133,6 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 
 * Calibrate ground station and rocket sensors by issuing commands via control center CLI. These get sent to the ground station which transmits the commands to the rocket if that is the intended destination.
 
-* Send command to the 
-
 * Send command to set off rocket launch. Rocket starts telemetry transmission and switches to exclusively TX.
 
 * Launch pad sets off motor and rocket launches.
@@ -147,11 +145,11 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 
 * If the ground station does not receive a valid telemetry packet at the expected interval it will update the expected position of the rocket by using the last correctly received position, velocity, and acceleration values. This will continue until another packet is received, at which point the new position overrides any calculated position up to that point.
 
-* As rocket reaches its apex and begins descending the avionics unit deploys the onboard parachute.
+* As the rocket reaches its apex and begins descending the avionics unit deploys the onboard parachute.
 
 * Rocket lands safely on the ground.
 
-* Avionics unit detects landing and stops telemetry recording and transmission after a short delay.
+* Avionics unit detects landing and stops telemetry recording and transmission after a short delay, but continues broadcasting it's GPS positon.
 
 * Rocket retrieved and full dataset can be downloaded from onboard storage.
 
@@ -175,18 +173,22 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 
 * [x] Design avionics unit development PCB with convenience features like line test pads, 0 ohm resistors etc. Transceivers are used as modules plugged into the PCB (later to be soldered permanently) while everything else is used as bare chips soldered directly to the PCB via hotplate reflow. Also include power management IC and safety arming switch for parachute deployment system.
 * [x] Acquire parts for avionics development PCB and assemble it. Iterate design as required.
-* [ ] Write sensor drivers for STM32.
-* [ ] Test sensor data acquisition and accuracy.
-* [ ] Write NOR flash chip driver for STM32. Implement LittleFS.
+* [x] Write sensor drivers.
+* [ ] Write NOR flash chip driver.
 * [ ] Test storage of sensor data on NOR flash.
-* [ ] Implement FreeRTOS on the STM32.
+* [ ] Write SX1280 and SX1262 drivers.
+* [ ] Write and test routine for downloading data from flash storage.
+* [ ] Write and test calibration routines for sensors (magnetometer and accelerometers).
+* [ ] Test sensor data acquisition and accuracy.
+* [ ] Gather field test data and write a sensor fusion and data integration algorithm to accurately track position over time (on PC).
+* [ ] Implement FreeRTOS on the MCU.
+* [ ] Implement tasks to collect all sensor data when ready.
+* [ ] Implement task to do the sensor fusion and data integration algorithm on the avionics unit.
 * [ ] Implement task to write all collected sensor data to NOR flash chip without interrupting critical sensor reading tasks.
-* [ ] Write SX1280 and SX1262 drivers for STM32.
-* [ ] Implement and test periodic transmission of collected sensor data through the SX1280 (lowest priority).
-* [ ] Implement and test sensor fusion and data integration algorithms to accurately track positional data over time.
+* [ ] Implement task to do periodic transmission of calculated data through the SX1280.
 * [ ] Implement a flight stage state machine which controls which sensors to use for position tracking over time.
 * [ ] Implement and test parachute deployment logic.
-* [ ] Switch periodic transmission to send integrated data and do final test of full system.
+* [ ] Final field tests of full avionics unit.
 
 
 
@@ -194,7 +196,7 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 
 * [ ] Build motorised portion of antenna base with stepper driving azimuth and servo driving elevation (no antenna mountings yet).
 * [ ] Add STM32G431KB (with FreeRTOS) and write drivers for it to drive the motors.
-* [ ] Implement and test algorithm to enable the STM32 to drive the base to point at any angle in the sky using PID controller.
+* [ ] Implement and test algorithm to enable the STM32 to drive the base to point at any angle in the sky.
 * [ ] Upgrade algorithm to take a location and point at it by determining the relative angle.
 * [ ] Build, test, and mount the 2.4GHz main telemetry antenna onto the base.
 * [ ] Hook up antenna to SX1280 driven by the STM32 and test receiving of periodic telemetry transmissions from the avionics unit.

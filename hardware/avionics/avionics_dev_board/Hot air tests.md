@@ -33,6 +33,7 @@ No visible scorching after any test.
 
 Testing full reflow with a dummy chip. Soak at 150C using 235C air at a flow rate of 3. Then ramp up air temperature to 320C and keep on the area for 25-30s:
 
+Soldered well except for a few pads. Retried and kept heat on for around 60-70 seconds and the issue was resolved.
 
 
 
