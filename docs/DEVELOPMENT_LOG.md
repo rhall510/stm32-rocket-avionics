@@ -5,6 +5,28 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### Apr 22nd 2026
+
+Started developing driver firmware for data logging on the NOR flash chip (W25Q256JVEIQ). The data logging architecture plan can be seen [here](dev_board_planning/Data%20logging%20architecture.txt) which implements wear levelling and bad block management while clearing the way for fast data logging during flight where performance is critical. So far I have been working mainly on the startup sequence, gathering metadata and preparing functions for writing data safely.
+
+Functions implemented:
+- Initialisation function which resets the device, checks it is responding correctly, and sets it to 4 byte addressing mode for future commands.
+- Get safe address functions. Perform checks to ensure all data is only written to a valid address (i.e. within memory bounds, not in bad blocks, (for non-metadata) not in the metadata or data sections).
+- Read metadata function. Automatically scans the entire address space to find any existing metadata sectors. If found then it parses the information contained within to find the start address of the data section as well as any saved bad blocks. If not found then it automatically creates a blank metadata section at the beginning of memory.
+- Write metadata function. Finds the first valid metadata sector address and writes current metadata to that sector. Optionally erases the previous metadata sector first.
+- Write volume and page program functions. Work together to enable safe writing of large contiguous blocks of data only to safe addresses. Performs checks and automatically skips bad blocks and already written sections. Also splits the input data into chunks to fit within each page boundary safely.
+
+
+To be implemented next:
+- Functions to read volumes of data
+- Functions to erase sections or the entire chip
+- Function to scan for bad blocks
+- Reconfigure initialisation sequence to properly use the above functions according to the [data logging plan](dev_board_planning/Data%20logging%20architecture.txt) (currently it just issues some basic commands)
+- Implement planned read and write modes
+
+<br>
+
+---
 ### Apr 19th 2026
 
 The 3rd board utilising the new V2 design was brought up successfully! Every important line was tested for shorts with a multimeter prior to closing the power isolation jumpers to each section one by one, all of which powered on successfully. The only section not brought up was the magnetometer/barometer section which contained a short between power and ground due to bridging under the MMC5983MA. Due to the lack of a working hot air gun firmware development was started with this section disconnected for a couple of weeks.

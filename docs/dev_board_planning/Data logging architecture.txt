@@ -1,9 +1,65 @@
-Buffers fill up with raw data that has been collected since the last write. Data is logged at 10Hz, at which point whatever is in the buffers is concatenated into a 'packet' that is sent to be written to storage. Each packet has a packet header with a sync word and information about the contents of the packet, followed by each piece of data which have their own headers containing information on the size and type of data they represent.
+Data is logged in flight on a W25Q256JVEIQ NOR flash chip. This scheme aims to provide robust data logging with wear levelling and bad block avoidance. The data on the chip comes in two parts: the metadata sector and the flight data.
+
+
+METADATA SECTOR:
+The metadata sector contains 2 pieces of data: the start address of the first data packet, and an array of any identified bad blocks. The metadata sector is always located at the start of the first functional block and starts with a specific header that identifies it as the metadata sector.
+
+Metadata sector structure:
+>> 8 Byte start identifier (1122334455667788)
+>> 4 Byte start address of first packet
+>> 2 Byte bad block array length in bytes
+[[[
+>> 2 Byte bad block address
+]]] x N (up to 512 blocks)
+
+To save space the 2 byte block addresses could be packed further (maybe with the first byte containing the MSB for each of the following 8 bytes) but I'll keep them 2 bytes for now.
+
+
+FLIGHT DATA:
+On the MCU buffers fill up with raw data that has been collected since the last write. A data log task is triggered at 10Hz, at which point whatever is in the buffers is concatenated into a 'packet' that is sent to be written to storage. Each packet has a packet header with a sync word and information about the contents of the packet, followed by each piece of data which have their own headers containing information on the size and type of data they represent.
 
 Packet structure:
 >> 4 Byte start sync word (AABBBBAA)
->> 4 byte header: Total number of readings in packet [31:24], Total number of bytes in packet [23:8], Checksum [7:0]
+>> 4 byte header: Total number of readings in packet [31:24], Total number of bytes in packet [23:8], CRC checksum [7:0]
 [[[
 >> 2 byte header: Data type [15:12], Total number of bytes in data [11:0]
 >> Raw data (variable length)
 ]]] x N
+
+
+
+GENERAL PROTOCOL FOR READING AND WRITING:
+On startup the MCU will start by finding the metadata sector. It will read 8 bytes starting at address 0x0 and moving to the next block start address until the 8 byte start identifier is found. Once found it will read the following 6 bytes and parse it into the start address of the flight data and the length of the bad blocks array. If the length of the bad blocks array is non-zero it will read that many bytes and parse them into an array of bad block start addresses. The array of bad blocks is stored in the MCUs memory to enable it to avoid writing to them during flight.
+
+Once this data is obtained the MCU jumps to the data start address obtained from the metadata and reads 8 bytes to get the sync word and the packet header. If the sync word is found then it will parse the last 4 bytes to get the total length of the packet and jump forward that many bytes, repeating the process of reading the sync word and header at the new location. This continues until it jumps to a location where no sync word is found (the end of the data section) and the end address is recorded.
+
+...WRITING:
+If new data is about to be written then all existing data is pre-erased before flight to allow uninterrupted sequential writing. The 4KB sector containing the metadata is erased along with every sector whose start address is within the data section bounds. This will leave the entire chip empty. A new data start address is calculated as first sector start address after the end address of the previous data. A new metadata sector is written in the same location as the old one with the same bad sector data but the new data start address.
+
+During flight data is written sequentially starting at the newly calculated data start address. The MCU maintains a pointer to the next free address to write to. Before any write in a new page the MCU checks if it would fall in a bad block, in which case the address pointer is skipped to the start of the next non-bad block. If it reaches the end of the address space then it wraps around to the start of the first sector which isn't the metadata sector or in a bad block.
+
+...READING:
+If the data on the flash is to be read then the MCU can simply start reading chunks at the obtained data start address and continue until the end address is reached, outputting the data to the appropriate channel as it goes.
+
+
+OTHER CASES:
+During initialisation, if the MCU reaches the last block and still hasn't found the start identifier it will perform a full chip erase and create a new metadata sector at address 0x0, with the data start address being the start address of the following sector (0x1000) and the bad block array being empty.
+
+
+IDENTIFYING BAD BLOCKS:
+This operation is intended to be done infrequently before critical tests/flights due to the extra wear it causes and time it takes.
+
+To identify bad blocks a full chip erase is first performed to get a clean slate. Then the MCU writes a specific repeating string to each sector and reads it back, checking there are no mistakes. If any mistakes are identified in a sector the whole block it resides in is marked as bad and is added to the bad block array. Once all sectors have been scanned another full chip erase is performed and the metadata sector is rewritten at it's previous start address, maintaining the old data start address but updating the bad block array to include any additional ones identified.
+
+
+
+
+
+
+
+
+
+
+
+
+
