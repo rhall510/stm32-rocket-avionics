@@ -7,14 +7,12 @@
 #include "datatypes.h"
 
 
-// Variables
+// Global variables to store metadata info
 uint32_t MetaStartAddr = 1;   // Start address of the metadata sector (1 indicates empty start address)
 uint32_t MetaEndAddr = 1;   // End address of the metadata sector (1 indicates empty end address)
 uint32_t DataStartAddr = 0;   // Start address of the flight data block
 uint32_t DataEndAddr = 0;   // Last byte address of the flight data block
-
-uint16_t NumBadBlocks = 0;
-uint16_t BadBlocks[512];   // Addresses of each bad block identified
+uint8_t BadBlocks[64] = {0};   // Bytes represent 8 contiguous blocks with lowest address at LSB and highest at MSB. 1 if bad, 0 if ok.
 
 
 // MCU connected pins
@@ -70,42 +68,59 @@ bool InitialiseW25Q();
 bool W25Q_CheckBusy();
 void W25Q_EnableWrite();
 
-// Check the address is safe to write to (i.e. not in a bad block or in the metadata/data sections), if not return the closest safe address downstream
-// Also checks if the address extends beyond the end of memory and wraps it around
-uint32_t W25Q_GetSafeContiguousAddress(uint32_t Addr);
 
-// Version of W25Q_GetSafeContiguousAddress which only checks for valid addresses for the metadata sector
-// Returns 1 if no valid address can be found
+
+/* Check the address is safe to write to (i.e. not in a bad block or in the metadata/data sections), if not return the closest
+ * safe address downstream. Also checks if the address extends beyond the end of memory and wraps it around.
+ */
+uint32_t W25Q_GetSafeContiguousWriteAddress(uint32_t Addr);
+
+/* Version of W25Q_GetSafeContiguousWriteAddress that does not move the return address outside of data sectors.
+ * Used for reading flight data packets.
+ */
+uint32_t W25Q_GetSafeContiguousReadAddress(uint32_t Addr);
+
+/* Wrapper around W25Q_GetSafeContiguousReadAddress that ensures an equivalent length of safe space is left before the return address
+ * as there was blocked space between StartAddr and StartAddr + Offset. Used for traversing the data section by only reading the headers.
+ */
+uint32_t W25Q_GetSafeContiguousReadAddressWithOffset(uint32_t StartAddr, uint32_t Offset);
+
+// Returns the first valid address for the metadata sector, or 1 if no valid address can be found
 uint32_t W25Q_GetSafeMetadataAddress();
 
+
 // Find and read metadata sector. Returns true if the sector was sucessfully found, false if a blank one was created
-bool W25Q_ReadMetadata(uint32_t *DataAddr, uint16_t *NumBB, uint16_t *BB);
+bool W25Q_ReadMetadata();
 
 // Writes metadata to the first available sector
-void W25Q_WriteMetadata(uint32_t *DataAddr, uint16_t *NumBB, uint16_t *BB, bool ErasePrev = true);
+void W25Q_WriteMetadata(bool ErasePrev);
 
-// Reads a contiguous volume of data into the buffer. Performs no checks for safe addresses
+
+// Reads a contiguous volume of data page by page into the buffer. Performs no checks for safe addresses
 void W25Q_ReadVolume(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen);
 
-// Version of W25Q_ReadVolume which skips bad blocks
+// Version of W25Q_ReadVolume which skips bad blocks and metadata
 void W25Q_ReadVolumeSafe(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen);
 
+
+// Erase parts of memory
 void W25Q_EraseChip();
 void W25Q_EraseSector(uint32_t SectorAddr);
 void W25Q_EraseBlock(uint32_t BlockAddr);
 
-// Scans and records all bad blocks in memory. WARNING: will erase all data and may take a while to complete
-void ScanBadBlocks(uint16_t *NumBB, uint16_t *BB);
 
 // Writes data to the end of the flight data section
 void W25Q_WriteAppendData(uint8_t *buff, uint32_t Len);
 
 // Writes data to a contiguous block of memory, skipping bad blocks and the metadata sector. Returns the end address of data written
-uint32_t W25Q_WriteVolume(uint32_t StartAddr, uint8_t *buff, uint32_t Len);
+// Will not check the write address if CheckAddress == true
+uint32_t W25Q_WriteVolume(uint32_t StartAddr, uint8_t *buff, uint32_t Len, bool CheckAddress);
 
 // Writes data to a single page, failing if the write would overflow
 bool W25Q_PageProgram(uint32_t StartAddr, uint8_t *buff, uint16_t Len);
 
 
+// Scans and records all bad blocks in memory. WARNING: will erase all data and may take a while to complete
+void ScanBadBlocks();
 
 #endif /* W25Q_H_ */

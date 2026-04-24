@@ -7,12 +7,9 @@ The metadata sector contains 2 pieces of data: the start address of the first da
 Metadata sector structure:
 >> 8 Byte start identifier (1122334455667788)
 >> 4 Byte start address of first packet
->> 2 Byte bad block array length in bytes
-[[[
->> 2 Byte bad block address
-]]] x N (up to 512 blocks)
+>> 64 Byte bad block array
 
-To save space the 2 byte block addresses could be packed further (maybe with the first byte containing the MSB for each of the following 8 bytes) but I'll keep them 2 bytes for now.
+Each byte in the bad block array represents the state of the 512 blocks in memory. 1 = bad, 0 = ok.
 
 
 FLIGHT DATA:
@@ -29,17 +26,17 @@ Packet structure:
 
 
 GENERAL PROTOCOL FOR READING AND WRITING:
-On startup the MCU will start by finding the metadata sector. It will read 8 bytes starting at address 0x0 and moving to the next block start address until the 8 byte start identifier is found. Once found it will read the following 6 bytes and parse it into the start address of the flight data and the length of the bad blocks array. If the length of the bad blocks array is non-zero it will read that many bytes and parse them into an array of bad block start addresses. The array of bad blocks is stored in the MCUs memory to enable it to avoid writing to them during flight.
+On startup the MCU will start by finding the metadata sector. It will read 8 bytes starting at address 0x0 and moving to the next block start address until the 8 byte start identifier is found. Once found it will read the following 6 bytes and parse it into the start address of the flight data and the bad blocks array. The array of bad blocks is stored in the MCUs memory to enable it to avoid writing to them during flight.
 
-Once this data is obtained the MCU jumps to the data start address obtained from the metadata and reads 8 bytes to get the sync word and the packet header. If the sync word is found then it will parse the last 4 bytes to get the total length of the packet and jump forward that many bytes, repeating the process of reading the sync word and header at the new location. This continues until it jumps to a location where no sync word is found (the end of the data section) and the end address is recorded.
+Once this data is obtained the MCU jumps to the data start address obtained from the metadata and reads 8 bytes to get the sync word and the packet header. If the sync word is found then it will parse the last 4 bytes to get the total length of the packet and jump forward that many bytes, repeating the process of reading the sync word and header at the new location. This continues until it jumps to a location where no sync word is found (past the end of the data section) and the end address is recorded.
 
 ...WRITING:
-If new data is about to be written then all existing data is pre-erased before flight to allow uninterrupted sequential writing. The 4KB sector containing the metadata is erased along with every sector whose start address is within the data section bounds. This will leave the entire chip empty. A new data start address is calculated as first sector start address after the end address of the previous data. A new metadata sector is written in the same location as the old one with the same bad sector data but the new data start address.
+If new data is about to be written then all existing data is pre-erased before flight to allow uninterrupted sequential writing. The 4KB sector containing the metadata is erased along with every sector whose start address is within the data section bounds. This will leave the entire chip empty. A new data start address is calculated as first sector start address after the end address of the previous data. A new metadata sector is written in the same location as the old one with the same bad block data but the new data start address.
 
 During flight data is written sequentially starting at the newly calculated data start address. The MCU maintains a pointer to the next free address to write to. Before any write in a new page the MCU checks if it would fall in a bad block, in which case the address pointer is skipped to the start of the next non-bad block. If it reaches the end of the address space then it wraps around to the start of the first sector which isn't the metadata sector or in a bad block.
 
 ...READING:
-If the data on the flash is to be read then the MCU can simply start reading chunks at the obtained data start address and continue until the end address is reached, outputting the data to the appropriate channel as it goes.
+If the data on the flash is to be read then the MCU can simply start reading chunks at the obtained data start address and continue until the end address is reached (ensuring bad blocks are skipped), outputting the data to the appropriate channel as it goes.
 
 
 OTHER CASES:
