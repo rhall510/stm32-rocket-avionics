@@ -5,6 +5,22 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### Apr 24th 2026
+
+Finished implementing the rest of the functions needed for the NOR flash driver. These include:
+- Read volume functions to read blocks of data in pages. The safe version also respects bad blocks and metadata sections and wraps the address if it extends beyond the end of memory.
+- Split the safe address functions into 3 more specialised and robust functions which handle write addresses, full read addresses, and offset read addresses (for skipping around the data section only reading headers).
+- Erase functions to erase either the full chip or specific blocks or sectors.
+- Function which erases previously written flight data and automatically increments the data section start address and updates the metadata section.
+- Function which detects and records bad blocks by writing a specific pattern to each page of memory and checking for readback errors.
+
+I also wrote a small test function to check the W25Q is working correctly. It checks initialisation, erasing data, writing a test packet, and appending to already written data with another test packet. The first test using this function seemed to work perfectly, with all tests passing, however, when relaunching the debug session to check for correct incrementing of metadata and data addresses I encountered unexpected behaviours. At first every test after the first completely failed as the metadata section could not be found. Stepping through debug mode revealed the rx buffer was reading all zeroes on each block start address. The cause of this was eventually identified to be likely because of the erase sector and erase block functions not working correctly. Only the command was being sent, omitting the address to erase which would cause the command to be dropped or potentially cause other strange behaviour. After fixing this the data was able to be read normally.
+
+The tests passed on each restart of the debug session now but the address incrementing was abnormal. Based on the data logging architecture we would expect the metadata address to increment by 1 block length each cycle and the data address to increment by 1 sector each cycle, except for the first cycle after a full erasure (as the empty data section would cancel the call to EraseFlightData and prevent address incrementing). In this case though, the first test after a full erase was normal, the second test showed the metadata and data start addresses did not change from the first test, and the third and fourth tests showed each address incremented twice the expected amount. Eventually I realised this was due to the slight delay in restarting a debug session allowing the MCU to boot and start executing code independently of the debug session. This caused the erase code to run at the start of the second test, meaning the addresses did not increment as expected. Then in the third and fourth tests the initialisation cycle was completed twice, once befor the debug sessions started and once after, causing the double increment. This has been temporarily dealt with by adding a 2s delay at the start of the main loop to prevent code from executing in the window between debug sessions. After adding the delay the addresses increment as normal and all tests pass perfectly.
+
+The next priority is to test the bad block management and writing longer volumes which span multiple pages and stretch across block and memory boundaries.
+
+---
 ### Apr 22nd 2026
 
 Started developing driver firmware for data logging on the NOR flash chip (W25Q256JVEIQ). The data logging architecture plan can be seen [here](dev_board_planning/Data%20logging%20architecture.txt) which implements wear levelling and bad block management while clearing the way for fast data logging during flight where performance is critical. So far I have been working mainly on the startup sequence, gathering metadata and preparing functions for writing data safely.
