@@ -32,6 +32,8 @@ bool InitialiseW25Q() {
 	HAL_SPI_Transmit(&hspi2_str, tx, 1, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(W25Q_CS_PORT, W25Q_CS_PIN, GPIO_PIN_SET);
 
+	W25Q_ReadMetadata();
+
 	return true;
 }
 
@@ -486,7 +488,7 @@ void W25Q_ReadVolume(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen) {
 
 	// Read one page at a time
 	while (ReadLeft > 0) {
-		uint16_t PageRemain = 0x100 - (WriteAddr & 0xFF);
+		uint16_t PageRemain = 0x100 - (ReadAddr & 0xFF);
 		uint16_t ReadLen = 0;
 
 		if (ReadLeft > PageRemain) {
@@ -528,7 +530,7 @@ void W25Q_ReadVolumeSafe(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen) {
 
 	// Read one page at a time
 	while (ReadLeft > 0) {
-		uint16_t PageRemain = 0x100 - (WriteAddr & 0xFF);
+		uint16_t PageRemain = 0x100 - (ReadAddr & 0xFF);
 		uint16_t ReadLen = 0;
 
 		if (ReadLeft > PageRemain) {
@@ -588,7 +590,7 @@ void ScanBadBlocks() {
 		}
 
 		if (bad) {
-			BadBlocks[block >> 3] |= (1U << (BlockNum & 0b111));   // Set bit in bad blocks array
+			BadBlocks[block >> 3] |= (1U << (block & 0b111));   // Set bit in bad blocks array
 			printf("Block %i identified as bad", block);
 		}
 	}
