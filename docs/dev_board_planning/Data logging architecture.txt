@@ -17,7 +17,7 @@ On the MCU buffers fill up with raw data that has been collected since the last 
 
 Packet structure:
 >> 4 Byte start sync word (AABBBBAA)
->> 4 byte header: Total number of readings in packet [31:24], Total number of bytes in packet [23:8], CRC checksum [7:0]
+>> 4 byte header: Total number of readings in packet [31:24], Total number of bytes in packet (including header) [23:8], CRC checksum [7:0]
 [[[
 >> 2 byte header: Data type [15:12], Total number of bytes in data [11:0]
 >> Raw data (variable length)

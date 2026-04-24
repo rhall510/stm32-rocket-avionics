@@ -8,11 +8,11 @@
 
 
 // Global variables to store metadata info
-uint32_t MetaStartAddr = 1;   // Start address of the metadata sector (1 indicates empty start address)
-uint32_t MetaEndAddr = 1;   // End address of the metadata sector (1 indicates empty end address)
-uint32_t DataStartAddr = 0;   // Start address of the flight data block
-uint32_t DataEndAddr = 0;   // Last byte address of the flight data block
-uint8_t BadBlocks[64] = {0};   // Bytes represent 8 contiguous blocks with lowest address at LSB and highest at MSB. 1 if bad, 0 if ok.
+extern uint32_t MetaStartAddr;   // Start address of the metadata sector (1 indicates empty start address)
+extern uint32_t MetaEndAddr;   // End address of the metadata sector (1 indicates empty end address)
+extern uint32_t DataStartAddr;   // Start address of the flight data block
+extern uint32_t DataEndAddr;   // Last byte address of the flight data block
+extern uint8_t BadBlocks[64];   // Bytes represent 8 contiguous blocks with lowest address at LSB and highest at MSB. 1 if bad, 0 if ok.
 
 
 // MCU connected pins
@@ -38,7 +38,7 @@ uint8_t BadBlocks[64] = {0};   // Bytes represent 8 contiguous blocks with lowes
 #define W25Q_4BYTE_ADDR_MODE 0xB7U
 
 #define W25Q_CHIP_ERASE 0xC7U
-#define W25Q_BLOCK_ERASE_4BADDR 0xD8U
+#define W25Q_BLOCK_ERASE_4BADDR 0xDCU
 #define W25Q_SECTOR_ERASE_4BADDR 0x21U
 
 #define W25Q_PAGE_PROG_4BADDR 0x12U
@@ -57,8 +57,12 @@ uint8_t BadBlocks[64] = {0};   // Bytes represent 8 contiguous blocks with lowes
 #define W25Q_METADATA_ADDR 0x0U
 #define W25Q_DATA_ADDR 0x1000U
 
-#define W25Q_META_START_ID 0x1122334455667788U
+#define W25Q_META_START_ID 0x1122334455667788ULL
 #define W25Q_DATA_SYNC_WORD 0xAABBBBAAU
+
+#define W25Q_MAX_ADDR 0x01FFFFFFU
+
+#define W25Q_SPI_MAX_DELAY 50
 
 
 // Functions
@@ -107,6 +111,9 @@ void W25Q_ReadVolumeSafe(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen);
 void W25Q_EraseChip();
 void W25Q_EraseSector(uint32_t SectorAddr);
 void W25Q_EraseBlock(uint32_t BlockAddr);
+
+// Erases all sectors with any flight data written to them
+void W25Q_EraseFlightData();
 
 
 // Writes data to the end of the flight data section

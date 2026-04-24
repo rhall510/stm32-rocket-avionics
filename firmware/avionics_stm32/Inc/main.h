@@ -8,12 +8,14 @@
 #include "bmp581.h"
 #include "mmc5983.h"
 #include "m10s.h"
+#include "w25q.h"
 #include "datatypes.h"
 #include "minmea.h"
 #include "misc.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 
 I2C_HandleTypeDef hi2c;
@@ -28,6 +30,8 @@ SPI_HandleTypeDef hspi3_rf;
 
 
 void Poll_MAXM10S();
+
+void Test_W25Q_Logging();
 
 void SystemClockConfig(void);
 
