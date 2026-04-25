@@ -5,6 +5,21 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### Apr 25th 2026
+
+Today I added some more functions to test the W25Q NOR flash driver. Here is a summary of the tests.
+
+As detailed in yesterdays log, the driver can correctly boot up, read the metadata and flight data sections, erase the old data, and write new data. It also correctly handles wear levelling by incrementing the metadata and flight data section addresses on each write cycle.
+
+Next I tested the bad block scanning function. It was able to complete the scan successfully and found no bad blocks as expected from a lightly used NOR flash chip.
+
+Since there are no actual bad blocks, I expanded the bad block test to inject a fake bad block flag for the block starting at address 0x20000 (the 3rd block) and test writing and reading back a ~200KB chunk of data. The test wipes the first 10 blocks of flash before starting (to avoid a lengthy full chip wipe) which removes the existing metadata and data sections and causes blank ones to be created. This yields a repeatable setup where the metadata sector spans addresses 0x10000 to 0x11000, the bad block spans 0x20000 to 0x30000, and the data section starts at 0x1000 (starting empty). The test then writes approximately 200KB of data which, if correctly written, should expand the data section to place it's end address at 0x3FF8B. When the test was executed this exact behaviour was observed, confirming the writes were handled correctly and skipped the metadata section and bad block. Next the data was read back, starting from address 0x1000 and reading a length of 200KB. The data readout showed the data was written perfectly, with byte order being preserved across skipped sections and across pages. An additional initialisation test performed directly after this test where the chip is booted and reads the metadata/data sections confirmed it was able to read this written data perfectly from a fresh boot as well. See the test logs [here](dev_board_planning/W25Q%20bad%20block%20test%20log.txt).
+
+Finally, I tested the wraparound behaviour at the end of memory. For this I wrote a function which initialised an empty metadata and data section by wiping existing data and then moved the empty data section start and end addresses to the last sector address in memory (0x1FFF000). It then writes 25 pages of data and reads it back from the starting address. This first test confirmed both the write and read functions correctly handle wraparound behaviour at the end of memory, perfectly preserving bytes across the transition. I then modified the test to move the data section back 1 block and inject a fake bad block in the last block, to test whether it could handle skipping a section and wrapping around at the same time. This second test worked perfectly as well. The third and final test just involved moving the data section to the original last sector address, which is now inside the fake bad block. Again, this was handled perfectly, with data being immediately wrapped around and written to the start of memory. See the test logs [here](dev_board_planning/W25Q%20wraparound%20test%20log.txt).
+
+These tests confirm my W25Q driver is working as expected and I can now move on to the next steps, which I think will be adding in the final pieces of the board, the LoRa transceivers, to enable a command link and transfer of data.
+
+---
 ### Apr 24th 2026
 
 Finished implementing the rest of the functions needed for the NOR flash driver. These include:
