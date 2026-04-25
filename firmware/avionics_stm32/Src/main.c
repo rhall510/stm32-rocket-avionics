@@ -37,8 +37,10 @@ int main(void) {
 	HAL_Delay(2000);
 
 
+//	Test_W25Q_Initialisation();
 //	Test_W25Q_Logging();
-	Test_W25Q_BadBlocks();
+//	Test_W25Q_BadBlocks();
+//	Test_W25Q_Wraparound();
 	while (1) {
 		HAL_Delay(1000);
 	}
@@ -85,94 +87,6 @@ int main(void) {
 
 	for(;;);
 }
-
-
-
-void Test_W25Q_Logging() {
-    printf("Starting W25Q test\n");
-
-//    for (int i = 0; i < 10; i++) {
-//    	W25Q_EraseBlock(0x10000 * i);
-//    }
-
-    // Check initialization + JEDEC ID
-    if (!InitialiseW25Q()) {
-        printf("W25Q initialization failed\n");
-        return;
-    }
-    printf("W25Q initialized - JEDEC ID verified\n");
-
-    printf("MetaStartAddr is: 0x%08lX\n", MetaStartAddr);
-
-    // Erase existing flight data
-    printf("Erasing old flight data...\n");
-    W25Q_EraseFlightData();
-    printf("Flight data erased. DataStartAddr now: 0x%08lX\n", DataStartAddr);
-    printf("MetaStartAddr is now: 0x%08lX\n", MetaStartAddr);
-
-    // Write test packet
-    uint8_t testPacket[16] = {0xAA, 0xBB, 0xBB, 0xAA, 0x01, 0x00, 0x10, 0x00, 0x10, 0x06, 'R', 'O', 'C', 'K', 'E', 'T'};
-
-    printf("Writing 16 byte test packet...\n");
-    W25Q_WriteAppendData(testPacket, sizeof(testPacket));
-
-    // Read back
-    printf("Reading back data from address 0x%08lX...\n", DataStartAddr);
-    uint8_t readBuffer[16] = {0};
-    W25Q_ReadVolumeSafe(DataStartAddr, readBuffer, sizeof(readBuffer));
-
-    if (memcmp(testPacket, readBuffer, sizeof(testPacket)) == 0) {
-        printf("Readback matched the written packet exactly\n");
-    } else {
-        printf("Readback mismatch\n");
-        printf("Expected sync word: %02X %02X %02X %02X\n", testPacket[0], testPacket[1], testPacket[2], testPacket[3]);
-        printf("Actual sync word  : %02X %02X %02X %02X\n", readBuffer[0], readBuffer[1], readBuffer[2], readBuffer[3]);
-        printf("W25Q test complete\n\n");
-        return;
-    }
-
-    // Test appending
-    uint8_t testPacket2[16] = {0xAA, 0xBB, 0xBB, 0xAA, 0x01, 0x00, 0x10, 0x00, 0x10, 0x06, 'F', 'L', 'I', 'G', 'H', 'T'};
-
-    printf("Writing second 16 byte test packet...\n");
-    W25Q_WriteAppendData(testPacket2, sizeof(testPacket2));
-
-    // Read back
-    printf("Reading back data from address 0x%08lX...\n", DataStartAddr);
-    uint8_t readBuffer2[16] = {0};
-    W25Q_ReadVolumeSafe(DataStartAddr + sizeof(testPacket), readBuffer2, sizeof(readBuffer2));
-
-    if (memcmp(testPacket2, readBuffer2, sizeof(testPacket2)) == 0) {
-        printf("Readback matched the written packet exactly\n");
-    } else {
-        printf("Readback mismatch\n");
-        printf("Expected sync word: %02X %02X %02X %02X\n", testPacket2[0], testPacket2[1], testPacket2[2], testPacket2[3]);
-        printf("Actual sync word  : %02X %02X %02X %02X\n", readBuffer2[0], readBuffer2[1], readBuffer2[2], readBuffer2[3]);
-        printf("W25Q test complete\n\n");
-        return;
-    }
-
-    printf("W25Q test complete\n\n");
-}
-
-
-
-void Test_W25Q_BadBlocks() {
-    printf("Starting W25Q bad block test\n");
-
-    // Check initialization + JEDEC ID
-    if (!InitialiseW25Q()) {
-        printf("W25Q initialization failed\n");
-        return;
-    }
-    printf("W25Q initialized - JEDEC ID verified\n");
-
-    printf("Current section boundaries: MS=0x%08lX, ME=0x%08lX, DS=0x%08lX, DE=0x%08lX\n", MetaStartAddr, MetaEndAddr, DataStartAddr, DataEndAddr);
-
-//    W25Q_ScanBadBlocks();
-}
-
-
 
 
 

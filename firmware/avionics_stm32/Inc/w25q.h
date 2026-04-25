@@ -103,8 +103,14 @@ void W25Q_WriteMetadata(bool ErasePrev);
 // Reads a contiguous volume of data page by page into the buffer. Performs no checks for safe addresses
 void W25Q_ReadVolume(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen);
 
+// Version of W25Q_ReadVolume which only prints out data a page at a time (skips copying the data over to a buffer)
+void W25Q_OutputVolume(uint32_t StartAddr, uint32_t MaxLen);
+
 // Version of W25Q_ReadVolume which skips bad blocks and metadata
 void W25Q_ReadVolumeSafe(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen);
+
+// Version of W25Q_ReadVolumeSafe which only prints out data a page at a time (skips copying the data over to a buffer)
+void W25Q_OutputVolumeSafe(uint32_t StartAddr, uint32_t MaxLen);
 
 
 // Erase parts of memory
@@ -129,5 +135,21 @@ bool W25Q_PageProgram(uint32_t StartAddr, uint8_t *buff, uint16_t Len);
 
 // Scans and records all bad blocks in memory. WARNING: will erase all data and may take a while to complete
 void W25Q_ScanBadBlocks();
+
+
+
+// Testing functions
+// Tests initialisation and reading of existing data on the chip
+void Test_W25Q_Initialisation();
+
+// Tests erasure of previous flight data and logging of two small packets
+void Test_W25Q_Logging();
+
+// Tests bad block and metadata sector management when writing and reading, as well as scanning for bad blocks
+void Test_W25Q_BadBlocks();
+
+// Tests wraparound behaviour at the end of memory
+void Test_W25Q_Wraparound();
+
 
 #endif /* W25Q_H_ */

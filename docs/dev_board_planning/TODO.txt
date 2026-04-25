@@ -1,3 +1,1 @@
 - Protect against INT skipping by using timers to periodically check status registers. Reset the timer every time the INT happens.
-- Implement bad block check for flash. ONLY DO INFREQUENTLY BEFORE CRITICAL TESTS (erase, write specific pattern to fill completely, read back and check for errors).
-- Implement wear levelling for flash.
