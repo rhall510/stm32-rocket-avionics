@@ -32,6 +32,8 @@ SPI_HandleTypeDef hspi3_rf;
 void Poll_MAXM10S();
 
 void Test_W25Q_Logging();
+void Test_W25Q_BadBlocks();
+
 
 void SystemClockConfig(void);
 

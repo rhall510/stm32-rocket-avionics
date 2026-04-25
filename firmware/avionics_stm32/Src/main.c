@@ -37,7 +37,8 @@ int main(void) {
 	HAL_Delay(2000);
 
 
-	Test_W25Q_Logging();
+//	Test_W25Q_Logging();
+	Test_W25Q_BadBlocks();
 	while (1) {
 		HAL_Delay(1000);
 	}
@@ -153,6 +154,24 @@ void Test_W25Q_Logging() {
 
     printf("W25Q test complete\n\n");
 }
+
+
+
+void Test_W25Q_BadBlocks() {
+    printf("Starting W25Q bad block test\n");
+
+    // Check initialization + JEDEC ID
+    if (!InitialiseW25Q()) {
+        printf("W25Q initialization failed\n");
+        return;
+    }
+    printf("W25Q initialized - JEDEC ID verified\n");
+
+    printf("Current section boundaries: MS=0x%08lX, ME=0x%08lX, DS=0x%08lX, DE=0x%08lX\n", MetaStartAddr, MetaEndAddr, DataStartAddr, DataEndAddr);
+
+//    W25Q_ScanBadBlocks();
+}
+
 
 
 

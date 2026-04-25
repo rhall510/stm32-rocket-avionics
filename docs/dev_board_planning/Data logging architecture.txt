@@ -26,7 +26,7 @@ Packet structure:
 
 
 GENERAL PROTOCOL FOR READING AND WRITING:
-On startup the MCU will start by finding the metadata sector. It will read 8 bytes starting at address 0x0 and moving to the next block start address until the 8 byte start identifier is found. Once found it will read the following 6 bytes and parse it into the start address of the flight data and the bad blocks array. The array of bad blocks is stored in the MCUs memory to enable it to avoid writing to them during flight.
+On startup the MCU will start by finding the metadata sector. It will read 8 bytes starting at address 0x0 and moving to the next block start address until the 8 byte start identifier is found. Once found it will read the following 68 bytes and parse it into the start address of the flight data and the bad blocks array. The array of bad blocks is stored in the MCUs memory to enable it to avoid writing to them during flight.
 
 Once this data is obtained the MCU jumps to the data start address obtained from the metadata and reads 8 bytes to get the sync word and the packet header. If the sync word is found then it will parse the last 4 bytes to get the total length of the packet and jump forward that many bytes, repeating the process of reading the sync word and header at the new location. This continues until it jumps to a location where no sync word is found (past the end of the data section) and the end address is recorded.
 

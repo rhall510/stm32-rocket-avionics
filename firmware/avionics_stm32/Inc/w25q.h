@@ -128,6 +128,6 @@ bool W25Q_PageProgram(uint32_t StartAddr, uint8_t *buff, uint16_t Len);
 
 
 // Scans and records all bad blocks in memory. WARNING: will erase all data and may take a while to complete
-void ScanBadBlocks();
+void W25Q_ScanBadBlocks();
 
 #endif /* W25Q_H_ */

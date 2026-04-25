@@ -418,7 +418,7 @@ uint32_t W25Q_WriteVolume(uint32_t StartAddr, uint8_t *buff, uint32_t Len, bool 
 		}
 	}
 
-	printf("Volume written between 0x%08lX and 0x%08lX\n", StartAddr, EndAddr);
+//	printf("Volume written between 0x%08lX and 0x%08lX\n", StartAddr, EndAddr);
 
 	return EndAddr;
 }
@@ -458,6 +458,8 @@ bool W25Q_PageProgram(uint32_t StartAddr, uint8_t *buff, uint16_t Len) {
 
 
 void W25Q_EraseChip() {
+	printf("Erasing whole chip...\n");
+
 	W25Q_EnableWrite();
 
 	uint8_t tx[1] = {W25Q_CHIP_ERASE};
@@ -576,12 +578,12 @@ void W25Q_ReadVolume(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen) {
 		HAL_GPIO_WritePin(W25Q_CS_PORT, W25Q_CS_PIN, GPIO_PIN_SET);
 
 		// Put data in buffer and print out
-		printf("Read volume: ");
+//		printf("Read volume: ");
 		for (int i = 0; i < ReadLen; i++) {
 			buff[i + buffpos] = rx[i];
-			printf("%02X", rx[i]);
+//			printf("%02X", rx[i]);
 		}
-		printf("\n");
+//		printf("\n");
 
 		ReadAddr += ReadLen;
 		buffpos += ReadLen;
@@ -622,13 +624,13 @@ void W25Q_ReadVolumeSafe(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen) {
 		HAL_GPIO_WritePin(W25Q_CS_PORT, W25Q_CS_PIN, GPIO_PIN_SET);
 
 		// Put data in buffer and print out
-		printf("Read volume: ");
+//		printf("Read volume: ");
 		for (int i = 0; i < ReadLen; i++) {
 			buff[i + buffpos] = rx[i];
 
-			printf("%02X", rx[i]);
+//			printf("%02X", rx[i]);
 		}
-		printf("\n");
+//		printf("\n");
 
 		ReadAddr = W25Q_GetSafeContiguousReadAddress(ReadAddr + ReadLen);
 		buffpos += ReadLen;
@@ -638,7 +640,9 @@ void W25Q_ReadVolumeSafe(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen) {
 
 
 
-void ScanBadBlocks() {
+void W25Q_ScanBadBlocks() {
+	printf("Initiating bad block scan...\n");
+
 	W25Q_EraseChip();   // Erase all existing data
 
 	uint8_t CheckPattern[256];
@@ -648,7 +652,10 @@ void ScanBadBlocks() {
 
 	uint8_t Readback[256];
 
+	uint16_t NumBadBlocks = 0;
+
 	for (int block = 0; block < 512; block++) {
+		printf("Testing block %i at address 0x%08lX      ", block, block * 0x10000);
 		bool bad = false;
 		for (int page = 0; page < 256; page++) {
 			uint32_t PageAddr = block * 0x10000 + page * 0x100;
@@ -668,9 +675,14 @@ void ScanBadBlocks() {
 
 		if (bad) {
 			BadBlocks[block >> 3] |= (1U << (block & 0b111));   // Set bit in bad blocks array
-			printf("Block %i identified as bad", block);
+			printf("BAD\n");
+			NumBadBlocks++;
+		} else {
+			printf("OK\n");
 		}
 	}
+
+	printf("Done testing. Found %i bad blocks\n", NumBadBlocks);
 
 	W25Q_EraseChip();   // Perform final erase to reset chip
 	W25Q_WriteMetadata(true);   // Rewrite metadata with new array
