@@ -738,7 +738,7 @@ void W25Q_ScanBadBlocks() {
 	uint16_t NumBadBlocks = 0;
 
 	for (int block = 0; block < 512; block++) {
-		printf("Testing block %i at address 0x%08lX      ", block, block * 0x10000);
+		printf("Testing block %i at address 0x%08X      ", block, block * 0x10000);
 		bool bad = false;
 		for (int page = 0; page < 256; page++) {
 			uint32_t PageAddr = block * 0x10000 + page * 0x100;
