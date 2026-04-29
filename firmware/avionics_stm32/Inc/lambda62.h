@@ -30,6 +30,9 @@
 #define L62_TXSW_PIN GPIO_PIN_1
 
 
+// Registers
+#define L62_TXCLAMP 0x08D8U
+
 
 // Opcodes
 #define L62_SETTX 0x83U
@@ -68,6 +71,9 @@
 #define L62_TX_TIMEOUT 0x0U   // 0x0 to disable timeout
 #define L62_RX_TIMEOUT 0xFFFFFFU   // 0x0 to disable timeout (single mode), 0xFFFFFF for continuous mode
 
+#define L62_TX_BASE_ADDR 0x0U   // Buffer base address for transmit packets
+#define L62_RX_BASE_ADDR 0x80U   // Buffer base address for receive packets
+
 
 
 // Functions
@@ -81,6 +87,10 @@ void LAMBDA62_SendPacket(uint8_t *packet, uint8_t len);
 
 void LAMBDA62_SetRx(uint32_t Timeout);
 uint8_t LAMBDA62_ReadPacket(uint8_t *buff, uint8_t MaxLen);   // Returns actual read length (0 if packet length exceeds buffer length)
+
+
+void LAMBDA62_ReadReg(uint16_t RegAddr, uint8_t *buff, uint8_t len);
+void LAMBDA62_WriteReg(uint16_t RegAddr, uint8_t *buff, uint8_t len);
 
 void LAMBDA62_SendContinuousWave();
 

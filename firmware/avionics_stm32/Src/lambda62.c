@@ -73,10 +73,16 @@ void InitialiseLAMBDA62() {
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
 
+	// Optimise TxClampConfig to minimise losses in case of antenna mismatch (as per datasheet section 15.2)
+	uint8_t txconfig = LAMBDA62_ReadReg(L62_TXCLAMP);
+	txconfig |= 0x1E;
+	LAMBDA62_WriteReg(L62_TXCLAMP, txconfig);
+
+
 	// Set buffer base addresses (TX, RX)
 	tx[0] = L62_BUFF_BASE_ADDR;
-	tx[1] = 0x0;
-	tx[2] = 0x8;
+	tx[1] = L62_TX_BASE_ADDR;
+	tx[2] = L62_RX_BASE_ADDR;
 
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi3_rf, tx, 3, HAL_MAX_DELAY);
@@ -116,6 +122,11 @@ void LAMBDA62_SetTx(uint32_t Timeout) {
 }
 
 
+void LAMBDA62_SendPacket(uint8_t *packet, uint8_t len) {
+
+}
+
+
 void LAMBDA62_SetRx(uint32_t Timeout) {
 	HAL_GPIO_WritePin(L62_TXSW_PORT, L62_TXSW_PIN, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(L62_RXSW_PORT, L62_RXSW_PIN, GPIO_PIN_SET);
@@ -126,3 +137,41 @@ void LAMBDA62_SetRx(uint32_t Timeout) {
 	HAL_SPI_Transmit(&hspi3_rf, tx, 4, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 }
+
+
+
+
+uint8_t LAMBDA62_ReadReg(uint16_t RegAddr) {
+	uint8_t tx[5] = {0};   	// Skip status return on 4th byte
+	uint8_t rx[5] = {0};
+
+	tx[0] = L62_READ_REG;
+	tx[1] = (uint8_t)(RegAddr >> 8);
+	tx[2] = (uint8_t)RegAddr;
+
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(&hspi3_rf, tx, rx, 5, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+
+	return rx[4];
+}
+
+
+void LAMBDA62_WriteReg(uint16_t RegAddr, uint8_t val) {
+	uint8_t tx[4];
+
+	tx[0] = L62_WRITE_REG;
+	tx[1] = (uint8_t)(RegAddr >> 8);
+	tx[2] = (uint8_t)RegAddr;
+	tx[3] = val;
+
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi3_rf, tx, 4, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+}
+
+
+
+
+
+
