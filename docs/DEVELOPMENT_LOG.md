@@ -5,6 +5,16 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### Apr 29th 2026
+
+Over the past few days I've been working on integrating the two LoRa transceivers. I soldered the LAMBDA62 and LAMBDA80 modules to the board only to realise I accidentally placed them the wrong way around. Although they have the same general pin layout, the LAMBDA62 has an additional two lines for the RX and TX switch pins so to be fully operational without bodge wires I need to swap them back. I tried desoldering them with solder wick but I cannot get enough of the solder out the through holes to lift them off safely. I have ordered a desoldering pump to help with this.
+
+In the mean time I've made a start on the software side writing basic drivers to test both modules, starting with the LAMBDA62. At the moment I have written functions to do all needed functions like transmitting packets, receiving packets, and emitting a constant wave. These are all written as simple blocking functions currently for ease of testing but later they will be modified to be real time compatable by using DMA for the large buffer SPI transfers and EXTI interrupts on the BUSY pin to replace the current blocking polling loops. EXTI interrupts will also be used for the DIO pins to notify the MCU on packet transmission/reception. Unfortunately, DIO1 for the SX1262 (LAMBDA62) is unavailable as an EXTI interrupt as the LSM6DSR uses pin 4 as it's data ready interrupt. I didn't realise at the time of designing the PCB that EXTI interrupts cannot share pin numbers despite being in different ports. However, for the intended purpouse of simply sending a constant wave, the SX1262 does not need this second interrupt line.
+
+I am currently in the process of writing the LAMBDA80 driver, which will use mostly the same code as the LAMBDA62 driver, just adapted to the specifics of the SX1280 instead. Once I can desolder and swap the modules I will be able to test the drivers proerly, although I will need to make 2.4GHz antennas for the LAMBDA80 first.
+
+
+---
 ### Apr 25th 2026
 
 Today I added some more functions to test the W25Q NOR flash driver. Here is a summary of the tests.
