@@ -84,21 +84,16 @@ void LAMBDA62_ClearIRQ(uint16_t IRQMask);
 
 void LAMBDA62_SetTx(uint32_t Timeout);
 void LAMBDA62_SendPacket(uint8_t *packet, uint8_t len);
+void LAMBDA62_SetPacketParams(uint16_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ);
 
 void LAMBDA62_SetRx(uint32_t Timeout);
-uint8_t LAMBDA62_ReadPacket(uint8_t *buff, uint8_t MaxLen);   // Returns actual read length (0 if packet length exceeds buffer length)
+void LAMBDA62_GetRxBufferStatus(uint8_t *len, uint8_t *start);
+void LAMBDA62_ReadBuffer(uint8_t *buff, uint8_t StartAddr, uint8_t len);
 
-
-void LAMBDA62_ReadReg(uint16_t RegAddr, uint8_t *buff, uint8_t len);
-void LAMBDA62_WriteReg(uint16_t RegAddr, uint8_t *buff, uint8_t len);
+uint8_t LAMBDA62_ReadReg(uint16_t RegAddr);
+void LAMBDA62_WriteReg(uint16_t RegAddr, uint8_t val);
 
 void LAMBDA62_SendContinuousWave();
-
-
-
-
-
-
 
 
 #endif /* LAMBDA62_H_ */
