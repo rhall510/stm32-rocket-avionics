@@ -74,12 +74,12 @@ void LAMBDA80_SetMode_Telemetry();
 // Use optimised configuration for short range high data rate sending of packets
 void LAMBDA80_SetMode_Download();
 
-inline bool LAMBDA80_CheckBusy();
+bool LAMBDA80_CheckBusy();
 void LAMBDA80_ClearIRQ(uint16_t IRQMask);
 
 void LAMBDA80_SetTx(uint8_t TimeBase, uint16_t Timeout);
 void LAMBDA80_SendPacket(uint8_t *packet, uint8_t len);
-void LAMBDA80_SetPacketParams(uint16_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ);
+void LAMBDA80_SetPacketParams(uint8_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ);
 
 void LAMBDA80_SetRx(uint8_t TimeBase, uint16_t Timeout);
 void LAMBDA80_GetRxBufferStatus(uint8_t *len, uint8_t *start);

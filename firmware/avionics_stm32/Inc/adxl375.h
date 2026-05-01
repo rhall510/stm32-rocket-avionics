@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 #include "datatypes.h"
 
 
@@ -31,7 +32,7 @@
 
 // Other
 #define ADXL_DR_FREQ 100   // Used for calculating timestamp
-
+#define ADXL_PKT_DATA_LEN (2 + 4 * sizeof(float))
 
 
 // Functions
@@ -41,6 +42,9 @@ struct Vector3 ADXL375_ReadSingleAccelData();
 
 void ADXL375_ReadFIFOData(volatile struct TS_Vec3 *accbuff, uint8_t readnum, float readytime);
 uint8_t ADXL375_GetFIFOStatus();
+
+// Constructs a flash logging packet from the given data and appends it to the buffer
+bool ADXL375_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_Vec3 *databuff, uint8_t Readings);
 
 
 #endif /* ADXL375_H_ */

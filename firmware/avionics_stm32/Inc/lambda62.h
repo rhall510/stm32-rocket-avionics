@@ -78,7 +78,7 @@
 // Functions
 void InitialiseLAMBDA62();
 
-inline bool LAMBDA62_CheckBusy();
+bool LAMBDA62_CheckBusy();
 void LAMBDA62_ClearIRQ(uint16_t IRQMask);
 
 void LAMBDA62_SetTx(uint32_t Timeout);

@@ -131,3 +131,49 @@ uint8_t ADXL375_GetFIFOStatus() {
 }
 
 
+
+bool ADXL375_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_Vec3 *databuff, uint8_t Readings) {
+	// Check the data can fit in the buffer
+	uint16_t ByteLen = Readings * ADXL_PKT_DATA_LEN;
+
+	if (BuffMaxLen - *BuffPos < ByteLen) {
+		return false;
+	}
+
+	// Copy data into the buffer
+	for (int i = 0; i < Readings; i++) {
+		buff[*BuffPos] = 0b00100000;   // Type 2 packet (high range acc)
+		*BuffPos += 1;
+		buff[*BuffPos] = 4 * sizeof(float);
+		*BuffPos += 1;
+
+		memcpy(buff + *BuffPos, &databuff[i].Timestamp, sizeof(float));
+		*BuffPos += sizeof(float);
+		memcpy(buff + *BuffPos, &databuff[i].X, sizeof(float));
+		*BuffPos += sizeof(float);
+		memcpy(buff + *BuffPos, &databuff[i].Y, sizeof(float));
+		*BuffPos += sizeof(float);
+		memcpy(buff + *BuffPos, &databuff[i].Z, sizeof(float));
+		*BuffPos += sizeof(float);
+	}
+
+	return true;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

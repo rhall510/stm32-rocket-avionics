@@ -117,7 +117,7 @@ void LAMBDA80_SetMode_Download() {
 	LAMBDA80_WriteReg(0x925, 0x1E);   // From datasheet for SF5
 
 	// Set default packet parameters
-	LAMBDA80_SetPacketParams(0x0C, 0, 256, 0x20, 0x40);   // 12 bit preamble, explicit header, 256 byte payload, CRC on, normal IQ
+	LAMBDA80_SetPacketParams(0x0C, 0, 128, 0x20, 0x40);   // 12 bit preamble, explicit header, 128 byte payload, CRC on, normal IQ
 
 	while(LAMBDA80_CheckBusy()) {}
 }
@@ -165,6 +165,8 @@ void LAMBDA80_SendPacket(uint8_t *packet, uint8_t len) {
 	HAL_SPI_Transmit(&hspi3_rf, tx, 2, HAL_MAX_DELAY);
 	HAL_SPI_Transmit(&hspi3_rf, packet, len, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
+
+	while(LAMBDA80_CheckBusy()) {}
 
 	LAMBDA80_SetTx(0x2, L80_TX_TIMEOUT);
 }

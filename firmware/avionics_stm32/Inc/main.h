@@ -9,8 +9,9 @@
 #include "mmc5983.h"
 #include "m10s.h"
 #include "w25q.h"
+#include "lambda62.h"
+#include "lambda80.h"
 #include "datatypes.h"
-#include "minmea.h"
 #include "misc.h"
 #include <math.h>
 #include <stdint.h>
@@ -29,14 +30,32 @@ SPI_HandleTypeDef hspi3_rf;
 #define BMP_FIFO_READNUM 1
 
 
-void Poll_MAXM10S();
+// Polls for available data. Returns true if a sentence is found
+bool Poll_MAXM10S();
 
+
+// Flash logging
+#define FLASH_BUFFER_LEN 1024
+#define FLASH_LOG_RATE 10   // Hz at which logging should be executed (handled by TIM2)
+
+// Write all accumulated data to flash and flip to accumulating in the other buffer
+void WriteFullDataPacket();
+
+// Transmit all data stored in flash over 2.4GHz
+void TransmitStoredData();
+
+
+// System initialisation
 void SystemClockConfig(void);
 
 void InitialiseGPIO();
 void InitialiseI2C();
 void InitialiseSPI();
+void InitialiseCRC();
+void InitialiseTimers();
 
+
+// Error handling
 void Error_Handler(void);
 
 

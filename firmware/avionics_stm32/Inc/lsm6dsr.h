@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 #include "datatypes.h"
 
 
@@ -40,6 +41,7 @@
 
 // Other
 #define LSM6_FIFO_DATA_BLOCK_SIZE 3
+#define LSM6_PKT_DATA_LEN (2 + 4 * sizeof(float))
 
 
 // Functions
@@ -51,5 +53,7 @@ struct Vector3 LSM6DSR_ReadInstGyroData();
 void LSM6DSR_ReadFIFOData(volatile struct TS_Vec3 *accbuff, volatile struct TS_Vec3 *gyrbuff, uint16_t readnum, float readytime);
 uint16_t LSM6DSR_GetFIFOStatus();
 
+// Constructs a flash logging packet from the given data and appends it to the buffer
+bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_Vec3 *accbuff, volatile struct TS_Vec3 *gyrbuff, uint8_t Readings);
 
 #endif /* LSM6DSR_H_ */

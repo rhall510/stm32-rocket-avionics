@@ -6,11 +6,15 @@ extern SPI_HandleTypeDef hspi2_str;
 
 
 // Global variables to store metadata info
-uint32_t MetaStartAddr = 1;   // Start address of the metadata sector (1 indicates empty start address)
-uint32_t MetaEndAddr = 1;   // End address of the metadata sector (1 indicates empty end address)
-uint32_t DataStartAddr = 0;   // Start address of the flight data block
-uint32_t DataEndAddr = 0;   // Last byte address of the flight data block
-uint8_t BadBlocks[64] = {0};   // Bytes represent 8 contiguous blocks with lowest address at LSB and highest at MSB. 1 if bad, 0 if ok.
+uint32_t W25Q_MetaStartAddr = 1;   // Start address of the metadata sector (1 indicates empty start address)
+uint32_t W25Q_MetaEndAddr = 1;   // End address of the metadata sector (1 indicates empty end address)
+uint32_t W25Q_DataStartAddr = 0;   // Start address of the flight data block
+uint32_t W25Q_DataEndAddr = 0;   // Last byte address of the flight data block
+uint8_t W25Q_BadBlocks[64] = {0};   // Bytes represent 8 contiguous blocks with lowest address at LSB and highest at MSB. 1 if bad, 0 if ok.
+
+// Useful info not stored in metadata
+uint32_t W25Q_NumDataPackets = 0;   // Number of data packets written in memory
+uint32_t W25Q_NumDataBytes = 0;   // Length of the data section in bytes
 
 
 bool InitialiseW25Q() {
@@ -87,7 +91,7 @@ void W25Q_EnableWrite() {
 
 
 bool W25Q_ReadMetadata() {
-	MetaStartAddr = 1;   // 1 Indicates not found
+	W25Q_MetaStartAddr = 1;   // 1 Indicates not found
 
 	uint8_t tx[5] = {0};
 	uint8_t rx[68] = {0};   // Allocate enough space for reading full metadata later
@@ -115,21 +119,21 @@ bool W25Q_ReadMetadata() {
 		}
 
 		if (found) {
-			MetaStartAddr = ReadAddr;
-			printf("Found metadata start at 0x%08lX\n", MetaStartAddr);
+			W25Q_MetaStartAddr = ReadAddr;
+			printf("Found metadata start at 0x%08lX\n", W25Q_MetaStartAddr);
 			break;
 		}
 	}
 
 	// Create new metadata block if none found. Must assume no bad blocks and reset addresses to start
-	if (MetaStartAddr == 1) {
+	if (W25Q_MetaStartAddr == 1) {
 		printf("Did not find metadata, writing blank...\n");
-		MetaStartAddr = 0x0;
-		DataStartAddr = 0x1000;
-		DataEndAddr = 0x1000;   // No data
+		W25Q_MetaStartAddr = 0x0;
+		W25Q_DataStartAddr = 0x1000;
+		W25Q_DataEndAddr = 0x1000;   // No data
 
 		for (int i = 0; i < 64; i++) {   // Clear all bad block flags
-			BadBlocks[i] = 0x0;
+			W25Q_BadBlocks[i] = 0x0;
 		}
 
 		W25Q_WriteMetadata(true);
@@ -137,7 +141,7 @@ bool W25Q_ReadMetadata() {
 	}
 
 	// Read existing metadata if found (4 byte data start address + 64 byte bad block array)
-	uint32_t ReadAddr = MetaStartAddr + 8;
+	uint32_t ReadAddr = W25Q_MetaStartAddr + 8;
 	for (int i = 3; i >= 0; i--) {   // Load read address into tx
 		tx[4 - i] = (uint8_t)((ReadAddr >> (i * 8)) & 0xFF);
 	}
@@ -147,12 +151,12 @@ bool W25Q_ReadMetadata() {
 	HAL_SPI_Receive(&hspi2_str, rx, 68, W25Q_SPI_MAX_DELAY);
 	HAL_GPIO_WritePin(W25Q_CS_PORT, W25Q_CS_PIN, GPIO_PIN_SET);
 
-	DataStartAddr = ((uint32_t)rx[0] << 24) | ((uint32_t)rx[1] << 16) | ((uint32_t)rx[2] << 8) | rx[3];
+	W25Q_DataStartAddr = ((uint32_t)rx[0] << 24) | ((uint32_t)rx[1] << 16) | ((uint32_t)rx[2] << 8) | rx[3];
 
-	printf("Read data start at 0x%08lX\n", DataStartAddr);
+	printf("Read data start at 0x%08lX\n", W25Q_DataStartAddr);
 
 	for (int i = 0; i < 64; i++) {   // Store bad block array
-		BadBlocks[i] = rx[i + 4];
+		W25Q_BadBlocks[i] = rx[i + 4];
 	}
 
 //    printf("Injecting fake bad block at 0x20000\n");
@@ -160,12 +164,15 @@ bool W25Q_ReadMetadata() {
 //    int block = 2;
 //    BadBlocks[block >> 3] |= (1U << (block & 0b111));
 
-	MetaEndAddr = MetaStartAddr + 0xFFF;   // Reserve the entire sector for metadata
+	W25Q_MetaEndAddr = W25Q_MetaStartAddr + 0xFFF;   // Reserve the entire sector for metadata
 
+	// Reset counters
+	W25Q_NumDataBytes = 0;
+	W25Q_NumDataPackets = 0;
 
 	// Find data end address
-	ReadAddr = DataStartAddr;
-	uint32_t LastValidEndAddr = DataStartAddr;
+	ReadAddr = W25Q_DataStartAddr;
+	uint32_t LastValidEndAddr = W25Q_DataStartAddr;
 	while (1) {
 		// Read 8 bytes at packet start: 4 byte sync word + 4 byte header
 		W25Q_ReadVolumeSafe(ReadAddr, rx, 8);
@@ -174,32 +181,35 @@ bool W25Q_ReadMetadata() {
 		if (sync == W25Q_DATA_SYNC_WORD) {
 			uint32_t packetLen = ((uint16_t)rx[5] << 8) | rx[6];
 
+			W25Q_NumDataPackets++;
+			W25Q_NumDataBytes += packetLen;
+
 			// Keep track of the last valid packet end
 			LastValidEndAddr = W25Q_GetSafeContiguousReadAddressWithOffset(ReadAddr, packetLen - 1);
 
 			// Increment read address to expected start of the next packet
 			ReadAddr = W25Q_GetSafeContiguousReadAddressWithOffset(ReadAddr, packetLen);
 		} else {
-			DataEndAddr = LastValidEndAddr;
+			W25Q_DataEndAddr = LastValidEndAddr;
 			break;
 		}
 	}
 
-	printf("Found data end at 0x%08lX\n", DataEndAddr);
+	printf("Found data end at 0x%08lX\n", W25Q_DataEndAddr);
 
 	return true;
 }
 
 
 void W25Q_WriteMetadata(bool ErasePrev) {
-	if (ErasePrev && MetaStartAddr != 1) {
-		W25Q_EraseSector(MetaStartAddr);
+	if (ErasePrev && W25Q_MetaStartAddr != 1) {
+		W25Q_EraseSector(W25Q_MetaStartAddr);
 	}
 
-	MetaStartAddr = W25Q_GetSafeMetadataAddress();   // Get first valid metadata address
-	MetaEndAddr = MetaStartAddr + 0xFFF;      // Reserve the entire sector for metadata
+	W25Q_MetaStartAddr = W25Q_GetSafeMetadataAddress();   // Get first valid metadata address
+	W25Q_MetaEndAddr = W25Q_MetaStartAddr + 0xFFF;      // Reserve the entire sector for metadata
 
-	if (MetaStartAddr == 1) {
+	if (W25Q_MetaStartAddr == 1) {
 		printf("ERROR in W25Q_WriteMetadata: Cannot find valid metadata sector address\n");
 		return;
 	}
@@ -212,16 +222,16 @@ void W25Q_WriteMetadata(bool ErasePrev) {
 	}
 
 	for (int i = 0; i < 4; i++) {   // Data start address
-	    metadata[i + 8] = (uint8_t)(DataStartAddr >> ((3 - i) * 8));
+	    metadata[i + 8] = (uint8_t)(W25Q_DataStartAddr >> ((3 - i) * 8));
 	}
 
 	for (int i = 0; i < 64; i++) {   // Bad block array
-		metadata[i + 12] = BadBlocks[i];
+		metadata[i + 12] = W25Q_BadBlocks[i];
 	}
 
-	printf("Writing metadata to 0x%08lX\n", MetaStartAddr);
+	printf("Writing metadata to 0x%08lX\n", W25Q_MetaStartAddr);
 
-	W25Q_WriteVolume(MetaStartAddr, metadata, len, false);   // Write without address checking (already checked above)
+	W25Q_WriteVolume(W25Q_MetaStartAddr, metadata, len, false);   // Write without address checking (already checked above)
 }
 
 
@@ -248,23 +258,23 @@ uint32_t W25Q_GetSafeContiguousWriteAddress(uint32_t Addr) {
 		}
 
 		// Check if the address is in the metadata sector
-		if (SafeAddr <= MetaEndAddr && SafeAddr >= MetaStartAddr) {
+		if (SafeAddr <= W25Q_MetaEndAddr && SafeAddr >= W25Q_MetaStartAddr) {
 			printf("WARNING: Address moved out of metadata sector in W25Q_GetSafeContiguousWriteAddress\n");
-			SafeAddr = MetaEndAddr + 1;
+			SafeAddr = W25Q_MetaEndAddr + 1;
 			continue;
 		}
 
 		// Check if the address is in the data section
-		if (DataEndAddr > DataStartAddr) {
-			if (SafeAddr <= DataEndAddr && SafeAddr >= DataStartAddr) {
+		if (W25Q_DataEndAddr > W25Q_DataStartAddr) {
+			if (SafeAddr <= W25Q_DataEndAddr && SafeAddr >= W25Q_DataStartAddr) {
 				printf("WARNING: Address moved out of data section in W25Q_GetSafeContiguousWriteAddress\n");
-				SafeAddr = DataEndAddr + 1;
+				SafeAddr = W25Q_DataEndAddr + 1;
 				continue;
 			}
-		} else if (DataEndAddr < DataStartAddr) {
-			if (SafeAddr <= DataEndAddr || SafeAddr >= DataStartAddr) {
+		} else if (W25Q_DataEndAddr < W25Q_DataStartAddr) {
+			if (SafeAddr <= W25Q_DataEndAddr || SafeAddr >= W25Q_DataStartAddr) {
 				printf("WARNING: Address moved out of data section in W25Q_GetSafeContiguousWriteAddress\n");
-				SafeAddr = DataEndAddr + 1;
+				SafeAddr = W25Q_DataEndAddr + 1;
 				continue;
 			}
 		}
@@ -274,7 +284,7 @@ uint32_t W25Q_GetSafeContiguousWriteAddress(uint32_t Addr) {
 		uint32_t BBStartAddr = SafeAddr & 0xFFFF0000;
 		uint32_t BBEndAddr = BBStartAddr + 0xFFFF;
 
-		if (BadBlocks[BlockNum >> 3] & (1U << (BlockNum & 0b111))) {
+		if (W25Q_BadBlocks[BlockNum >> 3] & (1U << (BlockNum & 0b111))) {
 			SafeAddr = BBEndAddr + 1;
 			printf("WARNING: Address moved out of bad block in W25Q_GetSafeContiguousWriteAddress\n");
 			continue;
@@ -300,9 +310,9 @@ uint32_t W25Q_GetSafeContiguousReadAddress(uint32_t Addr) {
 		}
 
 		// Check if the address is in the metadata sector
-		if (SafeAddr <= MetaEndAddr && SafeAddr >= MetaStartAddr) {
+		if (SafeAddr <= W25Q_MetaEndAddr && SafeAddr >= W25Q_MetaStartAddr) {
 			printf("WARNING: Address moved out of metadata sector in W25Q_GetSafeContiguousReadAddress\n");
-			SafeAddr = MetaEndAddr + 1;
+			SafeAddr = W25Q_MetaEndAddr + 1;
 			continue;
 		}
 
@@ -311,7 +321,7 @@ uint32_t W25Q_GetSafeContiguousReadAddress(uint32_t Addr) {
 		uint32_t BBStartAddr = SafeAddr & 0xFFFF0000;
 		uint32_t BBEndAddr = BBStartAddr + 0xFFFF;
 
-		if (BadBlocks[BlockNum >> 3] & (1U << (BlockNum & 0b111))) {
+		if (W25Q_BadBlocks[BlockNum >> 3] & (1U << (BlockNum & 0b111))) {
 			SafeAddr = BBEndAddr + 1;
 			printf("WARNING: Address moved out of bad block in W25Q_GetSafeContiguousReadAddress\n");
 			continue;
@@ -359,8 +369,8 @@ uint32_t W25Q_GetSafeMetadataAddress() {
 	bool safe = false;
 
 	uint16_t StartBlock = 0;
-	if (MetaStartAddr != 1) {   // Start searching from the block immediately after the current metadata
-		StartBlock = (MetaStartAddr >> 16) + 1;
+	if (W25Q_MetaStartAddr != 1) {   // Start searching from the block immediately after the current metadata
+		StartBlock = (W25Q_MetaStartAddr >> 16) + 1;
 	}
 
 	// Check each block start address
@@ -369,15 +379,15 @@ uint32_t W25Q_GetSafeMetadataAddress() {
 		SafeAddr = (block << 16);
 
 		// Check if the address is in the data section
-		if (DataEndAddr > DataStartAddr) {
-			if (SafeAddr <= DataEndAddr && SafeAddr >= DataStartAddr) { continue; }
-		} else if (DataEndAddr < DataStartAddr) {
-			if (SafeAddr <= DataEndAddr || SafeAddr >= DataStartAddr) { continue; }
+		if (W25Q_DataEndAddr > W25Q_DataStartAddr) {
+			if (SafeAddr <= W25Q_DataEndAddr && SafeAddr >= W25Q_DataStartAddr) { continue; }
+		} else if (W25Q_DataEndAddr < W25Q_DataStartAddr) {
+			if (SafeAddr <= W25Q_DataEndAddr || SafeAddr >= W25Q_DataStartAddr) { continue; }
 		}
 
 		// Check if the address is in a bad block
 		uint16_t BlockNum = SafeAddr >> 16;
-		if (BadBlocks[BlockNum >> 3] & (1U << (BlockNum & 0b111))) { continue; }
+		if (W25Q_BadBlocks[BlockNum >> 3] & (1U << (BlockNum & 0b111))) { continue; }
 
 		safe = true;
 		break;   // Break if all tests pass
@@ -391,10 +401,20 @@ uint32_t W25Q_GetSafeMetadataAddress() {
 
 void W25Q_WriteAppendData(uint8_t *buff, uint32_t Len) {
 	// Start exactly at the start address if memory is empty
-	uint32_t NextWriteAddr = (DataStartAddr == DataEndAddr) ? DataStartAddr : DataEndAddr + 1;
-	DataEndAddr = W25Q_WriteVolume(NextWriteAddr, buff, Len, true);
+	uint32_t NextWriteAddr = (W25Q_DataStartAddr == W25Q_DataEndAddr) ? W25Q_DataStartAddr : W25Q_DataEndAddr + 1;
+	W25Q_DataEndAddr = W25Q_WriteVolume(NextWriteAddr, buff, Len, true);
 
-	printf("Flight data written. New bounds: 0x%08lX to 0x%08lX\n", DataStartAddr, DataEndAddr);
+	printf("Flight data written. New bounds: 0x%08lX to 0x%08lX\n", W25Q_DataStartAddr, W25Q_DataEndAddr);
+
+	W25Q_NumDataBytes += Len;
+
+	// Increment packet counter if the starting 4 bytes are the sync word
+	if (Len > 8) {
+		uint32_t sync = ((uint32_t)buff[0]) << 24 | ((uint32_t)buff[1]) << 16 | ((uint32_t)buff[2]) << 8 | (uint32_t)buff[3];
+		if (sync = W25Q_DATA_SYNC_WORD) {
+			W25Q_NumDataPackets++;
+		}
+	}
 }
 
 
@@ -520,13 +540,13 @@ void W25Q_EraseBlock(uint32_t BlockAddr) {
 
 
 void W25Q_EraseFlightData() {
-	if (DataStartAddr == DataEndAddr) {
+	if (W25Q_DataStartAddr == W25Q_DataEndAddr) {
 		printf("W25Q_EraseFlightData: No flight data to erase, returning early\n");
 		return;
 	}   // Return if no flight data to erase
 
-	uint32_t StartSectorAddr = DataStartAddr & 0xFFFFF000;
-	uint32_t EndSectorAddr = DataEndAddr & 0xFFFFF000;
+	uint32_t StartSectorAddr = W25Q_DataStartAddr & 0xFFFFF000;
+	uint32_t EndSectorAddr = W25Q_DataEndAddr & 0xFFFFF000;
 	uint32_t CurrSectorAddr = StartSectorAddr;
 
 	while (1) {
@@ -545,13 +565,17 @@ void W25Q_EraseFlightData() {
 
 	printf("Flight data erased between 0x%08lX and 0x%08lX\n", StartSectorAddr, EndSectorAddr);
 
-	DataStartAddr = W25Q_GetSafeContiguousWriteAddress(EndSectorAddr + 0x1000);   // Move start position for new data to the next sector
-	DataEndAddr = DataStartAddr;   // No data currently written
-	W25Q_WriteMetadata(true);
+	// Reset counters
+	W25Q_NumDataBytes = 0;
+	W25Q_NumDataPackets = 0;
+
+	W25Q_DataStartAddr = W25Q_GetSafeContiguousWriteAddress(EndSectorAddr + 0x1000);   // Move start position for new data to the next sector
+	W25Q_DataEndAddr = W25Q_DataStartAddr;   // No data currently written
+	W25Q_WriteMetadata(true);   // Update metadata
 }
 
 
-void W25Q_ReadVolume(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen) {
+uint32_t W25Q_ReadVolume(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen) {
 	uint8_t tx[5];
 	uint8_t rx[256];   // Allocate enough space for a full page
 
@@ -591,6 +615,7 @@ void W25Q_ReadVolume(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen) {
 		buffpos += ReadLen;
 		ReadLeft -= ReadLen;
 	}
+	return ReadAddr;
 }
 
 
@@ -637,7 +662,7 @@ void W25Q_OutputVolume(uint32_t StartAddr, uint32_t MaxLen) {
 }
 
 
-void W25Q_ReadVolumeSafe(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen) {
+uint32_t W25Q_ReadVolumeSafe(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen) {
 	uint8_t tx[5];
 	uint8_t rx[256];   // Allocate enough space for a full page
 
@@ -677,6 +702,7 @@ void W25Q_ReadVolumeSafe(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen) {
 		buffpos += ReadLen;
 		ReadLeft -= ReadLen;
 	}
+	return ReadAddr;
 }
 
 
@@ -757,7 +783,7 @@ void W25Q_ScanBadBlocks() {
 		}
 
 		if (bad) {
-			BadBlocks[block >> 3] |= (1U << (block & 0b111));   // Set bit in bad blocks array
+			W25Q_BadBlocks[block >> 3] |= (1U << (block & 0b111));   // Set bit in bad blocks array
 			printf("BAD\n");
 			NumBadBlocks++;
 		} else {
@@ -795,7 +821,7 @@ void Test_W25Q_Initialisation() {
         return;
     }
     printf("W25Q initialized - JEDEC ID verified\n");
-    printf("Current section boundaries: MS=0x%08lX, ME=0x%08lX, DS=0x%08lX, DE=0x%08lX\n", MetaStartAddr, MetaEndAddr, DataStartAddr, DataEndAddr);
+    printf("Current section boundaries: MS=0x%08lX, ME=0x%08lX, DS=0x%08lX, DE=0x%08lX\n", W25Q_MetaStartAddr, W25Q_MetaEndAddr, W25Q_DataStartAddr, W25Q_DataEndAddr);
 }
 
 
@@ -813,13 +839,13 @@ void Test_W25Q_Logging() {
     }
     printf("W25Q initialized - JEDEC ID verified\n");
 
-    printf("MetaStartAddr is: 0x%08lX\n", MetaStartAddr);
+    printf("MetaStartAddr is: 0x%08lX\n", W25Q_MetaStartAddr);
 
     // Erase existing flight data
     printf("Erasing old flight data...\n");
     W25Q_EraseFlightData();
-    printf("Flight data erased. DataStartAddr now: 0x%08lX\n", DataStartAddr);
-    printf("MetaStartAddr is now: 0x%08lX\n", MetaStartAddr);
+    printf("Flight data erased. DataStartAddr now: 0x%08lX\n", W25Q_DataStartAddr);
+    printf("MetaStartAddr is now: 0x%08lX\n", W25Q_MetaStartAddr);
 
     // Write test packet
     uint8_t testPacket[16] = {0xAA, 0xBB, 0xBB, 0xAA, 0x01, 0x00, 0x10, 0x00, 0x10, 0x06, 'R', 'O', 'C', 'K', 'E', 'T'};
@@ -828,9 +854,9 @@ void Test_W25Q_Logging() {
     W25Q_WriteAppendData(testPacket, sizeof(testPacket));
 
     // Read back
-    printf("Reading back data from address 0x%08lX...\n", DataStartAddr);
+    printf("Reading back data from address 0x%08lX...\n", W25Q_DataStartAddr);
     uint8_t readBuffer[16] = {0};
-    W25Q_ReadVolumeSafe(DataStartAddr, readBuffer, sizeof(readBuffer));
+    W25Q_ReadVolumeSafe(W25Q_DataStartAddr, readBuffer, sizeof(readBuffer));
 
     if (memcmp(testPacket, readBuffer, sizeof(testPacket)) == 0) {
         printf("Readback matched the written packet exactly\n");
@@ -849,9 +875,9 @@ void Test_W25Q_Logging() {
     W25Q_WriteAppendData(testPacket2, sizeof(testPacket2));
 
     // Read back
-    printf("Reading back data from address 0x%08lX...\n", DataStartAddr);
+    printf("Reading back data from address 0x%08lX...\n", W25Q_DataStartAddr);
     uint8_t readBuffer2[16] = {0};
-    W25Q_ReadVolumeSafe(DataStartAddr + sizeof(testPacket), readBuffer2, sizeof(readBuffer2));
+    W25Q_ReadVolumeSafe(W25Q_DataStartAddr + sizeof(testPacket), readBuffer2, sizeof(readBuffer2));
 
     if (memcmp(testPacket2, readBuffer2, sizeof(testPacket2)) == 0) {
         printf("Readback matched the written packet exactly\n");
@@ -882,12 +908,12 @@ void Test_W25Q_BadBlocks() {
     }
     printf("W25Q initialized - JEDEC ID verified\n");
 
-    printf("Current section boundaries: MS=0x%08lX, ME=0x%08lX, DS=0x%08lX, DE=0x%08lX\n", MetaStartAddr, MetaEndAddr, DataStartAddr, DataEndAddr);
+    printf("Current section boundaries: MS=0x%08lX, ME=0x%08lX, DS=0x%08lX, DE=0x%08lX\n", W25Q_MetaStartAddr, W25Q_MetaEndAddr, W25Q_DataStartAddr, W25Q_DataEndAddr);
 
     printf("Injecting fake bad block at 0x20000\n");
 
     int block = 2;
-    BadBlocks[block >> 3] |= (1U << (block & 0b111));
+    W25Q_BadBlocks[block >> 3] |= (1U << (block & 0b111));
 
     printf("Writing ~735 pages (188300 bytes) of test data. Should span from 0x1000 to 0x3FF8B and skip the metadata and bad block...\n");
 
@@ -907,8 +933,8 @@ void Test_W25Q_BadBlocks() {
     }
 
     // Read back
-    printf("Reading back data from address 0x%08lX...\n", DataStartAddr);
-    W25Q_OutputVolumeSafe(DataStartAddr, 200000);
+    printf("Reading back data from address 0x%08lX...\n", W25Q_DataStartAddr);
+    W25Q_OutputVolumeSafe(W25Q_DataStartAddr, 200000);
 
 //    W25Q_ScanBadBlocks();
 }
@@ -928,16 +954,16 @@ void Test_W25Q_Wraparound() {
     }
     printf("W25Q initialized - JEDEC ID verified\n");
 
-    printf("Current section boundaries: MS=0x%08lX, ME=0x%08lX, DS=0x%08lX, DE=0x%08lX\n", MetaStartAddr, MetaEndAddr, DataStartAddr, DataEndAddr);
+    printf("Current section boundaries: MS=0x%08lX, ME=0x%08lX, DS=0x%08lX, DE=0x%08lX\n", W25Q_MetaStartAddr, W25Q_MetaEndAddr, W25Q_DataStartAddr, W25Q_DataEndAddr);
 
     printf("Injecting fake bad block at 0x1FF0000\n");
 
     int block = 511;
-    BadBlocks[block >> 3] |= (1U << (block & 0b111));
+    W25Q_BadBlocks[block >> 3] |= (1U << (block & 0b111));
 
     printf("Moving empty data section to the last sector address: 0x1FEF000\n");
-    DataStartAddr = 0x1FEF000;
-    DataEndAddr = 0x1FEF000;
+    W25Q_DataStartAddr = 0x1FEF000;
+    W25Q_DataEndAddr = 0x1FEF000;
 
     printf("Writing 25 pages (6400 bytes) of test data. Should span from 0x1FEF000 to 0x900...\n");
 
@@ -957,8 +983,8 @@ void Test_W25Q_Wraparound() {
     }
 
     // Read back
-    printf("Reading back data from address 0x%08lX...\n", DataStartAddr);
-    W25Q_OutputVolumeSafe(DataStartAddr, 7000);
+    printf("Reading back data from address 0x%08lX...\n", W25Q_DataStartAddr);
+    W25Q_OutputVolumeSafe(W25Q_DataStartAddr, 7000);
 }
 
 

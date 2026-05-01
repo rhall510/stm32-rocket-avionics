@@ -19,38 +19,45 @@ volatile struct TS_Vec3 mmc_buff;
 volatile bool mmc_data_ready = false;
 volatile float mmc_data_time = 0.0f;
 
-volatile struct TS_GPS m10s_data = {0};
-volatile bool m10s_data_ready = false;
-volatile float m10s_data_time = 0.0f;
-static char line_buffer[M10S_LINE_BUFFER_SIZE];
-static uint8_t line_len = 0;
+struct TS_GPS m10s_data = {0};
+
+volatile bool WriteData = false;
+
+
+uint8_t FlashLogBuffA[FLASH_BUFFER_LEN];   // Buffer to queue data for write. Ping-pong to prevent queueing of more data mid logging
+uint8_t FlashLogBuffB[FLASH_BUFFER_LEN];
+uint16_t FlashLogBuffAPos = 8;   // Current position of next free byte in the buffer
+uint16_t FlashLogBuffBPos = 8;
+uint8_t FlashLogBuffAReadings = 0;   // Number of readings in the buffer
+uint8_t FlashLogBuffBReadings = 0;
+bool LogBuffA = true;   // True to append new data to A, false to append new data to B
+
 
 
 int main(void) {
+	// System init
 	HAL_Init();
 
 	SystemClockConfig();
 	InitialiseGPIO();
 	InitialiseI2C();
 	InitialiseSPI();
+	InitialiseCRC();
+	InitialiseTimers();
 
-	HAL_Delay(2000);   // Startup delay to avoid some code executing inbetween debug sessions
-
-
-//	Test_W25Q_Initialisation();
-//	Test_W25Q_Logging();
-//	Test_W25Q_BadBlocks();
-//	Test_W25Q_Wraparound();
-	while (1) {
-		HAL_Delay(1000);
-	}
+	HAL_Delay(2000);   // Startup delay to avoid code executing inbetween debug sessions
 
 	__enable_irq();
 
 
-	ScanI2CBus();
+	// Preload header sync word into write buffers
+	for (int i = 3; i >= 0; i--) {
+		FlashLogBuffA[4 - i] = (uint8_t)((W25Q_DATA_SYNC_WORD >> (i * 8)) & 0xFF);
+		FlashLogBuffB[4 - i] = (uint8_t)((W25Q_DATA_SYNC_WORD >> (i * 8)) & 0xFF);
+	}
 
 
+	// Initialise sensors
 	InitialiseLSM6DSR(LSM6_FIFO_READNUM);
 	InitialiseADXL375(ADXL_FIFO_READNUM);
 	if (!InitialiseBMP581(BMP_FIFO_READNUM)) {
@@ -62,27 +69,68 @@ int main(void) {
 	InitialiseMAXM10S();
 
 
+	// Super loop to gather data
 	while (1) {
 		if (lsm_data_ready) {
 			lsm_data_ready = false;
 			LSM6DSR_ReadFIFOData(lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM, lsm_data_time);
+
+			if (LogBuffA) {
+				LSM6DSR_AppendLogPacket(FlashLogBuffA, &FlashLogBuffAPos, FLASH_BUFFER_LEN, lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM);
+				FlashLogBuffAReadings += LSM6_FIFO_READNUM;
+			} else {
+				LSM6DSR_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM);
+				FlashLogBuffBReadings += LSM6_FIFO_READNUM;
+			}
 		}
 		if (adxl_data_ready) {
 			adxl_data_ready = false;
 			ADXL375_ReadFIFOData(adxl_accbuff, ADXL_FIFO_READNUM, adxl_data_time);
+
+			if (LogBuffA) {
+				ADXL375_AppendLogPacket(FlashLogBuffA, &FlashLogBuffAPos, FLASH_BUFFER_LEN, adxl_accbuff, ADXL_FIFO_READNUM);
+				FlashLogBuffAReadings += ADXL_FIFO_READNUM;
+			} else {
+				ADXL375_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, adxl_accbuff, ADXL_FIFO_READNUM);
+				FlashLogBuffBReadings += ADXL_FIFO_READNUM;
+			}
 		}
 		if (bmp_data_ready) {
 			bmp_data_ready = false;
 			BMP581_ReadFIFOData(bmp_buff, BMP_FIFO_READNUM, bmp_data_time);
+
+			if (LogBuffA) {
+				BMP581_AppendLogPacket(FlashLogBuffA, &FlashLogBuffAPos, FLASH_BUFFER_LEN, bmp_buff, BMP_FIFO_READNUM);
+				FlashLogBuffAReadings += BMP_FIFO_READNUM;
+			} else {
+				BMP581_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, bmp_buff, BMP_FIFO_READNUM);
+				FlashLogBuffBReadings += BMP_FIFO_READNUM;
+			}
 		}
 		if (mmc_data_ready) {
 			mmc_data_ready = false;
 			MMC5983MA_ReadData(&mmc_buff, mmc_data_time);
+
+			if (LogBuffA) {
+				MMC5983MA_AppendLogPacket(FlashLogBuffA, &FlashLogBuffAPos, FLASH_BUFFER_LEN, &mmc_buff, 1);
+				FlashLogBuffAReadings += 1;
+			} else {
+				MMC5983MA_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, &mmc_buff, 1);
+				FlashLogBuffBReadings += 1;
+			}
 		}
 
-		Poll_MAXM10S();
+		if (Poll_MAXM10S()) {
+			if (LogBuffA) {
+				MAXM10S_AppendLogPacket(FlashLogBuffA, &FlashLogBuffAPos, FLASH_BUFFER_LEN, &m10s_data, 1);
+				FlashLogBuffAReadings += 1;
+			} else {
+				MAXM10S_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, &m10s_data, 1);
+				FlashLogBuffBReadings += 1;
+			}
+		}
 
-		HAL_Delay(10);
+		if (WriteData) { WriteFullDataPacket(); }
 	}
 
 	for(;;);
@@ -91,77 +139,107 @@ int main(void) {
 
 
 
-
-
-
-static void ProcessNMEASentence(const char *sentence) {
-	switch (minmea_sentence_id(sentence, false)) {
-		case MINMEA_SENTENCE_RMC: {
-			struct minmea_sentence_rmc frame;
-			if (minmea_parse_rmc(&frame, sentence)) {
-				m10s_data.HasFix = frame.valid;
-
-				if (frame.valid) {
-					// Convert to standard floats
-					m10s_data.Latitude = minmea_tocoord(&frame.latitude);
-					m10s_data.Longitude = minmea_tocoord(&frame.longitude);
-					m10s_data.Speed = minmea_tofloat(&frame.speed);
-
-					m10s_data.Timestamp = (float)HAL_GetTick() / 1000.0f;
-				}
-			}
-			break;
-		}
-		case MINMEA_SENTENCE_GGA: {
-			struct minmea_sentence_gga frame;
-			if (minmea_parse_gga(&frame, sentence)) {
-				if (frame.fix_quality > 0) {
-					m10s_data.Altitude = minmea_tofloat(&frame.altitude);
-					m10s_data.Satellites = frame.satellites_tracked;
-				}
-			}
-			break;
-		}
-		default:
-			break;   // Ignore other sentences
-	}
-}
-
-
-static void FeedI2CDataToParser(uint8_t *i2c_data, uint16_t length) {
-	for (uint16_t i = 0; i < length; i++) {
-		char c = (char)i2c_data[i];
-
-		// Fill buffer
-		if (line_len < M10S_LINE_BUFFER_SIZE - 1) {
-			line_buffer[line_len++] = c;
-		}
-
-		// Wait for end of a sentence (\n)
-		if (c == '\n') {
-			line_buffer[line_len] = '\0';   // Add null terminator
-			ProcessNMEASentence(line_buffer);
-			line_len = 0;
-		}
-	}
-}
-
-
-
-void Poll_MAXM10S(void) {
+bool Poll_MAXM10S() {
 	uint16_t bytes_available = MAXM10S_GetAvailableBytes();
 
 	if (bytes_available > 0) {
 		uint8_t i2c_data[bytes_available];
-		ULED_TOGGLE
 
 		if (MAXM10S_ReadStream(i2c_data, bytes_available)) {
-			FeedI2CDataToParser(i2c_data, bytes_available);
+			return MAXM10S_ParseStream(i2c_data, bytes_available, &m10s_data);
 		}
+	}
+
+	return false;
+}
+
+
+
+void WriteFullDataPacket() {
+	// Switch active buffer for collecting data
+	LogBuffA = !LogBuffA;
+
+	// Ready CRC unit
+	CRC->CR |= CRC_CR_RESET;
+	volatile uint8_t *CRC_DR8 = (volatile uint8_t *)&CRC->DR;
+
+	if (LogBuffA) {   // Send the inactive buffer's data to be written
+		// Calculate CRC for all bytes after header
+		for (uint16_t i = 8; i < FlashLogBuffBPos; i++) {
+			*CRC_DR8 = FlashLogBuffB[i];
+		}
+
+		// Load header into byte positions 4-7
+		FlashLogBuffB[4] = FlashLogBuffBReadings;
+		FlashLogBuffB[5] = (uint8_t)((FlashLogBuffBPos - 8) >> 8);
+		FlashLogBuffB[6] = (uint8_t)FlashLogBuffBPos;
+		FlashLogBuffB[7] = (uint8_t)(CRC->DR);
+
+		W25Q_WriteAppendData(FlashLogBuffB, FlashLogBuffBPos);
+		FlashLogBuffBPos = 8;   // Reset end point but leave space for header
+		FlashLogBuffBReadings = 0;
+	} else {
+		// Calculate CRC for all bytes after header
+		for (uint16_t i = 8; i < FlashLogBuffAPos; i++) {
+			*CRC_DR8 = FlashLogBuffA[i];
+		}
+
+		// Load header into byte positions 4-7
+		FlashLogBuffA[4] = FlashLogBuffAReadings;
+		FlashLogBuffA[5] = (uint8_t)((FlashLogBuffAPos - 8) >> 8);
+		FlashLogBuffA[6] = (uint8_t)FlashLogBuffAPos;
+		FlashLogBuffA[7] = (uint8_t)(CRC->DR);
+
+		W25Q_WriteAppendData(FlashLogBuffA, FlashLogBuffAPos);
+		FlashLogBuffAPos = 8;   // Reset end point but leave space for header
+		FlashLogBuffAReadings = 0;
 	}
 }
 
 
+
+void TransmitStoredData() {
+	if (!W25Q_NumDataBytes) { return; }   // No data
+
+	LAMBDA80_SetMode_Download();
+
+	uint8_t PacketLen = 128;
+	uint8_t buff[PacketLen + 2];   // Extra 2 bytes for sequence num
+
+	uint32_t ReadAddr = W25Q_DataStartAddr;
+	uint32_t ToRead = W25Q_NumDataBytes;
+	uint8_t ReadLen = PacketLen;
+
+	uint16_t SequenceNum = 0;
+
+	while (ToRead > 0) {   // Read and send packets until all data has been sent
+		if (ToRead < PacketLen) {   // Ensure no reads past the data boundary
+			ReadLen = ToRead;
+			LAMBDA80_SetPacketParams(0x0C, 0, ReadLen, 0x20, 0x40);
+		}
+
+		// Read in data and update next read address
+		ReadAddr = W25Q_ReadVolumeSafe(ReadAddr, buff + 2, ReadLen);
+
+		// Update sequence num
+		buff[0] = (uint8_t)(SequenceNum >> 8);
+		buff[1] = (uint8_t)SequenceNum;
+
+		LAMBDA80_SendPacket(buff, ReadLen);
+
+		while(LAMBDA80_CheckBusy()) {}
+
+		ToRead -= ReadLen;
+	}
+}
+
+
+void TIM2_IRQHandler() {
+	if (TIM2->SR & TIM_SR_UIF) {
+		TIM2->SR &= ~TIM_SR_UIF;   // Clear interrupt flag
+		WriteData = true;
+	}
+}
 
 
 // Initialisation functions
@@ -448,6 +526,127 @@ void InitialiseGPIO() {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
 	HAL_GPIO_Init(W25Q_HOLD_PORT, &GPIO_InitStruct);
+
+
+	// LAMBDA80 pins
+	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);   // Default SPI CS pins to high
+	GPIO_InitStruct.Pin = L80_CS_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	HAL_GPIO_Init(L80_CS_PORT, &GPIO_InitStruct);
+
+	HAL_GPIO_WritePin(L80_RST_PORT, L80_RST_PIN, GPIO_PIN_SET);   // Active low
+	GPIO_InitStruct.Pin = L80_RST_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(L80_RST_PORT, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = L80_BUSY_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(L80_BUSY_PORT, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = L80_DIO1_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(L80_DIO1_PORT, &GPIO_InitStruct);
+
+	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+	GPIO_InitStruct.Pin = L80_DIO2_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(L80_DIO2_PORT, &GPIO_InitStruct);
+
+	HAL_NVIC_SetPriority(EXTI3_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+
+
+	// LAMBDA62 pins
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);   // Default SPI CS pins to high
+	GPIO_InitStruct.Pin = L62_CS_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	HAL_GPIO_Init(L62_CS_PORT, &GPIO_InitStruct);
+
+	HAL_GPIO_WritePin(L62_RST_PORT, L62_RST_PIN, GPIO_PIN_SET);   // Active low
+	GPIO_InitStruct.Pin = L62_RST_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(L62_RST_PORT, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = L62_BUSY_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(L62_BUSY_PORT, &GPIO_InitStruct);
+
+	// DIO1 cannot be used as an EXTI interrupt due to LSM6DSR
+	GPIO_InitStruct.Pin = L62_DIO1_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(L62_DIO1_PORT, &GPIO_InitStruct);
+
+//	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
+//	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+	GPIO_InitStruct.Pin = L62_DIO2_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(L62_DIO2_PORT, &GPIO_InitStruct);
+
+	HAL_NVIC_SetPriority(EXTI2_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+
+	HAL_GPIO_WritePin(L62_RXSW_PORT, L62_RXSW_PIN, GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = L62_RXSW_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(L62_RXSW_PORT, &GPIO_InitStruct);
+
+	HAL_GPIO_WritePin(L62_TXSW_PORT, L62_TXSW_PIN, GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = L62_TXSW_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(L62_TXSW_PORT, &GPIO_InitStruct);
+}
+
+
+void InitialiseCRC() {
+    RCC->AHB1ENR |= RCC_AHB1ENR_CRCEN;   // Enable clock for the CRC peripheral
+    __DSB();   // Ensure the clock is active before continuing
+
+    CRC->CR |= CRC_CR_RESET;
+
+    CRC->CR &= ~CRC_CR_POLYSIZE;   // Set polynomial size to 8 bit
+    CRC->CR |= CRC_CR_POLYSIZE_1;
+    CRC->POL = 0x07;   // Set polynomial value to 0x07.
+
+    CRC->INIT = 0x00;   // Set initial value after reset
+
+    CRC->CR &= ~(CRC_CR_REV_IN | CRC_CR_REV_OUT);   // Disable bit reversal
+}
+
+
+void InitialiseTimers() {
+	// TIM2
+	RCC->AHB1ENR |= RCC_APB1ENR1_TIM2EN;   // Enable clock
+    __DSB();   // Ensure the clock is active before continuing
+
+	TIM2->PSC = 16999;   // Set prescaler and ARR to generate 10Hz interrupts
+	TIM2->ARR = 999;
+
+	TIM2->DIER |= TIM_DIER_UIE;   // Enable update interrupt
+	NVIC_EnableIRQ(TIM2_IRQn);
+	NVIC_SetPriority(TIM2_IRQn, 5);
+
+	TIM2->CR1 |= TIM_CR1_CEN;   // Enable TIM2
 }
 
 

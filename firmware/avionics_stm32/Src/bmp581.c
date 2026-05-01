@@ -105,6 +105,30 @@ void BMP581_ReadFIFOData(volatile struct TS_PressTemp *ptbuff, uint8_t readnum, 
 
 
 
+bool BMP581_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_PressTemp *databuff, uint8_t Readings) {
+	// Check the data can fit in the buffer
+	uint16_t ByteLen = Readings * BMP_PKT_DATA_LEN;
 
+	if (BuffMaxLen - *BuffPos < ByteLen) {
+		return false;
+	}
+
+	// Copy data into the buffer
+	for (int i = 0; i < Readings; i++) {
+		buff[*BuffPos] = 0b01000000;      // Type 4 packet (press/temp)
+		*BuffPos += 1;
+		buff[*BuffPos] = 3 * sizeof(float);
+		*BuffPos += 1;
+
+		memcpy(buff + *BuffPos, &databuff[i].Timestamp, sizeof(float));
+		*BuffPos += sizeof(float);
+		memcpy(buff + *BuffPos, &databuff[i].Press, sizeof(float));
+		*BuffPos += sizeof(float);
+		memcpy(buff + *BuffPos, &databuff[i].Temp, sizeof(float));
+		*BuffPos += sizeof(float);
+	}
+
+	return true;
+}
 
 

@@ -205,3 +205,48 @@ uint16_t LSM6DSR_GetFIFOStatus() {
 }
 
 
+bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_Vec3 *accbuff, volatile struct TS_Vec3 *gyrbuff, uint8_t Readings) {
+	// Check the data can fit in the buffer
+	uint16_t ByteLen = Readings * 2 * LSM6_PKT_DATA_LEN;
+
+	if (BuffMaxLen - *BuffPos < ByteLen) {
+		return false;
+	}
+
+	// Copy data into the buffer
+	for (int i = 0; i < Readings; i++) {
+		buff[*BuffPos] = 0b00000000;   // Type 0 packet (low range acc)
+		*BuffPos += 1;
+		buff[*BuffPos] = 4 * sizeof(float);
+		*BuffPos += 1;
+
+		memcpy(buff + *BuffPos, &accbuff[i].Timestamp, sizeof(float));
+		*BuffPos += sizeof(float);
+		memcpy(buff + *BuffPos, &accbuff[i].X, sizeof(float));
+		*BuffPos += sizeof(float);
+		memcpy(buff + *BuffPos, &accbuff[i].Y, sizeof(float));
+		*BuffPos += sizeof(float);
+		memcpy(buff + *BuffPos, &accbuff[i].Z, sizeof(float));
+		*BuffPos += sizeof(float);
+
+		buff[*BuffPos] = 0b00010000;   // Type 1 packet (gyroscope)
+		*BuffPos += 1;
+		buff[*BuffPos] = 4 * sizeof(float);
+		*BuffPos += 1;
+
+		memcpy(buff + *BuffPos, &gyrbuff[i].Timestamp, sizeof(float));
+		*BuffPos += sizeof(float);
+		memcpy(buff + *BuffPos, &gyrbuff[i].X, sizeof(float));
+		*BuffPos += sizeof(float);
+		memcpy(buff + *BuffPos, &gyrbuff[i].Y, sizeof(float));
+		*BuffPos += sizeof(float);
+		memcpy(buff + *BuffPos, &gyrbuff[i].Z, sizeof(float));
+		*BuffPos += sizeof(float);
+	}
+
+	return true;
+}
+
+
+
+

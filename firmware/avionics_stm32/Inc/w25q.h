@@ -9,11 +9,11 @@
 
 
 // Global variables to store metadata info
-extern uint32_t MetaStartAddr;   // Start address of the metadata sector (1 indicates empty start address)
-extern uint32_t MetaEndAddr;   // End address of the metadata sector (1 indicates empty end address)
-extern uint32_t DataStartAddr;   // Start address of the flight data block
-extern uint32_t DataEndAddr;   // Last byte address of the flight data block
-extern uint8_t BadBlocks[64];   // Bytes represent 8 contiguous blocks with lowest address at LSB and highest at MSB. 1 if bad, 0 if ok.
+extern uint32_t W25Q_MetaStartAddr;   // Start address of the metadata sector (1 indicates empty start address)
+extern uint32_t W25Q_MetaEndAddr;   // End address of the metadata sector (1 indicates empty end address)
+extern uint32_t W25Q_DataStartAddr;   // Start address of the flight data block
+extern uint32_t W25Q_DataEndAddr;   // Last byte address of the flight data block
+extern uint8_t W25Q_BadBlocks[64];   // Bytes represent 8 contiguous blocks with lowest address at LSB and highest at MSB. 1 if bad, 0 if ok.
 
 
 // MCU connected pins
@@ -102,13 +102,15 @@ void W25Q_WriteMetadata(bool ErasePrev);
 
 
 // Reads a contiguous volume of data page by page into the buffer. Performs no checks for safe addresses
-void W25Q_ReadVolume(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen);
+// Returns the byte address after the last read byte
+uint32_t W25Q_ReadVolume(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen);
 
 // Version of W25Q_ReadVolume which only prints out data a page at a time (skips copying the data over to a buffer)
 void W25Q_OutputVolume(uint32_t StartAddr, uint32_t MaxLen);
 
 // Version of W25Q_ReadVolume which skips bad blocks and metadata
-void W25Q_ReadVolumeSafe(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen);
+// Returns the next safe byte address after the last read byte
+uint32_t W25Q_ReadVolumeSafe(uint32_t StartAddr, uint8_t *buff, uint32_t MaxLen);
 
 // Version of W25Q_ReadVolumeSafe which only prints out data a page at a time (skips copying the data over to a buffer)
 void W25Q_OutputVolumeSafe(uint32_t StartAddr, uint32_t MaxLen);
@@ -127,7 +129,7 @@ void W25Q_EraseFlightData();
 void W25Q_WriteAppendData(uint8_t *buff, uint32_t Len);
 
 // Writes data to a contiguous block of memory, skipping bad blocks and the metadata sector. Returns the end address of data written
-// Will not check the write address if CheckAddress == true
+// Will safe the write address if CheckAddress == true
 uint32_t W25Q_WriteVolume(uint32_t StartAddr, uint8_t *buff, uint32_t Len, bool CheckAddress);
 
 // Writes data to a single page, failing if the write would overflow

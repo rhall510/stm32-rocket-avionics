@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include "datatypes.h"
 
 
@@ -33,6 +34,7 @@
 #define BMP_I2C_ADDR (0x46U << 1)
 #define BMP_FIFO_DATA_BLOCK_SIZE 6
 #define BMP_DR_FREQ 10   // Used for calculating timestamp
+#define BMP_PKT_DATA_LEN (2 + 3 * sizeof(float))
 
 
 // Functions
@@ -41,5 +43,7 @@ bool InitialiseBMP581(uint8_t Threshold);
 uint8_t BMP581_GetFIFOCount();
 void BMP581_ReadFIFOData(volatile struct TS_PressTemp *ptbuff, uint8_t readnum, float readytime);
 
+// Constructs a flash logging packet from the given data and appends it to the buffer
+bool BMP581_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_PressTemp *databuff, uint8_t Readings);
 
 #endif /* BMP581_H_ */
