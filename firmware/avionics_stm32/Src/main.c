@@ -34,7 +34,7 @@ int main(void) {
 	InitialiseI2C();
 	InitialiseSPI();
 
-	HAL_Delay(2000);
+	HAL_Delay(2000);   // Startup delay to avoid some code executing inbetween debug sessions
 
 
 //	Test_W25Q_Initialisation();

@@ -38,7 +38,6 @@
 #define L62_SETTX 0x83U
 #define L62_SETRX 0x82U
 #define L62_SETCW 0xD1U
-
 #define L62_STDBY 0x80U
 
 #define L62_WRITE_REG 0x0DU

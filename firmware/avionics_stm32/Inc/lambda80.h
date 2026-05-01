@@ -31,7 +31,6 @@
 #define L80_SETTX 0x83U
 #define L80_SETRX 0x82U
 #define L80_SETCW 0xD1U
-
 #define L80_STDBY 0x80U
 
 #define L80_WRITE_REG 0x18U
@@ -59,7 +58,7 @@
 
 // Other
 #define L80_TX_TIMEOUT 0x0U   // 0x0 to disable timeout
-#define L80_RX_TIMEOUT 0xFFFFFFU   // 0x0 to disable timeout (single mode), 0xFFFFFF for continuous mode
+#define L80_RX_TIMEOUT 0xFFFFU   // 0x0 to disable timeout (single mode), 0xFFFF for continuous mode
 
 #define L80_TX_BASE_ADDR 0x0U   // Buffer base address for transmit packets
 #define L80_RX_BASE_ADDR 0x80U   // Buffer base address for receive packets
@@ -67,23 +66,27 @@
 
 
 // Functions
-void InitialiseLAMBDA62();
+void InitialiseLAMBDA80();
+
+// Use optimised configuration for long range low data rate reception of telemetry packets
+void LAMBDA80_SetMode_Telemetry();
+
+// Use optimised configuration for short range high data rate sending of packets
+void LAMBDA80_SetMode_Download();
 
 inline bool LAMBDA80_CheckBusy();
 void LAMBDA80_ClearIRQ(uint16_t IRQMask);
 
-void LAMBDA80_SetTx(uint32_t Timeout);
+void LAMBDA80_SetTx(uint8_t TimeBase, uint16_t Timeout);
 void LAMBDA80_SendPacket(uint8_t *packet, uint8_t len);
 void LAMBDA80_SetPacketParams(uint16_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ);
 
-void LAMBDA80_SetRx(uint32_t Timeout);
+void LAMBDA80_SetRx(uint8_t TimeBase, uint16_t Timeout);
 void LAMBDA80_GetRxBufferStatus(uint8_t *len, uint8_t *start);
 void LAMBDA80_ReadBuffer(uint8_t *buff, uint8_t StartAddr, uint8_t len);
 
 uint8_t LAMBDA80_ReadReg(uint16_t RegAddr);
 void LAMBDA80_WriteReg(uint16_t RegAddr, uint8_t val);
-
-void LAMBDA80_SendContinuousWave();
 
 
 #endif /* LAMBDA80_H_ */
