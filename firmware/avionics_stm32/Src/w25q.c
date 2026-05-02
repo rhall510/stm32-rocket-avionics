@@ -411,7 +411,7 @@ void W25Q_WriteAppendData(uint8_t *buff, uint32_t Len) {
 	// Increment packet counter if the starting 4 bytes are the sync word
 	if (Len > 8) {
 		uint32_t sync = ((uint32_t)buff[0]) << 24 | ((uint32_t)buff[1]) << 16 | ((uint32_t)buff[2]) << 8 | (uint32_t)buff[3];
-		if (sync = W25Q_DATA_SYNC_WORD) {
+		if (sync == W25Q_DATA_SYNC_WORD) {
 			W25Q_NumDataPackets++;
 		}
 	}

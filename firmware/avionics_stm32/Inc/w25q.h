@@ -15,6 +15,9 @@ extern uint32_t W25Q_DataStartAddr;   // Start address of the flight data block
 extern uint32_t W25Q_DataEndAddr;   // Last byte address of the flight data block
 extern uint8_t W25Q_BadBlocks[64];   // Bytes represent 8 contiguous blocks with lowest address at LSB and highest at MSB. 1 if bad, 0 if ok.
 
+extern uint32_t W25Q_NumDataPackets;   // Number of data packets written in memory
+extern uint32_t W25Q_NumDataBytes;   // Length of the data section in bytes
+
 
 // MCU connected pins
 #define W25Q_CS_PORT GPIOC
