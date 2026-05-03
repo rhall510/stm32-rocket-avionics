@@ -114,6 +114,7 @@ bool MAXM10S_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxL
 	uint16_t ByteLen = Readings * M10S_PKT_DATA_LEN;
 
 	if (BuffMaxLen - *BuffPos < ByteLen) {
+		printf("WARNING: Could not write MAXM10S data to write buffer due to lack of space");
 		return false;
 	}
 

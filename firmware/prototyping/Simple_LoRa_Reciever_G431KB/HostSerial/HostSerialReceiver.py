@@ -6,18 +6,12 @@ BAUD_RATE = 1000000
 try:
     with serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1) as ser:
         print(f"Listening on {SERIAL_PORT}...")
-        count = 0
-        line = ''
-        while True:
-            if ser.in_waiting > 0:
-                data = ser.read(ser.in_waiting)
-                line += str(data.decode("utf-8"))
 
-                if '\n' in line:
-                    count = count + 1
-                    print(f"{count}: ")
-                    print(line)
-                    line = ''
+        while True:
+            if ser.in_waiting == 0:
+                continue
+
+            print(ser.read(ser.in_waiting))
 
 except KeyboardInterrupt:
     print("\nStopped")

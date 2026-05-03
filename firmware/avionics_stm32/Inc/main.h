@@ -29,6 +29,9 @@ SPI_HandleTypeDef hspi3_rf;
 #define ADXL_FIFO_READNUM 4
 #define BMP_FIFO_READNUM 1
 
+#define DOWNLOAD_PKT_SYNC_WORD 0x88442211
+#define DOWNLOAD_PKT_TERM 0x336699CC
+
 
 // Polls for available data. Returns true if a sentence is found
 bool Poll_MAXM10S();
@@ -44,6 +47,9 @@ void WriteFullDataPacket();
 // Transmit all data stored in flash over 2.4GHz
 void TransmitStoredData();
 
+
+
+void L80_SendTestPackets();
 
 // System initialisation
 void SystemClockConfig(void);

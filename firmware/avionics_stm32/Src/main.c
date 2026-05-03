@@ -33,6 +33,8 @@ uint8_t FlashLogBuffBReadings = 0;
 bool LogBuffA = true;   // True to append new data to A, false to append new data to B
 
 
+volatile bool TxReady = true;
+
 
 int main(void) {
 	// System init
@@ -49,11 +51,30 @@ int main(void) {
 
 	__enable_irq();
 
+	ScanI2CBus();
+
+
+	// Initialise storage
+//	W25Q_EraseChip();
+	InitialiseW25Q();
+//	W25Q_EraseFlightData();
+//	W25Q_OutputVolumeSafe(W25Q_DataStartAddr, 50000);
+
+	// Initialise RF modules
+	InitialiseLAMBDA80();
+
+	if (UBTN_READ) {
+		L80_SendTestPackets();
+	} else {
+		TransmitStoredData();
+		while (1) {}
+	}
+
 
 	// Preload header sync word into write buffers
 	for (int i = 3; i >= 0; i--) {
-		FlashLogBuffA[4 - i] = (uint8_t)((W25Q_DATA_SYNC_WORD >> (i * 8)) & 0xFF);
-		FlashLogBuffB[4 - i] = (uint8_t)((W25Q_DATA_SYNC_WORD >> (i * 8)) & 0xFF);
+		FlashLogBuffA[3 - i] = (uint8_t)((W25Q_DATA_SYNC_WORD >> (i * 8)) & 0xFF);
+		FlashLogBuffB[3 - i] = (uint8_t)((W25Q_DATA_SYNC_WORD >> (i * 8)) & 0xFF);
 	}
 
 
@@ -67,6 +88,9 @@ int main(void) {
 		Error_Handler();
 	}
 	InitialiseMAXM10S();
+
+
+	float starttime = (float)uwTick;
 
 
 	// Super loop to gather data
@@ -130,7 +154,13 @@ int main(void) {
 			}
 		}
 
-		if (WriteData) { WriteFullDataPacket(); }
+		if (WriteData) {
+			WriteData = false;
+			if ((float)uwTick - starttime < 100000) {
+				WriteFullDataPacket();
+				ULED_TOGGLE
+			}
+		}
 	}
 
 	for(;;);
@@ -172,7 +202,7 @@ void WriteFullDataPacket() {
 		// Load header into byte positions 4-7
 		FlashLogBuffB[4] = FlashLogBuffBReadings;
 		FlashLogBuffB[5] = (uint8_t)((FlashLogBuffBPos - 8) >> 8);
-		FlashLogBuffB[6] = (uint8_t)FlashLogBuffBPos;
+		FlashLogBuffB[6] = (uint8_t)(FlashLogBuffBPos - 8);
 		FlashLogBuffB[7] = (uint8_t)(CRC->DR);
 
 		W25Q_WriteAppendData(FlashLogBuffB, FlashLogBuffBPos);
@@ -187,7 +217,7 @@ void WriteFullDataPacket() {
 		// Load header into byte positions 4-7
 		FlashLogBuffA[4] = FlashLogBuffAReadings;
 		FlashLogBuffA[5] = (uint8_t)((FlashLogBuffAPos - 8) >> 8);
-		FlashLogBuffA[6] = (uint8_t)FlashLogBuffAPos;
+		FlashLogBuffA[6] = (uint8_t)(FlashLogBuffAPos - 8);
 		FlashLogBuffA[7] = (uint8_t)(CRC->DR);
 
 		W25Q_WriteAppendData(FlashLogBuffA, FlashLogBuffAPos);
@@ -201,35 +231,69 @@ void WriteFullDataPacket() {
 void TransmitStoredData() {
 	if (!W25Q_NumDataBytes) { return; }   // No data
 
+	float starttime = (float)uwTick;
+	ULED_TOGGLE
+
 	LAMBDA80_SetMode_Download();
 
-	uint8_t PacketLen = 128;
-	uint8_t buff[PacketLen + 2];   // Extra 2 bytes for sequence num
+	uint8_t PacketLen = 100;
+	uint8_t buff[PacketLen + 12];   // Extra 12 bytes for header, sequence num, and terminator
+
+	// Preload header sync word and terminator
+	buff[0] = (uint8_t)(DOWNLOAD_PKT_SYNC_WORD >> 24);
+	buff[1] = (uint8_t)(DOWNLOAD_PKT_SYNC_WORD >> 16);
+	buff[2] = (uint8_t)(DOWNLOAD_PKT_SYNC_WORD >> 8);
+	buff[3] = (uint8_t)DOWNLOAD_PKT_SYNC_WORD;
+
+	buff[PacketLen + 8] = (uint8_t)(DOWNLOAD_PKT_TERM >> 24);
+	buff[PacketLen + 9] = (uint8_t)(DOWNLOAD_PKT_TERM >> 16);
+	buff[PacketLen + 10] = (uint8_t)(DOWNLOAD_PKT_TERM >> 8);
+	buff[PacketLen + 11] = (uint8_t)DOWNLOAD_PKT_TERM;
 
 	uint32_t ReadAddr = W25Q_DataStartAddr;
 	uint32_t ToRead = W25Q_NumDataBytes;
 	uint8_t ReadLen = PacketLen;
 
-	uint16_t SequenceNum = 0;
+	uint32_t SequenceNum = 0;
 
 	while (ToRead > 0) {   // Read and send packets until all data has been sent
+		while (!TxReady) {}
+		TxReady = false;
+
+		LAMBDA80_ClearIRQ(0xFFFF);
+
 		if (ToRead < PacketLen) {   // Ensure no reads past the data boundary
 			ReadLen = ToRead;
-			LAMBDA80_SetPacketParams(0x0C, 0, ReadLen, 0x20, 0x40);
+
+			LAMBDA80_SetPacketParams(0x0C, 0, ReadLen + 12, 0x20, 0x40);
+
+			buff[ReadLen + 8] = (uint8_t)(DOWNLOAD_PKT_TERM >> 24);
+			buff[ReadLen + 9] = (uint8_t)(DOWNLOAD_PKT_TERM >> 16);
+			buff[ReadLen + 10] = (uint8_t)(DOWNLOAD_PKT_TERM >> 8);
+			buff[ReadLen + 11] = (uint8_t)DOWNLOAD_PKT_TERM;
 		}
 
 		// Read in data and update next read address
-		ReadAddr = W25Q_ReadVolumeSafe(ReadAddr, buff + 2, ReadLen);
+		ReadAddr = W25Q_ReadVolumeSafe(ReadAddr, buff + 8, ReadLen);
 
 		// Update sequence num
-		buff[0] = (uint8_t)(SequenceNum >> 8);
-		buff[1] = (uint8_t)SequenceNum;
+		buff[4] = (uint8_t)(SequenceNum >> 24);
+		buff[5] = (uint8_t)(SequenceNum >> 16);
+		buff[6] = (uint8_t)(SequenceNum >> 8);
+		buff[7] = (uint8_t)SequenceNum;
 
-		LAMBDA80_SendPacket(buff, ReadLen);
+		LAMBDA80_SendPacket(buff, PacketLen + 12);
 
 		while(LAMBDA80_CheckBusy()) {}
 
 		ToRead -= ReadLen;
+		SequenceNum++;
+
+		float newtime = (float)uwTick;
+		if (newtime - starttime > 50) {
+			starttime = newtime;
+			ULED_TOGGLE
+		}
 	}
 }
 
@@ -237,9 +301,50 @@ void TransmitStoredData() {
 void TIM2_IRQHandler() {
 	if (TIM2->SR & TIM_SR_UIF) {
 		TIM2->SR &= ~TIM_SR_UIF;   // Clear interrupt flag
-		WriteData = true;
+		WriteData = true;   // Prime data logging task
 	}
 }
+
+
+
+
+
+
+void L80_SendTestPackets() {
+	LAMBDA80_SetMode_Download();
+	LAMBDA80_SetPacketParams(0x23, 0, 11, 0x20, 0x40);
+
+	uint8_t count = 0;
+	uint16_t count2 = 0;
+	while (1) {
+		if (TxReady) {
+			TxReady = false;
+
+			LAMBDA80_ClearIRQ(0xFFFF);
+
+			uint8_t packet[11] = "TestPacket0";
+			packet[10] = count;
+
+			LAMBDA80_SendPacket(packet, 11);
+
+			count++;
+			count2++;
+
+			if (count2 % 1000 == 0) {
+				ULED_TOGGLE
+			}
+
+		}
+	}
+}
+
+
+
+
+
+
+
+
 
 
 // Initialisation functions
@@ -327,7 +432,7 @@ void InitialiseSPI() {
 	// Initialise SPI1 (accelerometers)
     GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -544,7 +649,7 @@ void InitialiseGPIO() {
 	HAL_GPIO_Init(L80_RST_PORT, &GPIO_InitStruct);
 
 	GPIO_InitStruct.Pin = L80_BUSY_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(L80_BUSY_PORT, &GPIO_InitStruct);
 
@@ -581,7 +686,7 @@ void InitialiseGPIO() {
 	HAL_GPIO_Init(L62_RST_PORT, &GPIO_InitStruct);
 
 	GPIO_InitStruct.Pin = L62_BUSY_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(L62_BUSY_PORT, &GPIO_InitStruct);
 
@@ -636,11 +741,11 @@ void InitialiseCRC() {
 
 void InitialiseTimers() {
 	// TIM2
-	RCC->AHB1ENR |= RCC_APB1ENR1_TIM2EN;   // Enable clock
+	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;   // Enable clock
     __DSB();   // Ensure the clock is active before continuing
 
 	TIM2->PSC = 16999;   // Set prescaler and ARR to generate 10Hz interrupts
-	TIM2->ARR = 999;
+	TIM2->ARR = 10000 / FLASH_LOG_RATE - 1;
 
 	TIM2->DIER |= TIM_DIER_UIE;   // Enable update interrupt
 	NVIC_EnableIRQ(TIM2_IRQn);
@@ -681,6 +786,7 @@ void EXTI9_5_IRQHandler(void) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_5);
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_6) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_6);
+		TxReady = true;
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_7) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_7);
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_8) != RESET) {

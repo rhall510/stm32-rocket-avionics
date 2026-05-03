@@ -1,10 +1,5 @@
-Application/User/Core/main.o: \
- C:/Dev/Avionics/firmware/prototyping/Simple_LoRa_Reciever_G431KB/Core/Src/main.c \
- ../../Core/Inc/main.h \
- ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h \
- ../../Core/Inc/stm32g4xx_hal_conf.h \
- ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_rcc.h \
- ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_def.h \
+Application/User/Core/lambda80.o: ../Application/User/Core/lambda80.c \
+ C:/Dev/Avionics/firmware/prototyping/Simple_LoRa_Reciever_G431KB/STM32CubeIDE/Application/User/Core/Inc/lambda80.h \
  ../../Drivers/CMSIS/Device/ST/STM32G4xx/Include/stm32g4xx.h \
  ../../Drivers/CMSIS/Device/ST/STM32G4xx/Include/stm32g431xx.h \
  ../../Drivers/CMSIS/Include/core_cm4.h \
@@ -13,6 +8,10 @@ Application/User/Core/main.o: \
  ../../Drivers/CMSIS/Include/cmsis_gcc.h \
  ../../Drivers/CMSIS/Include/mpu_armv7.h \
  ../../Drivers/CMSIS/Device/ST/STM32G4xx/Include/system_stm32g4xx.h \
+ ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h \
+ ../../Core/Inc/stm32g4xx_hal_conf.h \
+ ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_rcc.h \
+ ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_def.h \
  ../../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h \
  ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_rcc_ex.h \
  ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_gpio.h \
@@ -29,16 +28,8 @@ Application/User/Core/main.o: \
  ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_spi.h \
  ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_spi_ex.h \
  ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart.h \
- ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h \
- ../../Drivers/BSP/STM32G4xx_Nucleo/stm32g4xx_nucleo.h \
- ../../Drivers/BSP/STM32G4xx_Nucleo/stm32g4xx_nucleo_errno.h \
- ../../Core/Inc/stm32g4xx_nucleo_conf.h \
- C:/Dev/Avionics/firmware/prototyping/Simple_LoRa_Reciever_G431KB/STM32CubeIDE/Application/User/Core/Inc/lambda80.h
-../../Core/Inc/main.h:
-../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h:
-../../Core/Inc/stm32g4xx_hal_conf.h:
-../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_rcc.h:
-../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_def.h:
+ ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h
+C:/Dev/Avionics/firmware/prototyping/Simple_LoRa_Reciever_G431KB/STM32CubeIDE/Application/User/Core/Inc/lambda80.h:
 ../../Drivers/CMSIS/Device/ST/STM32G4xx/Include/stm32g4xx.h:
 ../../Drivers/CMSIS/Device/ST/STM32G4xx/Include/stm32g431xx.h:
 ../../Drivers/CMSIS/Include/core_cm4.h:
@@ -47,6 +38,10 @@ Application/User/Core/main.o: \
 ../../Drivers/CMSIS/Include/cmsis_gcc.h:
 ../../Drivers/CMSIS/Include/mpu_armv7.h:
 ../../Drivers/CMSIS/Device/ST/STM32G4xx/Include/system_stm32g4xx.h:
+../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h:
+../../Core/Inc/stm32g4xx_hal_conf.h:
+../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_rcc.h:
+../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_def.h:
 ../../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h:
 ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_rcc_ex.h:
 ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_gpio.h:
@@ -64,7 +59,3 @@ Application/User/Core/main.o: \
 ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_spi_ex.h:
 ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart.h:
 ../../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h:
-../../Drivers/BSP/STM32G4xx_Nucleo/stm32g4xx_nucleo.h:
-../../Drivers/BSP/STM32G4xx_Nucleo/stm32g4xx_nucleo_errno.h:
-../../Core/Inc/stm32g4xx_nucleo_conf.h:
-C:/Dev/Avionics/firmware/prototyping/Simple_LoRa_Reciever_G431KB/STM32CubeIDE/Application/User/Core/Inc/lambda80.h:

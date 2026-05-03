@@ -1,3 +1,4 @@
+"./Application/User/Core/lambda80.o"
 "./Application/User/Core/main.o"
 "./Application/User/Core/stm32g4xx_hal_msp.o"
 "./Application/User/Core/stm32g4xx_it.o"

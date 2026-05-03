@@ -132,7 +132,7 @@ void LAMBDA80_SetMode_Download() {
 	LAMBDA80_WriteReg(0x925, 0x1E);   // From datasheet for SF5
 
 	// Set default packet parameters
-	LAMBDA80_SetPacketParams(0x23, 0, 112, 0x20, 0x40);   // 12 bit preamble, explicit header, 112 byte payload, CRC on, normal IQ
+	LAMBDA80_SetPacketParams(0x23, 0, 128, 0x20, 0x40);   // 12 bit preamble, explicit header, 128 byte payload, CRC on, normal IQ
 
 	while(LAMBDA80_CheckBusy()) {}
 }

@@ -1,0 +1,13 @@
+../Application/User/Core/lambda80.c:8:6:InitialiseLAMBDA80	32	static
+../Application/User/Core/lambda80.c:71:6:LAMBDA80_SetMode_Telemetry	24	static
+../Application/User/Core/lambda80.c:106:6:LAMBDA80_SetMode_Download	24	static
+../Application/User/Core/lambda80.c:142:13:LAMBDA80_CheckBusy	8	static
+../Application/User/Core/lambda80.c:147:6:LAMBDA80_ClearIRQ	24	static
+../Application/User/Core/lambda80.c:159:6:LAMBDA80_SetTx	24	static
+../Application/User/Core/lambda80.c:175:6:LAMBDA80_SendPacket	24	static
+../Application/User/Core/lambda80.c:192:6:LAMBDA80_SetPacketParams	32	static
+../Application/User/Core/lambda80.c:203:6:LAMBDA80_SetRx	24	static
+../Application/User/Core/lambda80.c:219:6:LAMBDA80_GetRxBufferStatus	32	static
+../Application/User/Core/lambda80.c:234:6:LAMBDA80_ReadBuffer	24	static
+../Application/User/Core/lambda80.c:248:9:LAMBDA80_ReadReg	40	static
+../Application/User/Core/lambda80.c:266:6:LAMBDA80_WriteReg	24	static

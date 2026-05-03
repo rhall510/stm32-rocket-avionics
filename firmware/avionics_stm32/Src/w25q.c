@@ -128,7 +128,6 @@ bool W25Q_ReadMetadata() {
 	// Create new metadata block if none found. Must assume no bad blocks and reset addresses to start
 	if (W25Q_MetaStartAddr == 1) {
 		printf("Did not find metadata, writing blank...\n");
-		W25Q_MetaStartAddr = 0x0;
 		W25Q_DataStartAddr = 0x1000;
 		W25Q_DataEndAddr = 0x1000;   // No data
 
@@ -179,7 +178,12 @@ bool W25Q_ReadMetadata() {
 
 		uint32_t sync = ((uint32_t)rx[0] << 24) | ((uint32_t)rx[1] << 16) | ((uint32_t)rx[2] << 8) | rx[3];
 		if (sync == W25Q_DATA_SYNC_WORD) {
-			uint32_t packetLen = ((uint16_t)rx[5] << 8) | rx[6];
+			uint32_t packetLen = (((uint16_t)rx[5] << 8) | rx[6]) + 8;
+
+			if (packetLen < 8) {
+				W25Q_DataEndAddr = LastValidEndAddr;
+				break;
+			}
 
 			W25Q_NumDataPackets++;
 			W25Q_NumDataBytes += packetLen;

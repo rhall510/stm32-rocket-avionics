@@ -110,6 +110,7 @@ bool BMP581_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLe
 	uint16_t ByteLen = Readings * BMP_PKT_DATA_LEN;
 
 	if (BuffMaxLen - *BuffPos < ByteLen) {
+		printf("WARNING: Could not write BMP581 data to write buffer due to lack of space");
 		return false;
 	}
 
