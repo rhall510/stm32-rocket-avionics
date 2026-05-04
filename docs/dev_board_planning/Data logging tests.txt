@@ -1860,7 +1860,7 @@ Flight data written. New bounds: 0x00001000 to 0x0000EDED
 
 
 // THIRD TEST
-// Data logging and detection seems to be working well now. Need to test transmission and reconstruction over 2.4GHz next.
+// Data logging and detection seems to be working well now. Need to test readback of data next.
 
 
 // RUN 1
@@ -3425,7 +3425,7 @@ AF 41 E7 FB 09 3F B2 9D AF 3F 1E 85 DB 3F 20 10 8F C2 AF 41 CD CC 9C 3F CD CC 9C
 
 
 // TEST 5
-// Fixed the 0 length bug and blank metadata write always skipping address 0x0. Also added a check to cleanly stop logging after 100 seconds.
+// Fixed the 0 length bug caused by not properly subtracting the header length from the lower byte of the buffer length, and blank metadata write always skipping address 0x0. Also added a check to cleanly stop logging after 100 seconds.
 // Seems to work perfectly now!
 
 
@@ -4439,16 +4439,6 @@ Flight data written. New bounds: 0x00001000 to 0x0003ECD1
 
 
 
-
-
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 
 Found metadata start at 0x00000000
 Read data start at 0x00001000

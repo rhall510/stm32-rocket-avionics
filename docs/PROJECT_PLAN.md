@@ -176,7 +176,7 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 * [x] Write sensor drivers.
 * [x] Write NOR flash chip driver.
 * [x] Test storage of sensor data on NOR flash.
-* [ ] Write SX1280 and SX1262 drivers.
+* [x] Write SX1280 and SX1262 drivers.
 * [ ] Write and test routine for downloading data from flash storage.
 * [ ] Write and test calibration routines for sensors (magnetometer and accelerometers).
 * [ ] Test sensor data acquisition and accuracy.

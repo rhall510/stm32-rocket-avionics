@@ -5,6 +5,26 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### May 3rd 2026
+
+Over the past two days I have finished implementing and debugging data logging and a basic download link between the main avionics board and a host PC. Data logging has been more thoroughly tested now seems to work perfectly after ironing out a few issues. See the test logs [here](dev_board_planning/Data%20logging%20tests.txt) for more details.
+
+
+I also spent a lot of time testing and debugging the data transmission function. I made two 2.4GHz ground plane monopole antennas in the same design as the previous 868MHz ones and connected them to the transmitter (avionics unit) and the receiver (nucleo-g431kb board connected to the host PC). Unfortunately, as I only have the nanoVNA-H which only measures up to 1.5GHz, I cannot tune the antennas perfectly for 2.4GHz so I just cut them to as close to the theoretical perfect length as possible.
+
+#### 2.4GHz ground plane monopole antenna
+
+![2.4GHz ground plane monopole antenna](./images/2.4GHz_monopole.jpeg)
+
+#### View of the fully assembled avionics unit with the 2.4GHz antenna and ST-Link attached
+
+![Avionics unit with 2.4GHz antenna](./images/avionics_dev_v2_fullview_live.png)
+
+Initially the receiver was not receiving packets but it seems most of the issues were caused by some incorrect configuration options and not properly waiting for the transmitter to finish sending a packet before queueing the next one. After fixing the options, implementing proper delays, and adding a proper header and terminator to each packet we now have a working data download link which can transmit data to a host PC via a connected receiver over UART at around 200kb/s. There is currently no error correction in the download protocol though.
+
+The next step is to properly decode and parse the raw binary data received and implement error correction in case of any missing or malformed packets.
+
+---
 ### May 1st 2026
 
 Today I finished the main functionality of both LAMBDA drivers and got most of the way through writing functions to enable data logging and transmission over 2.4GHz radio. There are two main bits of functionality added, the first being centered around the WriteFullDataPacket. This function writes all accumulated data from sensors to the flash memory periodically (currently at 10Hz controlled by TIM2). Data is accumulated in two identical buffers which operate in a 'ping-pong' fashion. Buffer A is filled initially with all data until the periodic write is triggered, at which point everything accumulated in buffer A is written to flash while all new data is accumulated in buffer B. On the next write the opposite happens, with buffer B being written to memory while data accumulation switches back to buffer A. While all functions are currently blocking for testing simplicity, in the future data collection will be among the highest priority tasks and so may take place in the middle of a write. This method prevents new data being written into the buffer currently being committed to flash which could cause data loss. Data accumulation into the buffers is handled by 'AppendLogPacket' functions specific to each sensor, which handles packaging their data into byte arrays and appending them to the buffer.
@@ -104,12 +124,12 @@ Currently I am working on writing a driver for the NOR flash chip to enable data
 
 Buffers fill up with raw data that has been collected since the last write. Data is logged at 10Hz, at which point whatever is in the buffers is concatenated into a 'packet' that is sent to be written to storage. Each packet has a packet header with a sync word and information about the contents of the packet, followed by each piece of data which have their own headers containing information on the size and type of data they represent.
 
-**Packet structure:**  
-\>> 4 Byte start sync word (AABBBBAA)  
-\>> 4 byte header: Total number of readings in packet [31:24], Total number of bytes in packet [23:8], Checksum [7:0]  
-[[[  
-\>> 2 byte header: Data type [15:12], Total number of bytes in data [11:0]  
-\>> Raw data (variable length)  
+**Packet structure:**
+\>> 4 Byte start sync word (AABBBBAA)
+\>> 4 byte header: Total number of readings in packet [31:24], Total number of bytes in packet [23:8], Checksum [7:0]
+[[[
+\>> 2 byte header: Data type [15:12], Total number of bytes in data [11:0]
+\>> Raw data (variable length)
 ]]] x N
 
 

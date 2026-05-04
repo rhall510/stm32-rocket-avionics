@@ -78,7 +78,6 @@ flowchart TB
 Goals from the [project plan](docs/PROJECT_PLAN.md) that are currently being worked on:
 
 ##### 2\. Avionics unit
-* [ ] Write SX1280 and SX1262 drivers.
 * [ ] Write and test routine for downloading data from flash storage.
 
 *For an up to date breakdown of progress, check the [development log](docs/DEVELOPMENT_LOG.md).*
