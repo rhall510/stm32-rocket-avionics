@@ -5,9 +5,23 @@
 extern SPI_HandleTypeDef hspi1_acc;
 
 
-void InitialiseADXL375(uint8_t WatermarkWords) {
+bool InitialiseADXL375(uint8_t WatermarkWords) {
+	// Check for correct response
+	uint8_t tx[2] = {ADXL_DEVID | (1U << 7), 0};
+	uint8_t rx[2] = {0};
+
+	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(&hspi1_acc, tx, rx, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
+
+	if (rx[1] != 0xE5) {
+		printf("ADXL375 not responsive");
+		return false;
+	}
+
 	// Set to standby mode
-	uint8_t tx[2] = {ADXL_POWER_CTL, 0b00000000U};
+	tx[0] = ADXL_POWER_CTL;
+	tx[1] = 0b00000000U;
 
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
@@ -72,6 +86,8 @@ void InitialiseADXL375(uint8_t WatermarkWords) {
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
+
+	return true;
 }
 
 

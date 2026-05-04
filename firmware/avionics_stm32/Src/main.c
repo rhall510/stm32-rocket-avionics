@@ -55,19 +55,16 @@ int main(void) {
 
 
 	// Initialise storage
-//	W25Q_EraseChip();
 	InitialiseW25Q();
-//	W25Q_EraseFlightData();
-//	W25Q_OutputVolumeSafe(W25Q_DataStartAddr, 50000);
 
 	// Initialise RF modules
 	InitialiseLAMBDA80();
 
 	if (UBTN_READ) {
-		L80_SendTestPackets();
-	} else {
 		TransmitStoredData();
 		while (1) {}
+	} else {
+		W25Q_EraseFlightData();
 	}
 
 
@@ -79,19 +76,24 @@ int main(void) {
 
 
 	// Initialise sensors
-	InitialiseLSM6DSR(LSM6_FIFO_READNUM);
-	InitialiseADXL375(ADXL_FIFO_READNUM);
+	if (!InitialiseLSM6DSR(LSM6_FIFO_READNUM)) {
+		Error_Handler();
+	}
+	if (!InitialiseADXL375(ADXL_FIFO_READNUM)) {
+		Error_Handler();
+	}
 	if (!InitialiseBMP581(BMP_FIFO_READNUM)) {
 		Error_Handler();
 	}
 	if (!InitialiseMMC5983MA()) {
 		Error_Handler();
 	}
-	InitialiseMAXM10S();
+	if (!InitialiseMAXM10S()) {
+		Error_Handler();
+	}
 
 
 	float starttime = (float)uwTick;
-
 
 	// Super loop to gather data
 	while (1) {
@@ -106,6 +108,7 @@ int main(void) {
 				LSM6DSR_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM);
 				FlashLogBuffBReadings += LSM6_FIFO_READNUM;
 			}
+			printf("LSM6");
 		}
 		if (adxl_data_ready) {
 			adxl_data_ready = false;
@@ -118,6 +121,7 @@ int main(void) {
 				ADXL375_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, adxl_accbuff, ADXL_FIFO_READNUM);
 				FlashLogBuffBReadings += ADXL_FIFO_READNUM;
 			}
+			printf("ADXL");
 		}
 		if (bmp_data_ready) {
 			bmp_data_ready = false;
@@ -130,6 +134,7 @@ int main(void) {
 				BMP581_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, bmp_buff, BMP_FIFO_READNUM);
 				FlashLogBuffBReadings += BMP_FIFO_READNUM;
 			}
+			printf("BMP");
 		}
 		if (mmc_data_ready) {
 			mmc_data_ready = false;
@@ -142,6 +147,7 @@ int main(void) {
 				MMC5983MA_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, &mmc_buff, 1);
 				FlashLogBuffBReadings += 1;
 			}
+			printf("MMC");
 		}
 
 		if (Poll_MAXM10S()) {
@@ -152,11 +158,12 @@ int main(void) {
 				MAXM10S_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, &m10s_data, 1);
 				FlashLogBuffBReadings += 1;
 			}
+			printf("MAX");
 		}
 
 		if (WriteData) {
 			WriteData = false;
-			if ((float)uwTick - starttime < 100000) {
+			if ((float)uwTick - starttime < 10000) {   // Stop collecting data after 100s
 				WriteFullDataPacket();
 				ULED_TOGGLE
 			}
@@ -432,7 +439,7 @@ void InitialiseSPI() {
 	// Initialise SPI1 (accelerometers)
     GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);

@@ -30,6 +30,8 @@
 #define ADXL_FIFO_STATUS 0x39U
 #define ADXL_DATA 0x32U   // 6 contiguous registers for each FIFO word
 
+#define ADXL_DEVID 0x00U
+
 
 // Other
 #define ADXL_DR_FREQ 100   // Used for calculating timestamp
@@ -37,7 +39,7 @@
 
 
 // Functions
-void InitialiseADXL375(uint8_t WatermarkWords);
+bool InitialiseADXL375(uint8_t WatermarkWords);
 
 struct Vector3 ADXL375_ReadSingleAccelData();
 

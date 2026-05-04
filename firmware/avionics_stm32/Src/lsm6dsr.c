@@ -5,7 +5,7 @@
 extern SPI_HandleTypeDef hspi1_acc;
 
 
-void InitialiseLSM6DSR(uint16_t WatermarkReads) {
+bool InitialiseLSM6DSR(uint16_t WatermarkReads) {
 	uint16_t WatermarkWords = WatermarkReads * LSM6_FIFO_DATA_BLOCK_SIZE;
 
 	// Software reset
@@ -16,6 +16,20 @@ void InitialiseLSM6DSR(uint16_t WatermarkReads) {
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 	HAL_Delay(5);
+
+	// Check for correct response
+	uint8_t rx[2] = {0};
+	tx[0] = LSM6_WHO_AM_I | (1U << 7);
+	tx[1] = 0;
+
+	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(&hspi1_acc, tx, rx, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
+
+	if (rx[1] != 0x6B) {
+		printf("LSM6DSR not responsive");
+		return false;
+	}
 
 	// Disable I3C
 	tx[0] = LSM6_CTRL9_XL;
@@ -87,6 +101,8 @@ void InitialiseLSM6DSR(uint16_t WatermarkReads) {
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
+
+	return true;
 }
 
 

@@ -26,7 +26,7 @@
 
 
 // Functions
-void InitialiseMAXM10S();
+bool InitialiseMAXM10S();
 
 bool MAXM10S_SendCommand(uint8_t *cmd, uint16_t length);
 

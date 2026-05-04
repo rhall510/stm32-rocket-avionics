@@ -40,7 +40,11 @@ bool MAXM10S_SendCommand(uint8_t *cmd, uint16_t length) {
 
 
 
-void InitialiseMAXM10S() {
+bool InitialiseMAXM10S() {
+	if (HAL_I2C_IsDeviceReady(&hi2c, M10S_I2C_ADDR, 3, 100) != HAL_OK) {
+		return false;
+	}
+
 	// Command string generated with u-center
 	uint8_t confcmd[] = {
 		0xB5, 0x62, 0x06, 0x8A, 0x28, 0x00, 0x00, 0x01,
@@ -52,6 +56,8 @@ void InitialiseMAXM10S() {
 	};
 
 	MAXM10S_SendCommand(confcmd, sizeof(confcmd));
+
+	return true;
 }
 
 

@@ -19,7 +19,6 @@
 #define LSM6_INT2_PIN GPIO_PIN_5
 
 
-
 // Registers
 #define LSM6_CTRL1_XL 0x10U
 #define LSM6_CTRL2_G 0x11U
@@ -37,7 +36,9 @@
 #define LSM6_OUT_G 0x22U   // 3 contiguous two byte registers for each axis
 #define LSM6_OUT_A 0x28U   // 3 contiguous two byte registers for each axis
 #define LSM6_FIFO_DATA_OUT 0x78U   // 7 contiguous registers for each FIFO word
-#define LSM6_FIFO_STATUS 0x3A   // 2 contiguous registers for full FIFO status
+#define LSM6_FIFO_STATUS 0x3AU   // 2 contiguous registers for full FIFO status
+
+#define LSM6_WHO_AM_I 0x0FU
 
 
 // Other
@@ -46,7 +47,7 @@
 
 
 // Functions
-void InitialiseLSM6DSR(uint16_t WatermarkReads);
+bool InitialiseLSM6DSR(uint16_t WatermarkReads);
 
 struct Vector3 LSM6DSR_ReadInstAccelData();
 struct Vector3 LSM6DSR_ReadInstGyroData();
