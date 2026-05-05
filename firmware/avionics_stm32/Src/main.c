@@ -64,6 +64,8 @@ int main(void) {
 		TransmitStoredData();
 		while (1) {}
 	} else {
+		ULED_TOGGLE
+		HAL_Delay(2000);
 		W25Q_EraseFlightData();
 	}
 
@@ -108,7 +110,7 @@ int main(void) {
 				LSM6DSR_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM);
 				FlashLogBuffBReadings += LSM6_FIFO_READNUM;
 			}
-			printf("LSM6");
+			printf("L");
 		}
 		if (adxl_data_ready) {
 			adxl_data_ready = false;
@@ -121,7 +123,7 @@ int main(void) {
 				ADXL375_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, adxl_accbuff, ADXL_FIFO_READNUM);
 				FlashLogBuffBReadings += ADXL_FIFO_READNUM;
 			}
-			printf("ADXL");
+			printf("A");
 		}
 		if (bmp_data_ready) {
 			bmp_data_ready = false;
@@ -134,7 +136,7 @@ int main(void) {
 				BMP581_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, bmp_buff, BMP_FIFO_READNUM);
 				FlashLogBuffBReadings += BMP_FIFO_READNUM;
 			}
-			printf("BMP");
+			printf("B");
 		}
 		if (mmc_data_ready) {
 			mmc_data_ready = false;
@@ -147,7 +149,7 @@ int main(void) {
 				MMC5983MA_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, &mmc_buff, 1);
 				FlashLogBuffBReadings += 1;
 			}
-			printf("MMC");
+			printf("M");
 		}
 
 		if (Poll_MAXM10S()) {
@@ -158,12 +160,12 @@ int main(void) {
 				MAXM10S_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, &m10s_data, 1);
 				FlashLogBuffBReadings += 1;
 			}
-			printf("MAX");
+			printf("G");
 		}
 
 		if (WriteData) {
 			WriteData = false;
-			if ((float)uwTick - starttime < 10000) {   // Stop collecting data after 100s
+			if ((float)uwTick - starttime < 100000) {   // Stop collecting data after 100s
 				WriteFullDataPacket();
 				ULED_TOGGLE
 			}
@@ -699,12 +701,9 @@ void InitialiseGPIO() {
 
 	// DIO1 cannot be used as an EXTI interrupt due to LSM6DSR
 	GPIO_InitStruct.Pin = L62_DIO1_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(L62_DIO1_PORT, &GPIO_InitStruct);
-
-//	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
-//	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 	GPIO_InitStruct.Pin = L62_DIO2_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;

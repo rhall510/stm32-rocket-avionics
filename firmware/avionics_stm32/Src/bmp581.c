@@ -10,11 +10,11 @@ bool InitialiseBMP581(uint8_t Threshold) {
 	uint8_t buff[1] = {0xB6};
 	HAL_I2C_Mem_Write(&hi2c, BMP_I2C_ADDR, BMP_CMD, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
 
-	HAL_Delay(5);
+	HAL_Delay(10);
 
 	// Check device ID is correct
 	buff[0] = 0;
-	HAL_I2C_Mem_Read(&hi2c, BMP_I2C_ADDR, BMP_ASIC_ID, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
+	HAL_StatusTypeDef status = HAL_I2C_Mem_Read(&hi2c, BMP_I2C_ADDR, BMP_ASIC_ID, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
 
 	if (buff[0] == 0) {
 		printf("BMP581 not responsive");

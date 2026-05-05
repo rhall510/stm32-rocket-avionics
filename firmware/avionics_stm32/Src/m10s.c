@@ -126,7 +126,7 @@ bool MAXM10S_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxL
 
 	// Copy data into the buffer
 	for (int i = 0; i < Readings; i++) {
-		buff[*BuffPos] = 0b00100000;   // Type 5 packet (GPS)
+		buff[*BuffPos] = 0b01010000;   // Type 5 packet (GPS)
 		*BuffPos += 1;
 		buff[*BuffPos] = 5 * sizeof(float) + 2;
 		*BuffPos += 1;
