@@ -5,10 +5,18 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### May 6th 2026
+
+I have finished implementing a small testing script which decodes the raw data transmitted from the avionics unit. The script reads a binary file of concatenated data packets and first parses the packet headers and contents to identify any missing packets by checking the sequence number. It then concatenates all the actual data contents of the packets and splits it into chunks by the sync word. Each chunk is checked to ensure it's reported and actual length match and the CRC is correct. Finally, for each validated chunk the data within is parsed and added to arrays containing the data and timestamps for each sensor reading.
+
+Initially using this script I saw there were no data packets from the LSM6DSR or MAX-M10S modules after decoding the received binary. Using a hex viewer I saw there were GPS data packets in the raw binary, but they were not being parsed correctly. I eventually discovered that the missing MAX-M10S packets were due to the type bits in the data header being set wrong, making the decoding script think they were part of the magnetometer readings. However, there were no LSM6DSR packets at all. I did some debugging and found that the data ready interrupt was no longer firing even though it worked previously and I had not touched the driver code apart from to log the data, which should have no effect. In the end I realised that the lack of interrupt firing was due to the LAMDBA62 modules DIO1 pin being mapped to the same pin number as the LSM6DSR INT pin, and although I did not set up an EXTI interrupt on the DIO1 pin, I had mistakenly set the GPIO mode as IT_RISING, which masks the other ports interrupts in the HAL initialisation function. Changing the mode to input solved the problem and I was able to log, transmit, and decode data from all sensors successfully.
+
+During transmission there were a few dropped packets. There is still no mechanism for requesting resends of packets, but that is the next priority. To do this I plan to set up the command link on the 868MHz band next.
+
+---
 ### May 3rd 2026
 
 Over the past two days I have finished implementing and debugging data logging and a basic download link between the main avionics board and a host PC. Data logging has been more thoroughly tested now seems to work perfectly after ironing out a few issues. See the test logs [here](dev_board_planning/Data%20logging%20tests.txt) for more details.
-
 
 I also spent a lot of time testing and debugging the data transmission function. I made two 2.4GHz ground plane monopole antennas in the same design as the previous 868MHz ones and connected them to the transmitter (avionics unit) and the receiver (nucleo-g431kb board connected to the host PC). Unfortunately, as I only have the nanoVNA-H which only measures up to 1.5GHz, I cannot tune the antennas perfectly for 2.4GHz so I just cut them to as close to the theoretical perfect length as possible.
 
