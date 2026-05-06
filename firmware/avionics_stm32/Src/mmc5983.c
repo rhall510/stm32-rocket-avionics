@@ -5,21 +5,16 @@ extern I2C_HandleTypeDef hi2c;
 
 
 bool InitialiseMMC5983MA() {
-	// Issue software reset
-	uint8_t buff[1] = {0b10000000};
-	HAL_I2C_Mem_Write(&hi2c, MMC_I2C_ADDR, MMC_CTRL1, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
-
-	HAL_Delay(15);
+	MMC5983MA_Reset();
 
 	// Check device ID is correct
-	buff[0] = 0;
+	uint8_t buff[1] = {0};
 	HAL_I2C_Mem_Read(&hi2c, MMC_I2C_ADDR, MMC_ID, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
 
 	if (buff[0] != 0b00110000) {
 		printf("MMC5983MA not responsive");
 		return false;
 	}
-
 
 	// Enable data ready interrupt
 	buff[0] = 0b00000100;
@@ -30,6 +25,14 @@ bool InitialiseMMC5983MA() {
 	HAL_I2C_Mem_Write(&hi2c, MMC_I2C_ADDR, MMC_CTRL2, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
 
 	return true;
+}
+
+
+void MMC5983MA_Reset() {
+	uint8_t buff[1] = {0b10000000};
+	HAL_I2C_Mem_Write(&hi2c, MMC_I2C_ADDR, MMC_CTRL1, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
+
+	HAL_Delay(15);
 }
 
 

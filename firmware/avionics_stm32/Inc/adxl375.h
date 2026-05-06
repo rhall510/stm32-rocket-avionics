@@ -40,6 +40,7 @@
 
 // Functions
 bool InitialiseADXL375(uint8_t WatermarkWords);
+void ADXL375_SetStandby();
 
 struct Vector3 ADXL375_ReadSingleAccelData();
 

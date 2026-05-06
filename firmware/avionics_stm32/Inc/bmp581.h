@@ -39,6 +39,7 @@
 
 // Functions
 bool InitialiseBMP581(uint8_t Threshold);
+void BMP581_Reset();
 
 uint8_t BMP581_GetFIFOCount();
 void BMP581_ReadFIFOData(volatile struct TS_PressTemp *ptbuff, uint8_t readnum, float readytime);

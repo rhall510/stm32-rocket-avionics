@@ -28,7 +28,20 @@
 // Functions
 bool InitialiseMAXM10S();
 
+// Set module into software backup mode (no measurements taken) and clear fifo buffer
+void MAX10S_SetSleep();
+
+// Wake module from software backup mode and clear fifo buffer
+void MAX10S_Wake();
+
+// Hardware reset
+void MAX10S_Reset();
+
+// Send a raw byte array over I2C
 bool MAXM10S_SendCommand(uint8_t *cmd, uint16_t length);
+
+// Construct and send a UBX command
+bool MAXM10S_SendUBX(uint8_t class, uint8_t id, uint8_t *payload, uint16_t len);
 
 uint16_t MAXM10S_GetAvailableBytes();
 bool MAXM10S_ReadStream(uint8_t *buffer, uint16_t length);

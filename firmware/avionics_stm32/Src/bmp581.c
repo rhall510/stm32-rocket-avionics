@@ -6,14 +6,10 @@ extern I2C_HandleTypeDef hi2c;
 
 
 bool InitialiseBMP581(uint8_t Threshold) {
-	// Issue soft reset
-	uint8_t buff[1] = {0xB6};
-	HAL_I2C_Mem_Write(&hi2c, BMP_I2C_ADDR, BMP_CMD, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
-
-	HAL_Delay(10);
+	BMP581_Reset();
 
 	// Check device ID is correct
-	buff[0] = 0;
+	uint8_t buff[1] = {0};
 	HAL_StatusTypeDef status = HAL_I2C_Mem_Read(&hi2c, BMP_I2C_ADDR, BMP_ASIC_ID, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
 
 	if (buff[0] == 0) {
@@ -65,6 +61,14 @@ bool InitialiseBMP581(uint8_t Threshold) {
 	HAL_I2C_Mem_Write(&hi2c, BMP_I2C_ADDR, BMP_ODR, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
 
 	return true;
+}
+
+
+void BMP581_Reset() {
+	uint8_t buff[1] = {0xB6};
+	HAL_I2C_Mem_Write(&hi2c, BMP_I2C_ADDR, BMP_CMD, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
+
+	HAL_Delay(10);
 }
 
 

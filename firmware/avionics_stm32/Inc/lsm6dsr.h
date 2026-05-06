@@ -48,6 +48,7 @@
 
 // Functions
 bool InitialiseLSM6DSR(uint16_t WatermarkReads);
+void LSM6DSR_Reset();
 
 struct Vector3 LSM6DSR_ReadInstAccelData();
 struct Vector3 LSM6DSR_ReadInstGyroData();

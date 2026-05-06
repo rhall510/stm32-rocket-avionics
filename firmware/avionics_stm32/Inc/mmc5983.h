@@ -32,6 +32,7 @@
 
 // Functions
 bool InitialiseMMC5983MA();
+void MMC5983MA_Reset();
 
 uint8_t MMC5983MA_GetStatus();
 void MMC5983MA_ReadData(volatile struct TS_Vec3 *mout, float readytime);

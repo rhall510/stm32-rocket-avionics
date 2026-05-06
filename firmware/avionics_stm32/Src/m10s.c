@@ -38,6 +38,36 @@ bool MAXM10S_SendCommand(uint8_t *cmd, uint16_t length) {
 }
 
 
+bool MAXM10S_SendUBX(uint8_t class, uint8_t id, uint8_t *payload, uint16_t len) {
+    uint8_t packet[len + 8];
+
+    // Header
+    packet[0] = 0xB5;
+    packet[1] = 0x62;
+    packet[2] = cls;
+    packet[3] = id;
+    packet[4] = (uint8_t)(len & 0xFF);
+    packet[5] = (uint8_t)(len >> 8);
+
+    // Payload
+    if (len > 0) {
+        memcpy(&packet[6], payload, len);
+    }
+
+    // Checksum calculation spanning class, id, length, and payload
+    uint8_t ck_a = 0, ck_b = 0;
+    for (int i = 2; i < len + 6; i++) {
+        ck_a += packet[i];
+        ck_b += ck_a;
+    }
+
+    packet[6 + len] = ck_a;
+    packet[7 + len] = ck_b;
+
+    return MAXM10S_SendCommand(packet, len + 8);
+}
+
+
 
 
 bool InitialiseMAXM10S() {
@@ -58,6 +88,46 @@ bool InitialiseMAXM10S() {
 	MAXM10S_SendCommand(confcmd, sizeof(confcmd));
 
 	return true;
+}
+
+
+void MAX10S_SetSleep() {
+	MAXM10S_FlushBuffer();
+
+	// Set to software backup mode with infinite duration and default wakeup sources
+	uint8_t payload[16] = {0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0};
+	MAXM10S_SendUBX(0x02, 0x41, payload, 16);
+}
+
+
+void MAX10S_Wake() {
+	// Execute any I2C command to recover from software backup mode
+	MAXM10S_GetAvailableBytes();
+
+	HAL_Delay(100);
+
+	MAXM10S_FlushBuffer();
+}
+
+
+void MAX10S_Reset() {
+	HAL_GPIO_WritePin(M10S_RST_PORT, M10S_RST_PIN, GPIO_PIN_RESET);
+	HAL_Delay(2);
+	HAL_GPIO_WritePin(M10S_RST_PORT, M10S_RST_PIN, GPIO_PIN_SET);
+}
+
+
+void MAXM10S_FlushBuffer() {
+    uint16_t avail = MAXM10S_GetAvailableBytes();
+    uint8_t buff[100];
+
+    // Keep reading until the buffer is empty
+    while (avail > 0) {
+        uint16_t readnum = (avail > sizeof(dummy_buf)) ? sizeof(dummy_buf) : avail;
+
+        MAXM10S_ReadStream(buff, readnum);
+        avail = MAXM10S_GetAvailableBytes();
+    }
 }
 
 

@@ -19,15 +19,7 @@ bool InitialiseADXL375(uint8_t WatermarkWords) {
 		return false;
 	}
 
-	// Set to standby mode
-	tx[0] = ADXL_POWER_CTL;
-	tx[1] = 0b00000000U;
-
-	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
-
-	HAL_Delay(5);
+	ADXL375_SetStandby();
 
 	// Clear FIFO by putting it in bypass mode
 	tx[0] = ADXL_FIFO_CTL;
@@ -88,6 +80,17 @@ bool InitialiseADXL375(uint8_t WatermarkWords) {
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
 
 	return true;
+}
+
+
+void ADXL375_SetStandby() {
+	uint8_t tx[2] = {ADXL_POWER_CTL, 0};
+
+	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
+
+	HAL_Delay(5);
 }
 
 
