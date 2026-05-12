@@ -5,6 +5,14 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### May 12th 2026
+
+I have been thinking about how I want to handle the command link and I have written up a plan [here](dev_board_planning/Command%20link%20plan.txt). In short, I plan to use a master-slave relationship where the central controller (eventually to be connected to the ground station computer) always initiates transactions which the other nodes in the network can respond to. I have expanded the plan to take into account the possibility of multiple slave nodes rather than just the single rocket avionics unit due to the fact that I have been exploring the idea of using a network of 3 SX1280 modules to triangulate the position of the rocket. This would replace the current plan to use phase difference of arrival to track the azimuth of the rocket and allow for a more accurate external determination of the rockets position to complement the on board sensors. However, it does require more setup and a more comprehensive network architecture to handle potential collisions. I am leaning towards doing this though as it would be nicer to be able to externally track the rocket in all 3 axes.
+
+I have started designing a smaller PCB for the controller node which just contains an STM32G474RET6 MCU and the LAMBDA80 and LAMBDA62 transceivers. It also includes a USB connection to enable communication with the host PC. This version of the controller is just for testing as it does not include all the features that the full ground station PCB will need to have to control the motors, it's just much nicer to work with a neat PCB rather than breadboards, especially for this project where it will likely be a good while yet until I progress to making the full ground station PCB. So far I have made the schematic for the board and I will do the layout and routing next. It will be very similar to the main avionics board but just omitting all the sensors, storage, and parachute deployment sections. It also includes a USB-C connector from which is draws it's power. Power is stepped down to 3V3 by an LDL112PV33R LDO regulator instead of a buck converter for simplicity and less potential EMI from a switching power supply. I designed the main avionics board with a buck converter for efficiency reasons since it is battery powered rather than USB, but I may end up eventually switching that to an LDO as well in the final design as efficiency is not the main concern for short flights.
+
+
+---
 ### May 6th 2026
 
 I have finished implementing a small testing script which decodes the raw data transmitted from the avionics unit. The script reads a binary file of concatenated data packets and first parses the packet headers and contents to identify any missing packets by checking the sequence number. It then concatenates all the actual data contents of the packets and splits it into chunks by the sync word. Each chunk is checked to ensure it's reported and actual length match and the CRC is correct. Finally, for each validated chunk the data within is parsed and added to arrays containing the data and timestamps for each sensor reading.
@@ -12,6 +20,12 @@ I have finished implementing a small testing script which decodes the raw data t
 Initially using this script I saw there were no data packets from the LSM6DSR or MAX-M10S modules after decoding the received binary. Using a hex viewer I saw there were GPS data packets in the raw binary, but they were not being parsed correctly. I eventually discovered that the missing MAX-M10S packets were due to the type bits in the data header being set wrong, making the decoding script think they were part of the magnetometer readings. However, there were no LSM6DSR packets at all. I did some debugging and found that the data ready interrupt was no longer firing even though it worked previously and I had not touched the driver code apart from to log the data, which should have no effect. In the end I realised that the lack of interrupt firing was due to the LAMDBA62 modules DIO1 pin being mapped to the same pin number as the LSM6DSR INT pin, and although I did not set up an EXTI interrupt on the DIO1 pin, I had mistakenly set the GPIO mode as IT_RISING, which masks the other ports interrupts in the HAL initialisation function. Changing the mode to input solved the problem and I was able to log, transmit, and decode data from all sensors successfully.
 
 During transmission there were a few dropped packets. There is still no mechanism for requesting resends of packets, but that is the next priority. To do this I plan to set up the command link on the 868MHz band next.
+
+#### Plotted test data from 100s of the board sitting stationary
+
+![Plotted test data from 100s of the board sitting stationary](./images/avionics_first_data_plots.png)
+
+\* Note: GPS data is currently empty as this was done indoors
 
 ---
 ### May 3rd 2026

@@ -1,0 +1,42 @@
+While the LAMBDA80 is used for high bandwidth data transmission on the 2.4GHz band, the LAMBDA62 is used for transmitting and receiving command and status messages on the 868MHz band.
+
+Because the 868MHz band will be used for bidirectional communication unlike the 2.4GHz band, it will need to account for timing collisions by using a master-slave relationship. The controller (transceiver connected to the host PC) will always initiate a communication with a specific node, and that node only can respond immediately after.
+
+Packets will all have the following structure:
+>> 2 byte header: Recipient ID [15:12], Sender ID [11:8], Sender status [7:0]
+>> 1 byte message type
+>> 1 byte sequence number
+>> Payload (optional - variable length up to 251 bytes)
+
+A CRC and message length are not needed as the transceivers already takes care of these in explicit header mode.
+
+
+// DEVICE DISCOVERY
+The controller will maintain and update a list of available nodes it can communicate with by periodically sending out device discovery packets (say every 10s when idle). These will have a recipient ID of 0xF, which is the broadcast ID that all nodes can respond to. Any newly powered on node will default to Rx mode, and upon receiving a discovery packet will send an ACK back to the controller, at which point the list of active nodes is updated and it can be communicated with normally.
+
+To eliminate the chance of a collision in case multiple new nodes are powered on within 10s, each node receiving a discovery packet will wait a specified amount of time before sending the ACK. The amount of time a node waits is calculated as its device ID multiplied by 50ms (e.g. device ID 3 would wait 150ms). The controller stays in Rx mode for 500ms (can be expanded later to allow more time if more nodes are added) to receive any ACKs sent in this window.
+
+Discovery packets will have the following structure:
+>> 2 byte header: Recipient ID [15:12] = 0xF (broadcast ID), Sender ID [11:8] = 0x0 (controller ID), Sender status [7:0]
+>> 1 byte message type = 0x1
+>> 1 byte sequence number
+
+
+ACK packets will have the following structure:
+>> 2 byte header: Recipient ID [15:12] = 0x0 (controller ID), Sender ID [11:8], Sender status [7:0]
+>> 1 byte message type = 0x0
+>> 1 byte sequence number
+
+
+// GENERAL MESSAGES
+The controller must always initiate a transaction with a specific node by sending a packet with the intended recipient ID and message type fields configured. Although all nodes will receive these messages, only the node with the device ID matching the recipient ID will act on it.
+
+All messages sent by the controller to a node must be responded to by the node with a single message within a timeout window. For simple commands this may be an empty ACK packet, or for more complex commands/status requests this can be a larger packet with a payload containing more information. If no response is received from the node within the timeout window (which is configurable based on the message type) then the controller must assume the message was lost and either try again or fall back to some other error handler.
+
+To prevent collisions only one transaction can be ongoing at a time, and the end of a transaction is determined by the controller based on the message type and any received packets. As the 868MHz channel is intended for short, infrequent, bidirectional communication this is a reasonable restriction to impose for guaranteeing unobstructed message passing.
+
+
+// GENERAL CONSIDERATIONS
+To stay under the legal 1% duty cycle limit, even only using infrequent short messages, the 868MHz band will likely have to use the SX1262s FSK modem rather than LoRa. FSK should still have enough range to allow communication over hundreds of meters but allow much higher data rates to reduce the needed time on air.
+
+
