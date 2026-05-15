@@ -5,6 +5,30 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### May 14th 2026
+
+The layout for the RF controller PCB has been finalised and ordered. Once it arrives I'll begin assembling and testing it, and then I can use it for testing the main avionics board command link. As mentioned earlier, this PCB is essentially a stripped down version of the avionics PCB with only the MCU and LoRa transceivers.
+
+
+#### RF controller PCB schematics (microcontroller section)
+
+![Finalised RF controller PCB schematics part 1](./images/rf_controller_schematic1.png)
+
+#### RF controller PCB schematics (transceiver and SWD section)
+
+![Finalised RF controller PCB schematics part 2](./images/rf_controller_schematic2.png)
+
+#### RF controller PCB schematics (USB and power section)
+
+![Finalised RF controller PCB schematics part 3](./images/rf_controller_schematic3.png)
+
+
+#### Finalised RF controller PCB layout (top and bottom signal layers in red and blue)
+
+![Finalised RF controller PCB design](./images/rf_controller_fullview.png)
+
+
+---
 ### May 12th 2026
 
 I have been thinking about how I want to handle the command link and I have written up a plan [here](dev_board_planning/Command%20link%20plan.txt). In short, I plan to use a master-slave relationship where the central controller (eventually to be connected to the ground station computer) always initiates transactions which the other nodes in the network can respond to. I have expanded the plan to take into account the possibility of multiple slave nodes rather than just the single rocket avionics unit due to the fact that I have been exploring the idea of using a network of 3 SX1280 modules to triangulate the position of the rocket. This would replace the current plan to use phase difference of arrival to track the azimuth of the rocket and allow for a more accurate external determination of the rockets position to complement the on board sensors. However, it does require more setup and a more comprehensive network architecture to handle potential collisions. I am leaning towards doing this though as it would be nicer to be able to externally track the rocket in all 3 axes.
