@@ -2,7 +2,8 @@
 #include "lambda80.h"
 
 
-volatile bool PacketReady = false;
+volatile bool L62PacketReady = false;
+volatile bool L80PacketReady = false;
 
 SPI_HandleTypeDef hspi3_rf;
 
@@ -37,8 +38,8 @@ int main(void) {
 	HAL_UART_Transmit(&huart2, send, sizeof(send) - 1, HAL_MAX_DELAY);
 
 	while (1) {
-		if (PacketReady) {
-			PacketReady = false;
+		if (L80PacketReady) {
+			L80PacketReady = false;
 
 			uint8_t len = 0;
 			uint8_t start = 0;
@@ -239,7 +240,7 @@ void EXTI9_5_IRQHandler(void) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_8);
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_9) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_9);
-		PacketReady = true;
+		L80PacketReady = true;
 	}
 }
 

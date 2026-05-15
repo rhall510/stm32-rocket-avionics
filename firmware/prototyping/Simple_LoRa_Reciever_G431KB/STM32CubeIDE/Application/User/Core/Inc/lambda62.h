@@ -82,7 +82,7 @@ void LAMBDA62_ClearIRQ(uint16_t IRQMask);
 
 void LAMBDA62_SetTx(uint32_t Timeout);
 void LAMBDA62_SendPacket(uint8_t *packet, uint8_t len);
-void LAMBDA62_SetPacketParams(uint16_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ);
+void LAMBDA62_SetPacketParamsLoRa(uint16_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ);
 
 void LAMBDA62_SetRx(uint32_t Timeout);
 void LAMBDA62_GetRxBufferStatus(uint8_t *len, uint8_t *start);

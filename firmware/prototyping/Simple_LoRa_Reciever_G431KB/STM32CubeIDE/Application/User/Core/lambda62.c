@@ -107,7 +107,7 @@ void InitialiseLAMBDA62() {
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
 	// Set default packet parameters
-	LAMBDA62_SetPacketParams(8, 0, 10, 1, 0);   // 8 bit preamble, explicit header, CRC on, normal IQ
+	LAMBDA62_SetPacketParamsLoRa(8, 0, 10, 1, 0);   // 8 bit preamble, explicit header, CRC on, normal IQ
 
 	while(LAMBDA62_CheckBusy()) {}
 
@@ -151,7 +151,7 @@ void LAMBDA62_SendPacket(uint8_t *packet, uint8_t len) {
 }
 
 
-void LAMBDA62_SetPacketParams(uint16_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ) {
+void LAMBDA62_SetPacketParamsLoRa(uint16_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ) {
 	while(LAMBDA62_CheckBusy()) {}
 
 	uint8_t tx[7] = {L62_PKT_PARAMS, (uint8_t)(PreambleLen >> 8), (uint8_t)PreambleLen, HeaderType, len, CRCType, InvertIQ};
