@@ -44,7 +44,7 @@ bool MAXM10S_SendUBX(uint8_t class, uint8_t id, uint8_t *payload, uint16_t len) 
     // Header
     packet[0] = 0xB5;
     packet[1] = 0x62;
-    packet[2] = cls;
+    packet[2] = class;
     packet[3] = id;
     packet[4] = (uint8_t)(len & 0xFF);
     packet[5] = (uint8_t)(len >> 8);
@@ -123,7 +123,7 @@ void MAXM10S_FlushBuffer() {
 
     // Keep reading until the buffer is empty
     while (avail > 0) {
-        uint16_t readnum = (avail > sizeof(dummy_buf)) ? sizeof(dummy_buf) : avail;
+        uint16_t readnum = (avail > sizeof(buff)) ? sizeof(buff) : avail;
 
         MAXM10S_ReadStream(buff, readnum);
         avail = MAXM10S_GetAvailableBytes();

@@ -37,6 +37,9 @@ void MAX10S_Wake();
 // Hardware reset
 void MAX10S_Reset();
 
+// Flush all available bytes out of the I2C buffer
+void MAXM10S_FlushBuffer();
+
 // Send a raw byte array over I2C
 bool MAXM10S_SendCommand(uint8_t *cmd, uint16_t length);
 

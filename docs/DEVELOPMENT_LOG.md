@@ -5,6 +5,23 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### May 31st 2026
+
+The RF controller PCB and components finally arrived and I assembled the board using the same method as the avionics board (hotplate reflow for the SMD parts and soldering iron for the remaining through hold components). Assembly went perfectly except for some easily fixed solder bridging on the MCU pins and one of the pads of the 16MHz crystal not soldering correctly. After assembly I brought up the board in stages using the power isolation jumpers and observed no issues. A stable 3V3 was output onto the power rail, the power LED turned on, and no components significantly heated up. The MCU was detected by STLINK and was able to be programmed, and I used cubeMX to generate a simple project that sent a message continuously over USB to a virtual COM port on the connected PC. Using this I was able to detect the device when it was plugged in and read the sent messages perfectly!
+
+The next step is to design and print an enclosure to contain the board and antennas in one easy to transport package that also protects sensitive electronics from the elements.
+
+#### RF controller bare PCB on the hotplate
+
+![RF controller bare PCB](./images/rf_controller_bareboard.jpeg)
+
+
+#### RF controller fully assembled PCB
+
+![RF controller assembled PCB](./images/rf_controller_fullview.jpeg)
+
+
+---
 ### May 14th 2026
 
 The layout for the RF controller PCB has been finalised and ordered. Once it arrives I'll begin assembling and testing it, and then I can use it for testing the main avionics board command link. As mentioned earlier, this PCB is essentially a stripped down version of the avionics PCB with only the MCU and LoRa transceivers.
