@@ -1,0 +1,9 @@
+2.4GHz = 55mm coax length (start at 75mm - 10mm for connectors each end)
+868MHz = 195mm coax length (start at 215mm - 10mm for connectors each end)
+
+SMA connector assembly:
+- Cut outer jacket 10mm from end
+- Expose inner conductor 3mm
+- Solder inner pin
+- Add outer part and crimp on ferrule 
+- Heat shrink
