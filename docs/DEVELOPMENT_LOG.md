@@ -5,6 +5,29 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### June 8th 2026
+
+I have spent the last week or so designing and printing an enclosure for the RF controller PCB and starting to write the firmware to drive it.
+
+The enclosure is used to both protect the PCB from the elements if used outdoors (which it will eventually be) and enable stable placement of the antennas for the transceivers so they are a good distance apart and vertically oriented to enable good horizontal signal coverage. The enclosure holds the PCB to the base and antennas to the masts with clamps that are screwed in. Even though the 868MHz and 2.4GHz bands do overlap, the antennas are held ~130mm apart which should provide good separation to reduce any stray interference between the two frequencies and reduce the risk of swamping during transmission.
+
+
+#### RF controller enclosure outside
+
+![RF controller enclosure outside](./images/RFcontroller_enclosure_outside.jpeg)
+
+
+#### RF controller enclosure inside
+
+![RF controller enclosure inside](./images/RFcontroller_enclosure_inside.jpeg)
+
+
+
+Alongside this I have started writing the firmware to drive the RF controller. I made a clean project and integrated HAL, TinyUSB for driving the USB connection, and FreeRTOS for concurrent task management. I plan to use this as an opportunity to learn FreeRTOS in a smaller project before attempting to implement it on the larger avionics board. So far I have got to the point where all the basic initialisation code is there and everything is integrated and seemingly working fine. Windows does detect a USB device is connected when I plug it in but the device descriptor cannot be obtained properly. I will attempt to fix this next and get the USB connection fully working.
+
+
+
+---
 ### May 31st 2026
 
 The RF controller PCB and components finally arrived and I assembled the board using the same method as the avionics board (hotplate reflow for the SMD parts and soldering iron for the remaining through hold components). Assembly went perfectly except for some easily fixed solder bridging on the MCU pins and one of the pads of the 16MHz crystal not soldering correctly. After assembly I brought up the board in stages using the power isolation jumpers and observed no issues. A stable 3V3 was output onto the power rail, the power LED turned on, and no components significantly heated up. The MCU was detected by STLINK and was able to be programmed, and I used cubeMX to generate a simple project that sent a message continuously over USB to a virtual COM port on the connected PC. Using this I was able to detect the device when it was plugged in and read the sent messages perfectly!
