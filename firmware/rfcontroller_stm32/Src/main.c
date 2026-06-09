@@ -3,7 +3,6 @@
 
 void tud_task_run(void *param) {
     (void) param;
-    tusb_init();
 
     while (1) {
         tud_task();
@@ -26,20 +25,58 @@ void send_test_string(void *param) {
 }
 
 
+//int main(void) {
+//    HAL_Init();
+//
+//	SystemClockConfig();
+//	InitialiseGPIO();
+//	InitialiseSPI();
+//
+//
+//	tusb_rhport_init_t dev_init = {
+//		.role = TUSB_ROLE_DEVICE,
+//		.speed = TUSB_SPEED_FULL,
+//	};
+//
+//	tusb_init(0, &dev_init);
+//
+//
+//    xTaskCreate(tud_task_run, "TUSB", 1000, NULL, configMAX_PRIORITIES - 1, NULL);
+//    xTaskCreate(send_test_string, "Test", 1000, NULL, 1, NULL);
+//
+//    vTaskStartScheduler();
+//
+//    while (1) {}
+//}
+
+
 int main(void) {
     HAL_Init();
 
-	SystemClockConfig();
-	InitialiseGPIO();
-	InitialiseSPI();
+    SystemClockConfig();
+    InitialiseGPIO();
+    InitialiseSPI();
 
+    tusb_init();
 
-    xTaskCreate(tud_task_run, "TUSB", configMINIMAL_STACK_SIZE * 2, NULL, configMAX_PRIORITIES - 1, NULL);
-    xTaskCreate(send_test_string, "Test", configMINIMAL_STACK_SIZE * 2, NULL, 1, NULL);
+    uint32_t last_tx_time = 0;
 
-    vTaskStartScheduler();
+    while (1) {
+        // 1. Poll the TinyUSB device stack continuously
+        tud_task();
 
-    while (1) {}
+        // 2. Non-blocking string transmission every 10ms
+        if (HAL_GetTick() - last_tx_time >= 10) {
+            last_tx_time = HAL_GetTick();
+
+            // Only attempt to write if the host has successfully mounted the COM port
+            if (tud_cdc_connected()) {
+                const char *msg = "Test string sent from RF controller\r\n";
+                tud_cdc_write(msg, strlen(msg));
+                tud_cdc_write_flush();
+            }
+        }
+    }
 }
 
 
@@ -50,6 +87,7 @@ void SystemClockConfig(void) {
 
     // Configure main internal regulator output voltage
     __HAL_RCC_PWR_CLK_ENABLE();
+
     HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
 
     // Initialise the RCC Oscillators
@@ -64,6 +102,8 @@ void SystemClockConfig(void) {
     RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
 
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) { Error_Handler(); }
+
+    __HAL_RCC_PLLCLKOUT_ENABLE(RCC_PLL_48M1CLK);
 
     // Initialise CPU, AHB and APB bus clocks
     RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
@@ -215,6 +255,7 @@ void InitialiseGPIO() {
 
 	// Enable USB clock
 	__HAL_RCC_USB_CLK_ENABLE();
+	HAL_PWREx_DisableUCPDDeadBattery();
 
 	// USB interrupt
 	HAL_NVIC_SetPriority(USB_LP_IRQn, 5, 0);

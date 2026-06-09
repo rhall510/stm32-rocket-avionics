@@ -23,7 +23,44 @@
  *
  */
 
+
 #include "tusb.h"
+
+
+TU_ATTR_WEAK size_t board_get_unique_id(uint8_t id[], size_t max_len) {
+  (void) max_len;
+  // fixed serial string is 01234567889ABCDEF
+  uint32_t* uid32 = (uint32_t*) (uintptr_t)id;
+  uid32[0] = 0x67452301u;
+  uid32[1] = 0xEFCDAB89u;
+  return 8;
+}
+
+
+static inline size_t board_usb_get_serial(uint16_t desc_str1[], size_t max_chars) {
+  uint8_t uid[16] TU_ATTR_ALIGNED(4);
+  size_t uid_len;
+
+  // TODO work with make, but not working with esp32s3 cmake
+  uid_len = board_get_unique_id(uid, sizeof(uid));
+
+  if ( uid_len > max_chars / 2u ) {
+    uid_len = max_chars / 2u;
+  }
+
+  for ( size_t i = 0; i < uid_len; i++ ) {
+    for ( size_t j = 0; j < 2; j++ ) {
+      const unsigned char nibble_to_hex[16] = {
+          '0', '1', '2', '3', '4', '5', '6', '7',
+          '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+      };
+      const uint8_t nibble = (uint8_t) ((uid[i] >> (j * 4u)) & 0xfu);
+      desc_str1[i * 2 + (1 - j)] = nibble_to_hex[nibble]; // UTF-16-LE
+    }
+  }
+
+  return 2 * uid_len;
+}
 
 /* A combination of interfaces must have a unique product id, since PC will save device driver after the first plug.
  * Same VID/PID with different interface e.g MSC (first), then CDC (later) will possibly cause system error on PC.
@@ -102,16 +139,19 @@ enum {
     #define EPNUM_CDC_NOTIF   0x81
     #define EPNUM_CDC_OUT     0x08
     #define EPNUM_CDC_IN      0x89
+
   #else
     #define EPNUM_CDC_NOTIF   0x81
     #define EPNUM_CDC_OUT     0x02
     #define EPNUM_CDC_IN      0x83
+
   #endif
 
 #else
   #define EPNUM_CDC_NOTIF   0x81
   #define EPNUM_CDC_OUT     0x02
   #define EPNUM_CDC_IN      0x82
+
 #endif
 
 #define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN)
@@ -135,9 +175,6 @@ static uint8_t const desc_hs_configuration[] = {
 
     // Interface number, string index, EP notification address and size, EP data address (out, in) and size.
     TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, EPNUM_CDC_NOTIF, 16, EPNUM_CDC_OUT, EPNUM_CDC_IN, 512),
-
-    // Interface number, string index, EP Out & EP In address, EP size
-    TUD_MSC_DESCRIPTOR(ITF_NUM_MSC, 5, EPNUM_MSC_OUT, EPNUM_MSC_IN, 512),
 };
 
 // other speed configuration
@@ -218,7 +255,6 @@ static char const *string_desc_arr[] = {
     "TinyUSB Device",              // 2: Product
     NULL,                          // 3: Serials will use unique ID if possible
     "TinyUSB CDC",                 // 4: CDC Interface
-    "TinyUSB MSC",                 // 5: MSC Interface
 };
 
 static uint16_t _desc_str[32 + 1];
@@ -236,10 +272,7 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
       break;
 
     case STRID_SERIAL:
-	  // Hardcoded Serial Number
-	  const char* serialnum = "123456789";
-	  chr_count = strlen(serialnum);
-	  memcpy(_desc_str + 1, serialnum, chr_count);
+      chr_count = board_usb_get_serial(_desc_str + 1, 32);
       break;
 
     default:
