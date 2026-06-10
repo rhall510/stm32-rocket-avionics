@@ -72,7 +72,7 @@ static inline size_t board_usb_get_serial(uint16_t desc_str1[], size_t max_chars
 #define USB_PID           (0x4000 | PID_MAP(CDC, 0) | PID_MAP(MSC, 1) | PID_MAP(HID, 2) | \
                            PID_MAP(MIDI, 3) | PID_MAP(VENDOR, 4) )
 
-#define USB_VID   0xCafe
+#define USB_VID   0xCaff
 #define USB_BCD   0x0200
 
 //--------------------------------------------------------------------+

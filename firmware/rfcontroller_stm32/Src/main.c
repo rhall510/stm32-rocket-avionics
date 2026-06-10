@@ -20,65 +20,29 @@ void send_test_string(void *param) {
             tud_cdc_write_flush();
         }
 
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
-
-
-//int main(void) {
-//    HAL_Init();
-//
-//	SystemClockConfig();
-//	InitialiseGPIO();
-//	InitialiseSPI();
-//
-//
-//	tusb_rhport_init_t dev_init = {
-//		.role = TUSB_ROLE_DEVICE,
-//		.speed = TUSB_SPEED_FULL,
-//	};
-//
-//	tusb_init(0, &dev_init);
-//
-//
-//    xTaskCreate(tud_task_run, "TUSB", 1000, NULL, configMAX_PRIORITIES - 1, NULL);
-//    xTaskCreate(send_test_string, "Test", 1000, NULL, 1, NULL);
-//
-//    vTaskStartScheduler();
-//
-//    while (1) {}
-//}
 
 
 int main(void) {
     HAL_Init();
 
-    SystemClockConfig();
-    InitialiseGPIO();
-    InitialiseSPI();
+	SystemClockConfig();
+	InitialiseGPIO();
+	InitialiseSPI();
 
-    tusb_init();
+	__enable_irq();
 
-    uint32_t last_tx_time = 0;
+	tusb_init();
 
-    while (1) {
-        // 1. Poll the TinyUSB device stack continuously
-        tud_task();
+    xTaskCreate(tud_task_run, "TUSB", 1000, NULL, configMAX_PRIORITIES - 1, NULL);
+    xTaskCreate(send_test_string, "Test", 1000, NULL, 1, NULL);
 
-        // 2. Non-blocking string transmission every 10ms
-        if (HAL_GetTick() - last_tx_time >= 10) {
-            last_tx_time = HAL_GetTick();
+    vTaskStartScheduler();
 
-            // Only attempt to write if the host has successfully mounted the COM port
-            if (tud_cdc_connected()) {
-                const char *msg = "Test string sent from RF controller\r\n";
-                tud_cdc_write(msg, strlen(msg));
-                tud_cdc_write_flush();
-            }
-        }
-    }
+    while (1) {}
 }
-
 
 
 void SystemClockConfig(void) {
@@ -257,9 +221,10 @@ void InitialiseGPIO() {
 	__HAL_RCC_USB_CLK_ENABLE();
 	HAL_PWREx_DisableUCPDDeadBattery();
 
-	// USB interrupt
+	// Set USB interrupt priorities (initialisation handled by tusb)
 	HAL_NVIC_SetPriority(USB_LP_IRQn, 5, 0);
-	HAL_NVIC_EnableIRQ(USB_LP_IRQn);
+	HAL_NVIC_SetPriority(USB_HP_IRQn, 5, 0);
+	HAL_NVIC_SetPriority(USBWakeUp_IRQn, 5, 0);
 }
 
 
@@ -297,6 +262,14 @@ void InitialiseSPI() {
 
 
 void USB_LP_IRQHandler(void) {
+    tud_int_handler(0);
+}
+
+void USB_HP_IRQHandler(void) {
+    tud_int_handler(0);
+}
+
+void USBWakeUP_IRQHandler(void) {
     tud_int_handler(0);
 }
 

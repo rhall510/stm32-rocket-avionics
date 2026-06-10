@@ -5,6 +5,14 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### June 10th 2026
+
+The device descriptor bug is finally fixed! I tried all sorts to attempt to resolve it and nothing seemed to work, but in the end after determining the MCU was getting stuck in the default handler infinite loop using serial wire viewer statistics I narrowed down the issue to missing definitions of the USB_HP and USB_WakeUP IRQ handlers. Once those were implemented the USB connection worked perfectly on bare metal. I then tried to re-enable freeRTOS and it began failing with the same device descriptor error again, and SWV statistics showed it was hanging in the vPortValidateInterruptPriority(). The only interrupts I had not explicitly set the priority for were the 3 USB IRQ handlers as I thought they were handled by tinyUSB, but after manually setting their priorities to above the required level this was also fixed and I now have a stable USB connection with freeRTOS enabled.
+
+I now need to plan how I want to design the firmware to handle simultaneous USB and RF transfers, as well as handling various networking packets which require different behaviours.
+
+
+---
 ### June 8th 2026
 
 I have spent the last week or so designing and printing an enclosure for the RF controller PCB and starting to write the firmware to drive it.

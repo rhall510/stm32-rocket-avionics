@@ -7,6 +7,7 @@
 #include "tusb.h"
 
 #include <stdint.h>
+#include <stdio.h>
 
 #include "lambda62.h"
 #include "lambda80.h"
