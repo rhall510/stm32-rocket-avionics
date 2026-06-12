@@ -50,6 +50,7 @@
 									<listOptionValue builtIn="false" value="&quot;C:\Dev\Avionics\firmware\rfcontroller_stm32\HAL_Drivers\Include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Dev\Avionics\firmware\rfcontroller_stm32\FreeRTOS\Include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Dev\Avionics\firmware\rfcontroller_stm32\FreeRTOS\Portable&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/shared}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.411871627" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -82,6 +83,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Inc"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Src"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Startup"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="shared"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="tinyusb/src"/>
 					</sourceEntries>
 				</configuration>

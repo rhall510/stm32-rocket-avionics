@@ -2,7 +2,7 @@
 #define MAIN_H_
 
 #include "stm32g4xx.h"
-#include "debug_peripherals.h"
+#include "pinconfig.h"
 #include "adxl375.h"
 #include "lsm6dsr.h"
 #include "bmp581.h"

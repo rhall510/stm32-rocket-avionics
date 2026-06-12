@@ -7,11 +7,7 @@
 #include <string.h>
 #include "datatypes.h"
 #include "minmea.h"
-
-
-// MCU connected pins
-#define M10S_RST_PORT GPIOA
-#define M10S_RST_PIN GPIO_PIN_12
+#include "pinconfig.h"
 
 
 // Registers

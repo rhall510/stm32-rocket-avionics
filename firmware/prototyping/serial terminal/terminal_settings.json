@@ -1,0 +1,7 @@
+{
+    "port": "COM6",
+    "baud_rate": "115200",
+    "line_ending": "LF (\\n)",
+    "autoscroll": true,
+    "filter_prefix": ""
+}

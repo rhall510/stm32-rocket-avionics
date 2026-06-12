@@ -11,13 +11,16 @@
 
 #include "lambda62.h"
 #include "lambda80.h"
-#include "debug_peripherals.h"
+#include "pinconfig.h"
 
 
 SPI_HandleTypeDef hspi3_rf;
-PCD_HandleTypeDef hpcd;
 
 
+TaskHandle_t xUSBRx = NULL;
+
+
+void SendPacketUSB(uint8_t *buff, uint16_t len);
 
 
 void SystemClockConfig(void);
@@ -26,5 +29,7 @@ void InitialiseSPI();
 
 // Error handling
 void Error_Handler(void);
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName);
 
 #endif /* MAIN_H_ */

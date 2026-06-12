@@ -5,6 +5,16 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### June 12th 2026
+
+I have started writing some basic USB functions for the RF controller which use FreeRTOS for task scheduling. It can currently read incoming messages sent from a connected host PC and echo them back out. Initially there was some strange behaviour going on where if I enabled a task that sent out test packets to the host PC periodically then it could no longer read incoming packets, even though they are entirely separate from each other. However, I eventually figured out that it was due to a stack overflow in the sending task as I set the stack size too small. It was not caught immediately because stack overflow detection was turned off in the FreeRTOS config by default, but it is now for the future.
+
+I have also made a basic custom terminal GUI in python which can connect to a serial port and send and receive messages. It also has other QoL features like live logging to a file with prefix filtering and customisation of line endings for future flexibility. This will certainly come in handy for testing this and other devices in the future.
+
+I now have a rough plan for how I'm going to structure the firmware for the RF controller. The USB tasks are already set up to receive commands and send back data/status messages. Commands will be added to a queue which will be processed by a central transaction manager task. Because my network architecture dictates that only one transaction can be ongoing at a time it should be simple to design a state machine that pulls from this queue, executes a transaction, and then waits for the next command. Incoming USB commands are handled by the tinyUSB Rx callback which releases a task notification, and a similar mechanism will be used for reading from the radio modules when packets arrive. For sending packets I intend to implement a function which either uses DMA or blocking transfers, using the transfer size to determine whether it would be worth the overhead to use DMA.
+
+
+---
 ### June 10th 2026
 
 The device descriptor bug is finally fixed! I tried all sorts to attempt to resolve it and nothing seemed to work, but in the end after determining the MCU was getting stuck in the default handler infinite loop using serial wire viewer statistics I narrowed down the issue to missing definitions of the USB_HP and USB_WakeUP IRQ handlers. Once those were implemented the USB connection worked perfectly on bare metal. I then tried to re-enable freeRTOS and it began failing with the same device descriptor error again, and SWV statistics showed it was hanging in the vPortValidateInterruptPriority(). The only interrupts I had not explicitly set the priority for were the 3 USB IRQ handlers as I thought they were handled by tinyUSB, but after manually setting their priorities to above the required level this was also fixed and I now have a stable USB connection with freeRTOS enabled.

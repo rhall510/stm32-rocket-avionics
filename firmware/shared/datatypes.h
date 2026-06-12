@@ -1,29 +1,29 @@
 #ifndef DATATYPES_H_
 #define DATATYPES_H_
 
-struct Vector3 {
+typedef struct{
 	float X;
 	float Y;
 	float Z;
-};
+} Vec3;
 
 
-struct TS_Vec3 {
+typedef struct {
 	float Timestamp;
 	float X;
 	float Y;
 	float Z;
-};
+} TS_Vec3;
 
 
-struct TS_PressTemp {
+typedef struct {
 	float Timestamp;
 	float Press;
 	float Temp;
-};
+} TS_PressTemp;
 
 
-struct TS_GPS {
+typedef struct {
 	float Timestamp;
 	float Latitude;
 	float Longitude;
@@ -31,7 +31,7 @@ struct TS_GPS {
 	float Speed;
 	uint8_t Satellites;
 	bool HasFix;
-};
+} TS_GPS;
 
 
 #endif /* DATATYPES_H_ */

@@ -1,5 +1,4 @@
 #include "lambda80.h"
-#include "stm32g4xx.h"
 
 
 extern SPI_HandleTypeDef hspi3_rf;

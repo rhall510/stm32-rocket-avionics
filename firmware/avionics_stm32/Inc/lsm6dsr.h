@@ -6,17 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "datatypes.h"
-
-
-// MCU connected pins
-#define LSM6_CS_PORT GPIOA
-#define LSM6_CS_PIN GPIO_PIN_3
-
-#define LSM6_INT1_PORT GPIOC
-#define LSM6_INT1_PIN GPIO_PIN_4
-
-#define LSM6_INT2_PORT GPIOC
-#define LSM6_INT2_PIN GPIO_PIN_5
+#include "pinconfig.h"
 
 
 // Registers

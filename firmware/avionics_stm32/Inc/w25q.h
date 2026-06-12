@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "datatypes.h"
+#include "pinconfig.h"
 
 
 // Global variables to store metadata info
@@ -17,17 +18,6 @@ extern uint8_t W25Q_BadBlocks[64];   // Bytes represent 8 contiguous blocks with
 
 extern uint32_t W25Q_NumDataPackets;   // Number of data packets written in memory
 extern uint32_t W25Q_NumDataBytes;   // Length of the data section in bytes
-
-
-// MCU connected pins
-#define W25Q_CS_PORT GPIOC
-#define W25Q_CS_PIN GPIO_PIN_6
-
-#define W25Q_WP_PORT GPIOC
-#define W25Q_WP_PIN GPIO_PIN_7   // MUST BE HELD HIGH TO ALLOW WRITES TO STATUS REGISTER
-
-#define W25Q_HOLD_PORT GPIOB
-#define W25Q_HOLD_PIN GPIO_PIN_12   // MUST BE HELD HIGH TO ALLOW COMMUNICATIONS
 
 
 // Instructions

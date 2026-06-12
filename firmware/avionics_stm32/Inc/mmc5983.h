@@ -6,11 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "datatypes.h"
-
-
-// MCU connected pins
-#define MMC_INT_PORT GPIOA
-#define MMC_INT_PIN GPIO_PIN_10
+#include "pinconfig.h"
 
 
 // Registers

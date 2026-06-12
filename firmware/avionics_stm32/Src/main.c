@@ -2,24 +2,24 @@
 #include <stdio.h>
 
 
-volatile struct TS_Vec3 lsm_accbuff[LSM6_FIFO_READNUM];
-volatile struct TS_Vec3 lsm_gyrbuff[LSM6_FIFO_READNUM];
+volatile TS_Vec3 lsm_accbuff[LSM6_FIFO_READNUM];
+volatile TS_Vec3 lsm_gyrbuff[LSM6_FIFO_READNUM];
 volatile bool lsm_data_ready = false;
 volatile float lsm_data_time = 0.0f;
 
-volatile struct TS_Vec3 adxl_accbuff[ADXL_FIFO_READNUM];
+volatile TS_Vec3 adxl_accbuff[ADXL_FIFO_READNUM];
 volatile bool adxl_data_ready = false;
-volatile float adxl_data_time = 0.0f;
+volatile adxl_data_time = 0.0f;
 
-volatile struct TS_PressTemp bmp_buff[BMP_FIFO_READNUM];
+volatile TS_PressTemp bmp_buff[BMP_FIFO_READNUM];
 volatile bool bmp_data_ready = false;
 volatile float bmp_data_time = 0.0f;
 
-volatile struct TS_Vec3 mmc_buff;
+volatile TS_Vec3 mmc_buff;
 volatile bool mmc_data_ready = false;
 volatile float mmc_data_time = 0.0f;
 
-struct TS_GPS m10s_data = {0};
+TS_GPS m10s_data = {0};
 
 volatile bool WriteData = false;
 
@@ -60,11 +60,11 @@ int main(void) {
 	// Initialise RF modules
 	InitialiseLAMBDA80();
 
-	if (UBTN_READ) {
+	if (UBTN1_READ) {
 		TransmitStoredData();
 		while (1) {}
 	} else {
-		ULED_TOGGLE
+		ULED1_TOGGLE
 		HAL_Delay(2000);
 		W25Q_EraseFlightData();
 	}
@@ -167,7 +167,7 @@ int main(void) {
 			WriteData = false;
 			if ((float)uwTick - starttime < 100000) {   // Stop collecting data after 100s
 				WriteFullDataPacket();
-				ULED_TOGGLE
+				ULED1_TOGGLE
 			}
 		}
 	}
@@ -241,7 +241,7 @@ void TransmitStoredData() {
 	if (!W25Q_NumDataBytes) { return; }   // No data
 
 	float starttime = (float)uwTick;
-	ULED_TOGGLE
+	ULED1_TOGGLE
 
 	LAMBDA80_SetMode_Download();
 
@@ -301,7 +301,7 @@ void TransmitStoredData() {
 		float newtime = (float)uwTick;
 		if (newtime - starttime > 50) {
 			starttime = newtime;
-			ULED_TOGGLE
+			ULED1_TOGGLE
 		}
 	}
 }
@@ -340,7 +340,7 @@ void L80_SendTestPackets() {
 			count2++;
 
 			if (count2 % 1000 == 0) {
-				ULED_TOGGLE
+				ULED1_TOGGLE
 			}
 
 		}

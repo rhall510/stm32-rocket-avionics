@@ -6,11 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "datatypes.h"
-
-
-// MCU connected pins
-#define BMP_INT_PORT GPIOA
-#define BMP_INT_PIN GPIO_PIN_11
+#include "pinconfig.h"
 
 
 // Registers

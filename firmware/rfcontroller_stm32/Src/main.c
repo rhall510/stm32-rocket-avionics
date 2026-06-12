@@ -1,28 +1,35 @@
 #include "main.h"
 
 
-void tud_task_run(void *param) {
-    (void) param;
+void RunTUDTask(void *param) {
+	(void) param;
 
-    while (1) {
-        tud_task();
-    }
+	while (1) {
+		tud_task();
+		vTaskDelay(pdMS_TO_TICKS(1));
+	}
 }
 
 
-void send_test_string(void *param) {
+void CheckIncomingCMD(void *param) {
     (void) param;
 
     while (1) {
-        if (tud_cdc_connected()) {
-            const char *msg = "Test string sent from RF controller\r\n";
-            tud_cdc_write(msg, strlen(msg));
-            tud_cdc_write_flush();
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+        	while (tud_cdc_available() > 0) {
+				uint8_t buff[64];
+				uint32_t count = tud_cdc_read(buff, sizeof(buff));
+
+				for (int i = 0; i < count; i++) {
+					printf("%c", (char)buff[i]);
+				}
+
+		        SendPacketUSB(buff, count);
+			}
         }
-
-        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
+
 
 
 int main(void) {
@@ -36,13 +43,32 @@ int main(void) {
 
 	tusb_init();
 
-    xTaskCreate(tud_task_run, "TUSB", 1000, NULL, configMAX_PRIORITIES - 1, NULL);
-    xTaskCreate(send_test_string, "Test", 1000, NULL, 1, NULL);
+	printf("INIT\n");
+
+    xTaskCreate(RunTUDTask, "TUSB-Task", 1024, NULL, configMAX_PRIORITIES - 1, NULL);
+    xTaskCreate(CheckIncomingCMD, "CMD-Receive", 512, NULL, 1, &xUSBRx);
 
     vTaskStartScheduler();
 
     while (1) {}
 }
+
+
+
+void SendPacketUSB(uint8_t *buff, uint16_t len) {
+    if (tud_cdc_connected()) {
+        tud_cdc_write(buff, len);
+        tud_cdc_write_flush();
+    }
+}
+
+
+
+
+
+
+
+
 
 
 void SystemClockConfig(void) {
@@ -85,7 +111,6 @@ void SystemClockConfig(void) {
 
 	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) { Error_Handler(); }
 }
-
 
 
 void InitialiseGPIO() {
@@ -261,6 +286,13 @@ void InitialiseSPI() {
 
 
 
+// TUSB callbacks
+void tud_cdc_rx_cb(uint8_t itf) {
+	xTaskNotifyGive(xUSBRx);
+}
+
+
+// USB interrupts
 void USB_LP_IRQHandler(void) {
     tud_int_handler(0);
 }
@@ -343,3 +375,12 @@ void Error_Handler(void) {
     __disable_irq();
     while (1) {}
 }
+
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+    __disable_irq();
+    while (1) {}
+}
+
+
+

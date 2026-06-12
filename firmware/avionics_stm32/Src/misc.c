@@ -3,10 +3,7 @@
 #include <stdio.h>
 
 
-extern I2C_HandleTypeDef hi2c;
-
-
-void ScanI2CBus() {
+void ScanI2CBus(I2C_HandleTypeDef hi2c) {
 	for (uint8_t i = 0; i < 128; i++) {
 		if (HAL_I2C_IsDeviceReady(&hi2c, (uint16_t)(i<<1), 3, 5) == HAL_OK) {
 			printf("%2x ", i);
