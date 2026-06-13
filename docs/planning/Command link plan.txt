@@ -3,27 +3,27 @@ While the LAMBDA80 is used for high bandwidth data transmission on the 2.4GHz ba
 Because the 868MHz band will be used for bidirectional communication unlike the 2.4GHz band, it will need to account for timing collisions by using a master-slave relationship. The controller (transceiver connected to the host PC) will always initiate a communication with a specific node, and that node only can respond immediately after.
 
 Packets will all have the following structure:
->> 2 byte header: Recipient ID [15:12], Sender ID [11:8], Sender status [7:0]
+>> 3 byte header: Recipient ID [23:16], Sender ID [15:8], Sender status [7:0]
 >> 1 byte message type
 >> 1 byte sequence number
->> Payload (optional - variable length up to 251 bytes)
+>> Payload (optional - variable length up to 250 bytes)
 
 A CRC and message length are not needed as the transceivers already takes care of these in explicit header mode.
 
 
 // DEVICE DISCOVERY
-The controller will maintain and update a list of available nodes it can communicate with by periodically sending out device discovery packets (say every 10s when idle). These will have a recipient ID of 0xF, which is the broadcast ID that all nodes can respond to. Any newly powered on node will default to Rx mode, and upon receiving a discovery packet will send an ACK back to the controller, at which point the list of active nodes is updated and it can be communicated with normally.
+The controller will maintain and update a list of available nodes it can communicate with by periodically sending out device discovery packets (say every 10s when idle). These will have a recipient ID of 0xFF, which is the broadcast ID that all nodes can respond to. Any newly powered on node will default to Rx mode, and upon receiving a discovery packet will send an ACK back to the controller, at which point the list of active nodes is updated and it can be communicated with normally.
 
 To eliminate the chance of a collision in case multiple new nodes are powered on within 10s, each node receiving a discovery packet will wait a specified amount of time before sending the ACK. The amount of time a node waits is calculated as its device ID multiplied by 50ms (e.g. device ID 3 would wait 150ms). The controller stays in Rx mode for 500ms (can be expanded later to allow more time if more nodes are added) to receive any ACKs sent in this window.
 
 Discovery packets will have the following structure:
->> 2 byte header: Recipient ID [15:12] = 0xF (broadcast ID), Sender ID [11:8] = 0x0 (controller ID), Sender status [7:0]
+>> 3 byte header: Recipient ID [23:16] = 0xFF (broadcast ID), Sender ID [15:8] = 0x0 (controller ID), Sender status [7:0]
 >> 1 byte message type = 0x1
 >> 1 byte sequence number
 
 
 ACK packets will have the following structure:
->> 2 byte header: Recipient ID [15:12] = 0x0 (controller ID), Sender ID [11:8], Sender status [7:0]
+>> 3 byte header: Recipient ID [23:16] = 0x0 (controller ID), Sender ID [15:8], Sender status [7:0]
 >> 1 byte message type = 0x0
 >> 1 byte sequence number
 

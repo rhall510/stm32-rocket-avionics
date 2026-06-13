@@ -11,25 +11,64 @@ void RunTUDTask(void *param) {
 }
 
 
-void CheckIncomingCMD(void *param) {
+void ReadIncomingUSB(void *param) {
     (void) param;
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
         	while (tud_cdc_available() > 0) {
-				uint8_t buff[64];
+				uint8_t buff[512];
 				uint32_t count = tud_cdc_read(buff, sizeof(buff));
-
-				for (int i = 0; i < count; i++) {
-					printf("%c", (char)buff[i]);
-				}
-
-		        SendPacketUSB(buff, count);
+				ParseUSBBytes(buff, count);
 			}
         }
     }
 }
 
+
+void TransactionManagerTask(void *param) {
+	// State to function mapping table
+	static const TMStateHandler TMStateTable[TM_NUM_STATES] = {
+	    [TM_STATE_IDLE] = HandleStateIdle,
+	    [TM_ECHO_CMD] = HandleStateEchoCmd,
+		[TM_STATUS_CMD] = HandleStateStatusCmd
+	};
+
+    TMState currState = TM_STATE_IDLE;
+    USBPacket currCmd;
+    NetPacket currRadResp;
+
+    // Continuously execute the function that maps to the current state and update the current state
+    while (1) {
+    	currState = TMStateTable[currState](&currCmd, &currRadResp);
+    }
+}
+
+
+TMState HandleStateIdle(USBPacket* pkt, NetPacket* resp) {
+	// Wait for a command to arrive over USB
+	if (xQueueReceive(CommandQueue, pkt, portMAX_DELAY) == pdPASS) {
+		if (pkt->type == USB_MTYPE_ECHO) { return TM_ECHO_CMD; }
+		if (pkt->type == USB_MTYPE_STATUS) { return TM_STATUS_CMD; }
+	}
+	return TM_STATE_IDLE;
+}
+
+
+TMState HandleStateEchoCmd(USBPacket* pkt, NetPacket* resp) {
+	SendPacketUSB(pkt);
+	return TM_STATE_IDLE;
+}
+
+
+TMState HandleStateStatusCmd(USBPacket* pkt, NetPacket* resp) {
+	pkt->payloadlen = 2;
+	pkt->payload[0] = 0xFA;
+	pkt->payload[1] = 0xBB;
+
+	SendPacketUSB(pkt);
+	return TM_STATE_IDLE;
+}
 
 
 int main(void) {
@@ -43,10 +82,22 @@ int main(void) {
 
 	tusb_init();
 
-	printf("INIT\n");
+
+	RadioResponseQueue = xQueueCreate(5, sizeof(NetPacket));
+	if (RadioResponseQueue == NULL) { Error_Handler(); }
+
+	CommandQueue = xQueueCreate(5, sizeof(USBPacket));
+	if (CommandQueue == NULL) { Error_Handler(); }
+
+	USBTxMutex = xSemaphoreCreateMutex();
+	if (USBTxMutex == NULL) { Error_Handler(); }
+
 
     xTaskCreate(RunTUDTask, "TUSB-Task", 1024, NULL, configMAX_PRIORITIES - 1, NULL);
-    xTaskCreate(CheckIncomingCMD, "CMD-Receive", 512, NULL, 1, &xUSBRx);
+    xTaskCreate(ReadIncomingUSB, "CMD-Receive", 1024, NULL, 1, &USBRxTaskNotif);
+    xTaskCreate(TransactionManagerTask, "Transaction-Manager", 4096, NULL, 1, NULL);
+
+    printf("INIT\n");
 
     vTaskStartScheduler();
 
@@ -55,14 +106,105 @@ int main(void) {
 
 
 
-void SendPacketUSB(uint8_t *buff, uint16_t len) {
-    if (tud_cdc_connected()) {
-        tud_cdc_write(buff, len);
-        tud_cdc_write_flush();
+void SendPacketUSB(USBPacket* packetinfo) {
+    if (!tud_cdc_connected()) { return; }
+
+    // Construct a raw byte stream from the packet info
+    uint8_t buff[256];
+    uint16_t len = ConstructUSBPacket(buff, 256, packetinfo);
+
+    // Gated on mutex to prevent collisions if multiple tasks write to USB
+    if (xSemaphoreTake(USBTxMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        uint16_t bytes_sent = 0;
+
+        while (bytes_sent < len) {
+            if (!tud_cdc_connected()) { break; }
+
+            uint32_t available = tud_cdc_write_available();
+
+            if (available > 0) {
+            	// Break longer transfers into chunks that fit the buffer
+                uint16_t chunk_size = (len - bytes_sent < available) ? (len - bytes_sent) : available;
+                uint32_t written = tud_cdc_write(&buff[bytes_sent], chunk_size);
+                bytes_sent += written;
+
+                tud_cdc_write_flush();
+            }
+
+            if (bytes_sent < len) {
+                vTaskDelay(pdMS_TO_TICKS(1));
+            }
+        }
+
+        // Release USB Tx mutex when finished
+        xSemaphoreGive(USBTxMutex);
+    } else {
+    	printf("[ERROR] USB write timed out");
     }
 }
 
 
+
+void ParseUSBBytes(uint8_t *bytestream, uint16_t len) {
+    static USBParserState state = USBPARSER_WAIT_SYNC_HIGH;
+    static uint16_t payloadidx = 0;
+    static USBPacket packet;
+
+    for (uint16_t i = 0; i < len; i++) {
+    	uint8_t byte = bytestream[i];
+
+        switch (state) {
+            case USBPARSER_WAIT_SYNC_HIGH:
+                if (byte == (USB_SYNC_WORD >> 8)) {
+                    state = USBPARSER_WAIT_SYNC_LOW;
+                }
+                break;
+
+            case USBPARSER_WAIT_SYNC_LOW:
+                if (byte == (USB_SYNC_WORD & 0xFF)) {
+                    state = USBPARSER_TYPE;
+                } else if (byte != (USB_SYNC_WORD >> 8)) {
+					state = USBPARSER_WAIT_SYNC_HIGH;
+				}
+                break;
+
+            case USBPARSER_TYPE:
+            	packet.type = byte;
+            	state = USBPARSER_LEN;
+            	break;
+
+            case USBPARSER_LEN:
+                packet.payloadlen = byte;
+                payloadidx = 0;
+
+            	if (packet.payloadlen == 0) {
+					if (xQueueSend(CommandQueue, &packet, pdMS_TO_TICKS(10)) != pdPASS) {
+						printf("[ERROR] USB command queue full");
+					}
+					state = USBPARSER_WAIT_SYNC_HIGH;
+				} else {
+					state = USBPARSER_PAYLOAD;
+				}
+
+                break;
+
+            case USBPARSER_PAYLOAD:
+                packet.payload[payloadidx++] = byte;
+
+            	if (payloadidx >= packet.payloadlen) {
+					if (xQueueSend(CommandQueue, &packet, pdMS_TO_TICKS(10)) != pdPASS) {
+						printf("[ERROR] USB command queue full");
+					}
+					state = USBPARSER_WAIT_SYNC_HIGH;
+				} else if (payloadidx >= USB_PAYLOAD_MAXLEN) {
+                	printf("[ERROR] USB parser found longer than allowed payload");
+                    state = USBPARSER_WAIT_SYNC_HIGH;
+                }
+
+                break;
+        }
+    }
+}
 
 
 
@@ -288,7 +430,7 @@ void InitialiseSPI() {
 
 // TUSB callbacks
 void tud_cdc_rx_cb(uint8_t itf) {
-	xTaskNotifyGive(xUSBRx);
+	xTaskNotifyGive(USBRxTaskNotif);
 }
 
 

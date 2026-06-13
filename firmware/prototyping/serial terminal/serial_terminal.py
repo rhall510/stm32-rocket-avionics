@@ -13,7 +13,6 @@ ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
 # --- PYINSTALLER PATH FIX ---
-# This ensures the JSON saves to the folder the .exe is in, not a random Temp folder
 if getattr(sys, 'frozen', False):
     application_path = os.path.dirname(sys.executable)
 else:
@@ -26,7 +25,7 @@ class ModernSerialTerminal:
     def __init__(self, root):
         self.root = root
         self.root.title("Bidirectional Serial Terminal")
-        self.root.geometry("950x550") # Widened slightly for the new filter entry
+        self.root.geometry("1000x550") 
         
         self.ser = None
         self.is_running = False
@@ -70,11 +69,9 @@ class ModernSerialTerminal:
         self.save_btn = ctk.CTkButton(tools_frame, text="Save Snapshot", width=100, command=self.save_log, fg_color="gray50", hover_color="gray30")
         self.save_btn.pack(side=ctk.LEFT, padx=10)
 
-        # NEW: Live Record Toggle
         self.record_btn = ctk.CTkButton(tools_frame, text="Start Recording", width=110, command=self.toggle_recording, fg_color="gray50", hover_color="gray30")
         self.record_btn.pack(side=ctk.LEFT)
 
-        # NEW: Filter Prefix Entry
         self.filter_entry = ctk.CTkEntry(tools_frame, width=150, placeholder_text="Filter prefix (e.g. DATA:)")
         self.filter_entry.pack(side=ctk.LEFT, padx=10)
 
@@ -85,6 +82,10 @@ class ModernSerialTerminal:
         # --- Bottom: Input Area ---
         input_frame = ctk.CTkFrame(self.root)
         input_frame.pack(side=ctk.BOTTOM, fill=ctk.X, padx=10, pady=(0, 10))
+
+        self.input_mode_combo = ctk.CTkOptionMenu(input_frame, width=80, values=["ASCII", "HEX"])
+        self.input_mode_combo.set("ASCII")
+        self.input_mode_combo.pack(side=ctk.LEFT, padx=(5, 0), pady=10)
 
         self.entry_box = ctk.CTkEntry(input_frame, font=("Consolas", 14), placeholder_text="Type command here...")
         self.entry_box.pack(side=ctk.LEFT, fill=ctk.X, expand=True, padx=(10, 5), pady=10)
@@ -111,7 +112,6 @@ class ModernSerialTerminal:
         self.log_area.configure(state="disabled")
 
     def load_settings(self):
-        """Attempts to load saved user preferences from a JSON file."""
         if os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
@@ -125,6 +125,8 @@ class ModernSerialTerminal:
                     self.autoscroll_var.set(settings["autoscroll"])
                 if "filter_prefix" in settings:
                     self.filter_entry.insert(0, settings["filter_prefix"])
+                if "input_mode" in settings:
+                    self.input_mode_combo.set(settings["input_mode"])
 
                 if "port" in settings:
                     saved_port = settings["port"]
@@ -137,7 +139,6 @@ class ModernSerialTerminal:
                 self.append_to_log(f"[WARNING] Could not load settings: {e}\n", tag="error")
 
     def save_settings(self):
-        """Dumps the current UI state to a JSON file."""
         current_port_str = self.port_combo.get()
         port_only = current_port_str.split(" - ")[0] if " - " in current_port_str else ""
 
@@ -146,7 +147,8 @@ class ModernSerialTerminal:
             "baud_rate": self.baud_combo.get(),
             "line_ending": self.line_end_combo.get(),
             "autoscroll": self.autoscroll_var.get(),
-            "filter_prefix": self.filter_entry.get()
+            "filter_prefix": self.filter_entry.get(),
+            "input_mode": self.input_mode_combo.get()
         }
         
         try:
@@ -210,7 +212,6 @@ class ModernSerialTerminal:
         if self.ser and self.ser.is_open:
             self.ser.close()
             
-        # Stop recording if we disconnect
         if self.is_recording:
             self.toggle_recording()
             
@@ -223,7 +224,6 @@ class ModernSerialTerminal:
 
     def toggle_recording(self):
         if self.is_recording:
-            # Stop the live logger
             self.is_recording = False
             if self.log_file_handle:
                 self.log_file_handle.close()
@@ -231,7 +231,6 @@ class ModernSerialTerminal:
             self.record_btn.configure(text="Start Recording", fg_color="gray50", hover_color="gray30")
             self.append_to_log("\n--- Live Recording Stopped ---\n", tag="info")
         else:
-            # Start the live logger
             file_path = filedialog.asksaveasfilename(
                 defaultextension=".csv",
                 filetypes=[("CSV/Log Files", "*.csv *.log"), ("All Files", "*.*")],
@@ -241,7 +240,7 @@ class ModernSerialTerminal:
                 try:
                     self.log_file_handle = open(file_path, "a", encoding="utf-8")
                     self.is_recording = True
-                    self.record_buffer = "" # Reset the hidden line buffer
+                    self.record_buffer = "" 
                     
                     self.record_btn.configure(text="Stop Recording", fg_color="red", hover_color="darkred")
                     self.append_to_log(f"\n--- Live Recording to {file_path} ---\n", tag="info")
@@ -252,39 +251,41 @@ class ModernSerialTerminal:
         while self.is_running:
             try:
                 if self.ser.in_waiting > 0:
-                    incoming_data = self.ser.read(self.ser.in_waiting).decode('utf-8', errors='replace')
-                    
-                    # Hand data over to the UI safely
-                    self.root.after(0, self.handle_incoming_data, incoming_data)
-                    
+                    # NEW: Read RAW bytes instead of immediately decoding to text
+                    raw_bytes = self.ser.read(self.ser.in_waiting)
+                    self.root.after(0, self.handle_incoming_data, raw_bytes)
             except Exception as e:
                 if self.is_running:
                     self.root.after(0, self.append_to_log, f"\n[Read Error: {e}]\n", "error")
                     self.root.after(0, self.disconnect)
                 break
 
-    def handle_incoming_data(self, chunk):
-        """Passes data to the UI, and handles line-buffering for the Live Logger file stream."""
-        # 1. Update the UI instantly
-        self.append_to_log(chunk, "rx")
+    def handle_incoming_data(self, raw_bytes):
+        # Determine how to format the data based on the dropdown
+        input_mode = self.input_mode_combo.get()
         
-        # 2. Update the background file logger if active
-        if self.is_recording and self.log_file_handle:
-            self.record_buffer += chunk
+        if input_mode == "HEX":
+            # Convert bytes to "AA BB CC" format, and force a newline 
+            # so each burst gets a clean timestamp
+            chunk_str = raw_bytes.hex(' ').upper() + "\n"
+        else:
+            # Decode standard text
+            chunk_str = raw_bytes.decode('utf-8', errors='replace')
             
-            # Extract complete lines one by one
+        self.append_to_log(chunk_str, "rx")
+        
+        if self.is_recording and self.log_file_handle:
+            self.record_buffer += chunk_str
             while '\n' in self.record_buffer:
                 line, self.record_buffer = self.record_buffer.split('\n', 1)
-                
                 clean_line = line.replace('\r', '')
                 prefix = self.filter_entry.get().strip()
                 
-                # Check the filter: Write to file if prefix matches, or if prefix is blank
                 if not prefix or clean_line.startswith(prefix):
                     raw_time = datetime.now().strftime("%H:%M:%S.%f")[:-3]
                     try:
                         self.log_file_handle.write(f"[{raw_time}] {clean_line}\n")
-                        self.log_file_handle.flush() # Force write to disk instantly
+                        self.log_file_handle.flush() 
                     except Exception as e:
                         self.append_to_log(f"\n[RECORDING ERROR] {e}\n", tag="error")
                         self.toggle_recording()
@@ -295,35 +296,43 @@ class ModernSerialTerminal:
             return
             
         user_message = self.entry_box.get()
-        if user_message:
-            endings = {
-                "CRLF (\\r\\n)": "\r\n",
-                "LF (\\n)": "\n",
-                "CR (\\r)": "\r",
-                "None": ""
-            }
-            selected_ending = self.line_end_combo.get()
-            ending_str = endings.get(selected_ending, "\r\n")
-            
+        if not user_message:
+            return
+
+        input_mode = self.input_mode_combo.get()
+        
+        if input_mode == "ASCII":
+            endings = {"CRLF (\\r\\n)": "\r\n", "LF (\\n)": "\n", "CR (\\r)": "\r", "None": ""}
+            ending_str = endings.get(self.line_end_combo.get(), "\r\n")
             data_to_send = (user_message + ending_str).encode('utf-8')
+            display_text = f"> {user_message}"
             
+        elif input_mode == "HEX":
+            clean_hex = user_message.replace("0x", "").replace("0X", "").replace(" ", "").replace(",", "")
             try:
-                self.ser.write(data_to_send)
-                self.ser.flush()
-                
-                self.append_to_log(f"> {user_message}\n", tag="tx")
-                self.entry_box.delete(0, 'end')
-                
-                # Also log outgoing commands to the file stream (unfiltered)
-                if self.is_recording and self.log_file_handle:
-                    raw_time = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-                    self.log_file_handle.write(f"[{raw_time}] > {user_message}\n")
-                    self.log_file_handle.flush()
-                
-            except serial.SerialTimeoutException:
-                self.append_to_log("\n[ERROR: Write timeout]\n", tag="error")
-            except Exception as e:
-                self.append_to_log(f"\n[Write error: {e}]\n", tag="error")
+                data_to_send = bytes.fromhex(clean_hex)
+                formatted_hex = " ".join(clean_hex[i:i+2] for i in range(0, len(clean_hex), 2)).upper()
+                display_text = f"> [HEX] {formatted_hex}"
+            except ValueError:
+                self.append_to_log("\n[ERROR] Invalid HEX input. Use formats like '0xAABB' or 'AA BB'\n", tag="error")
+                return
+
+        try:
+            self.ser.write(data_to_send)
+            self.ser.flush()
+            
+            self.append_to_log(f"{display_text}\n", tag="tx")
+            self.entry_box.delete(0, 'end')
+            
+            if self.is_recording and self.log_file_handle:
+                raw_time = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+                self.log_file_handle.write(f"[{raw_time}] {display_text}\n")
+                self.log_file_handle.flush()
+            
+        except serial.SerialTimeoutException:
+            self.append_to_log("\n[ERROR: Write timeout]\n", tag="error")
+        except Exception as e:
+            self.append_to_log(f"\n[Write error: {e}]\n", tag="error")
 
     def append_to_log(self, text, tag="rx"):
         self.log_area.configure(state="normal")
@@ -374,11 +383,8 @@ class ModernSerialTerminal:
 
     def on_closing(self):
         self.save_settings()
-        
-        # Ensure we safely close the recording file if it's active
         if self.is_recording and self.log_file_handle:
             self.log_file_handle.close()
-            
         self.is_running = False
         if self.ser and self.ser.is_open:
             self.ser.close()
