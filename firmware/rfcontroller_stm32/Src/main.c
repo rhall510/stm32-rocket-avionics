@@ -26,7 +26,41 @@ void ReadIncomingUSB(void *param) {
 }
 
 
+void ReadIncomingLAMBDA80(void *param) {
+	(void) param;
+
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+			uint8_t len = 0;
+			uint8_t start = 0;
+			LAMBDA80_GetRxBufferStatus(hspi3_rf, &len, &start);
+
+			uint8_t buff[256];
+			LAMBDA80_ReadBuffer(hspi3_rf, buff, start, len);
+        }
+    }
+}
+
+
+void ReadIncomingLAMBDA62(void *param) {
+	(void) param;
+
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+			uint8_t len = 0;
+			uint8_t start = 0;
+			LAMBDA62_GetRxBufferStatus(hspi3_rf, &len, &start);
+
+			uint8_t buff[256];
+			LAMBDA62_ReadBuffer(hspi3_rf, buff, start, len);
+        }
+    }
+}
+
+
 void TransactionManagerTask(void *param) {
+	(void) param;
+
 	// State to function mapping table
 	static const TMStateHandler TMStateTable[TM_NUM_STATES] = {
 	    [TM_STATE_IDLE] = HandleStateIdle,
@@ -92,9 +126,20 @@ int main(void) {
 	USBTxMutex = xSemaphoreCreateMutex();
 	if (USBTxMutex == NULL) { Error_Handler(); }
 
+	SPIRfMutex = xSemaphoreCreateMutex();
+	if (SPIRfMutex == NULL) { Error_Handler(); }
+
+	LAMBDA80TxSemphr = xSemaphoreCreateBinary();
+	if (LAMBDA80TxSemphr == NULL) { Error_Handler(); }
+
+	LAMBDA62TxSemphr = xSemaphoreCreateBinary();
+	if (LAMBDA62TxSemphr == NULL) { Error_Handler(); }
+
 
     xTaskCreate(RunTUDTask, "TUSB-Task", 1024, NULL, configMAX_PRIORITIES - 1, NULL);
-    xTaskCreate(ReadIncomingUSB, "CMD-Receive", 1024, NULL, 1, &USBRxTaskNotif);
+    xTaskCreate(ReadIncomingUSB, "CMD-Receive", 1024, NULL, 4, &USBRxTaskNotif);
+    xTaskCreate(ReadIncomingLAMBDA80, "LAMBDA80-Receive", 1024, NULL, 4, &LAMBDA80RxTaskNotif);
+    xTaskCreate(ReadIncomingLAMBDA62, "LAMBDA62-Receive", 1024, NULL, 4, &LAMBDA62RxTaskNotif);
     xTaskCreate(TransactionManagerTask, "Transaction-Manager", 4096, NULL, 1, NULL);
 
     printf("INIT\n");
@@ -449,20 +494,28 @@ void USBWakeUP_IRQHandler(void) {
 
 
 // External interrupt handlers
-void EXTI2_IRQHandler(void) {
+void EXTI2_IRQHandler(void) {   // LAMBDA62 Rx done
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_2);
+
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	vTaskNotifyGiveFromISR(LAMBDA62RxTaskNotif, &xHigherPriorityTaskWoken);
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-void EXTI3_IRQHandler(void) {
+void EXTI3_IRQHandler(void) {   // LAMBDA80 Rx done
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_3);
+
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	vTaskNotifyGiveFromISR(LAMBDA80RxTaskNotif, &xHigherPriorityTaskWoken);
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-void EXTI4_IRQHandler(void) {
+void EXTI4_IRQHandler(void) {   // LAMBDA62 Tx done
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_4);
 }
 
 void EXTI9_5_IRQHandler(void) {
-	if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_6) != RESET) {
+	if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_6) != RESET) {   // LAMBDA80 Tx done
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_6);
 	}
 }

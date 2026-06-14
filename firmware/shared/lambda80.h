@@ -51,27 +51,27 @@
 
 
 // Functions
-void InitialiseLAMBDA80();
+void InitialiseLAMBDA80(SPI_HandleTypeDef hspi);
 
 // Use optimised configuration for long range low data rate reception of telemetry packets
-void LAMBDA80_SetMode_Telemetry();
+void LAMBDA80_SetMode_Telemetry(SPI_HandleTypeDef hspi);
 
 // Use optimised configuration for short range high data rate sending of packets
-void LAMBDA80_SetMode_Download();
+void LAMBDA80_SetMode_Download(SPI_HandleTypeDef hspi);
 
 bool LAMBDA80_CheckBusy();
-void LAMBDA80_ClearIRQ(uint16_t IRQMask);
+void LAMBDA80_ClearIRQ(SPI_HandleTypeDef hspi, uint16_t IRQMask);
 
-void LAMBDA80_SetTx(uint8_t TimeBase, uint16_t Timeout);
-void LAMBDA80_SendPacket(uint8_t *packet, uint8_t len);
-void LAMBDA80_SetPacketParams(uint8_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ);
+void LAMBDA80_SetTx(SPI_HandleTypeDef hspi, uint8_t TimeBase, uint16_t Timeout);
+void LAMBDA80_SendPacket(SPI_HandleTypeDef hspi, uint8_t *packet, uint8_t len);
+void LAMBDA80_SetPacketParams(SPI_HandleTypeDef hspi, uint8_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ);
 
-void LAMBDA80_SetRx(uint8_t TimeBase, uint16_t Timeout);
-void LAMBDA80_GetRxBufferStatus(uint8_t *len, uint8_t *start);
-void LAMBDA80_ReadBuffer(uint8_t *buff, uint8_t StartAddr, uint8_t len);
+void LAMBDA80_SetRx(SPI_HandleTypeDef hspi, uint8_t TimeBase, uint16_t Timeout);
+void LAMBDA80_GetRxBufferStatus(SPI_HandleTypeDef hspi, uint8_t *len, uint8_t *start);
+void LAMBDA80_ReadBuffer(SPI_HandleTypeDef hspi, uint8_t *buff, uint8_t StartAddr, uint8_t len);
 
-uint8_t LAMBDA80_ReadReg(uint16_t RegAddr);
-void LAMBDA80_WriteReg(uint16_t RegAddr, uint8_t val);
+uint8_t LAMBDA80_ReadReg(SPI_HandleTypeDef hspi, uint16_t RegAddr);
+void LAMBDA80_WriteReg(SPI_HandleTypeDef hspi, uint16_t RegAddr, uint8_t val);
 
 
 #endif /* LAMBDA80_H_ */
