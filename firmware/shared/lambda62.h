@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include "pinconfig.h"
 #include "stm32g4xx.h"
+#include "FreeRTOS.h"
+#include "misc.h"
 
 
 // Registers
@@ -54,26 +56,29 @@
 // FXTAL is 32MHz
 
 // Functions
-void InitialiseLAMBDA62LoRa(SPI_HandleTypeDef hspi);
-void InitialiseLAMBDA62FSK(SPI_HandleTypeDef hspi);
-
 bool LAMBDA62_CheckBusy();
-void LAMBDA62_ClearIRQ(SPI_HandleTypeDef hspi, uint16_t IRQMask);
+void LAMBDA62_WaitBusy(bool Blocking);
 
-void LAMBDA62_SetTx(SPI_HandleTypeDef hspi, uint32_t Timeout);
-void LAMBDA62_SendPacket(SPI_HandleTypeDef hspi, uint8_t *packet, uint8_t len);
-void LAMBDA62_SetPacketParamsLoRa(SPI_HandleTypeDef hspi, uint16_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ);
-void LAMBDA62_SetPacketParamsFSK(SPI_HandleTypeDef hspi, uint16_t PreambleLen, uint8_t PreambleDetectLen, uint8_t SyncWordLen,
-								 uint8_t AddrComp, bool ExplicitLength, uint8_t len, uint8_t CRCType, bool Whitening);
+void InitialiseLAMBDA62LoRa(SPI_HandleTypeDef *hspi, bool Blocking);
+void InitialiseLAMBDA62FSK(SPI_HandleTypeDef *hspi, bool Blocking);
 
-void LAMBDA62_SetRx(SPI_HandleTypeDef hspi, uint32_t Timeout);
-void LAMBDA62_GetRxBufferStatus(SPI_HandleTypeDef hspi, uint8_t *len, uint8_t *start);
-void LAMBDA62_ReadBuffer(SPI_HandleTypeDef hspi, uint8_t *buff, uint8_t StartAddr, uint8_t len);
+void LAMBDA62_ClearIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask, bool Blocking);
 
-uint8_t LAMBDA62_ReadReg(SPI_HandleTypeDef hspi, uint16_t RegAddr);
-void LAMBDA62_WriteReg(SPI_HandleTypeDef hspi, uint16_t RegAddr, uint8_t val);
+void LAMBDA62_SetTx(SPI_HandleTypeDef *hspi, uint32_t Timeout, bool Blocking);
+void LAMBDA62_SendPacket(SPI_HandleTypeDef *hspi, uint8_t *packet, uint8_t len, bool Blocking);
+void LAMBDA62_SetPacketParamsLoRa(SPI_HandleTypeDef *hspi, uint16_t PreambleLen, uint8_t HeaderType, uint8_t len,
+								  uint8_t CRCType, uint8_t InvertIQ, bool Blocking);
+void LAMBDA62_SetPacketParamsFSK(SPI_HandleTypeDef *hspi, uint16_t PreambleLen, uint8_t PreambleDetectLen, uint8_t SyncWordLen,
+								 uint8_t AddrComp, bool ExplicitLength, uint8_t len, uint8_t CRCType, bool Whitening, bool Blocking);
 
-void LAMBDA62_SendContinuousWave(SPI_HandleTypeDef hspi);
+void LAMBDA62_SetRx(SPI_HandleTypeDef *hspi, uint32_t Timeout, bool Blocking);
+void LAMBDA62_GetRxBufferStatus(SPI_HandleTypeDef *hspi, uint8_t *len, uint8_t *start, bool Blocking);
+void LAMBDA62_ReadBuffer(SPI_HandleTypeDef *hspi, uint8_t *buff, uint8_t StartAddr, uint8_t len, bool Blocking);
+
+uint8_t LAMBDA62_ReadReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, bool Blocking);
+void LAMBDA62_WriteReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, uint8_t val, bool Blocking);
+
+void LAMBDA62_SendContinuousWave(SPI_HandleTypeDef *hspi, bool Blocking);
 
 
 #endif /* LAMBDA62_H_ */

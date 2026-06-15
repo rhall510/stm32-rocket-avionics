@@ -111,6 +111,7 @@ int main(void) {
 	SystemClockConfig();
 	InitialiseGPIO();
 	InitialiseSPI();
+	InitialiseTimers();
 
 	__enable_irq();
 
@@ -134,6 +135,12 @@ int main(void) {
 
 	LAMBDA62TxSemphr = xSemaphoreCreateBinary();
 	if (LAMBDA62TxSemphr == NULL) { Error_Handler(); }
+
+	LAMBDA80BusySemphr = xSemaphoreCreateBinary();
+	if (LAMBDA80BusySemphr == NULL) { Error_Handler(); }
+
+	LAMBDA62BusySemphr = xSemaphoreCreateBinary();
+	if (LAMBDA62BusySemphr == NULL) { Error_Handler(); }
 
 
     xTaskCreate(RunTUDTask, "TUSB-Task", 1024, NULL, configMAX_PRIORITIES - 1, NULL);
@@ -472,6 +479,16 @@ void InitialiseSPI() {
 }
 
 
+void InitialiseTimers() {
+	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;   // Enable clock
+    __DSB();   // Ensure the clock is active before continuing
+
+	TIM2->PSC = 143;   // Set prescaler to count once per microsecond (1MHz)
+	TIM2->ARR |= 0xFFFFFFFF;   // Max auto reload for use as a microsecond timer
+
+	TIM2->CR1 |= TIM_CR1_CEN;   // Enable TIM2
+}
+
 
 // TUSB callbacks
 void tud_cdc_rx_cb(uint8_t itf) {
@@ -512,11 +529,19 @@ void EXTI3_IRQHandler(void) {   // LAMBDA80 Rx done
 
 void EXTI4_IRQHandler(void) {   // LAMBDA62 Tx done
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_4);
+
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	xSemaphoreGiveFromISR(LAMBDA62TxSemphr, &xHigherPriorityTaskWoken);
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 void EXTI9_5_IRQHandler(void) {
 	if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_6) != RESET) {   // LAMBDA80 Tx done
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_6);
+
+		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+		xSemaphoreGiveFromISR(LAMBDA80TxSemphr, &xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 	}
 }
 

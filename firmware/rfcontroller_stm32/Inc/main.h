@@ -28,6 +28,8 @@ TaskHandle_t LAMBDA62RxTaskNotif = NULL;
 // Semaphores
 SemaphoreHandle_t LAMBDA80TxSemphr = NULL;
 SemaphoreHandle_t LAMBDA62TxSemphr = NULL;
+SemaphoreHandle_t LAMBDA80BusySemphr = NULL;
+SemaphoreHandle_t LAMBDA62BusySemphr = NULL;
 
 // Mutexes
 SemaphoreHandle_t USBTxMutex = NULL;
