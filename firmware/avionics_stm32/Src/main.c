@@ -1,39 +1,89 @@
 #include "main.h"
-#include <stdio.h>
 
 
-volatile TS_Vec3 lsm_accbuff[LSM6_FIFO_READNUM];
-volatile TS_Vec3 lsm_gyrbuff[LSM6_FIFO_READNUM];
-volatile bool lsm_data_ready = false;
-volatile float lsm_data_time = 0.0f;
+void ReadIncomingLAMBDA80(void *param) {
+	(void) param;
 
-volatile TS_Vec3 adxl_accbuff[ADXL_FIFO_READNUM];
-volatile bool adxl_data_ready = false;
-volatile adxl_data_time = 0.0f;
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+        	// Read the raw bytes from the radio buffer
+			uint8_t len = 0;
+			uint8_t start = 0;
+			LAMBDA80_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
 
-volatile TS_PressTemp bmp_buff[BMP_FIFO_READNUM];
-volatile bool bmp_data_ready = false;
-volatile float bmp_data_time = 0.0f;
+			uint8_t buff[256];
+			LAMBDA80_ReadBuffer(&hspi3_rf, buff, start, len, false);
 
-volatile TS_Vec3 mmc_buff;
-volatile bool mmc_data_ready = false;
-volatile float mmc_data_time = 0.0f;
+			// Decode raw bytes into a net packet
+			NetPacket pkt;
+			DecodeNetPacket(&pkt, buff, len);
 
-TS_GPS m10s_data = {0};
-
-volatile bool WriteData = false;
-
-
-uint8_t FlashLogBuffA[FLASH_BUFFER_LEN];   // Buffer to queue data for write. Ping-pong to prevent queueing of more data mid logging
-uint8_t FlashLogBuffB[FLASH_BUFFER_LEN];
-uint16_t FlashLogBuffAPos = 8;   // Current position of next free byte in the buffer
-uint16_t FlashLogBuffBPos = 8;
-uint8_t FlashLogBuffAReadings = 0;   // Number of readings in the buffer
-uint8_t FlashLogBuffBReadings = 0;
-bool LogBuffA = true;   // True to append new data to A, false to append new data to B
+			// Place into the radio response queue
+			if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
+				printf("[ERROR] Radio response queue full");
+			}
+        }
+    }
+}
 
 
-volatile bool TxReady = true;
+void ReadIncomingLAMBDA62(void *param) {
+	(void) param;
+
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+        	// Read the raw bytes from the radio buffer
+			uint8_t len = 0;
+			uint8_t start = 0;
+			LAMBDA62_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
+
+			uint8_t buff[256];
+			LAMBDA62_ReadBuffer(&hspi3_rf, buff, start, len, false);
+
+			// Decode raw bytes into a net packet
+			NetPacket pkt;
+			DecodeNetPacket(&pkt, buff, len);
+
+			// Place into the radio response queue
+			if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
+				printf("[ERROR] Radio response queue full");
+			}
+        }
+    }
+}
+
+
+void TransactionManagerTask(void *param) {
+	(void) param;
+
+	// State to function mapping table
+	static const TMStateHandler TMStateTable[TM_NUM_STATES] = {
+	    [TM_STATE_IDLE] = HandleStateIdle,
+		[TM_DISC_CMD] = HandleStateDiscoveryCmd
+	};
+
+    TMState currState = TM_STATE_IDLE;
+    NetPacket currRadResp;
+
+    // Continuously execute the function that maps to the current state and update the current state
+    while (1) {
+    	currState = TMStateTable[currState](&currRadResp);
+    }
+}
+
+
+TMState HandleStateIdle(NetPacket* pkt) {
+	// Wait for a command to arrive over radio
+	if (xQueueReceive(RadioQueue, pkt, portMAX_DELAY) == pdPASS) {
+		if (pkt->type == NET_MTYPE_DISCOVERY) { return TM_DISC_CMD; }
+	}
+	return TM_STATE_IDLE;
+}
+
+
+TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
+}
+
 
 
 int main(void) {
@@ -51,307 +101,46 @@ int main(void) {
 
 	__enable_irq();
 
-	ScanI2CBus();
-
-
-	// Initialise storage
-	InitialiseW25Q();
-
 	// Initialise RF modules
-	InitialiseLAMBDA80();
-
-	if (UBTN1_READ) {
-		TransmitStoredData();
-		while (1) {}
-	} else {
-		ULED1_TOGGLE
-		HAL_Delay(2000);
-		W25Q_EraseFlightData();
-	}
+	InitialiseLAMBDA62FSK(&hspi3_rf, true);
 
 
-	// Preload header sync word into write buffers
-	for (int i = 3; i >= 0; i--) {
-		FlashLogBuffA[3 - i] = (uint8_t)((W25Q_DATA_SYNC_WORD >> (i * 8)) & 0xFF);
-		FlashLogBuffB[3 - i] = (uint8_t)((W25Q_DATA_SYNC_WORD >> (i * 8)) & 0xFF);
-	}
+	// Initialise FreeRTOS objects
+	RadioQueue = xQueueCreate(5, sizeof(NetPacket));
+	if (RadioQueue == NULL) { Error_Handler(); }
+
+	SPIRfMutex = xSemaphoreCreateMutex();
+	if (SPIRfMutex == NULL) { Error_Handler(); }
+
+	LAMBDA80TxSemphr = xSemaphoreCreateBinary();
+	if (LAMBDA80TxSemphr == NULL) { Error_Handler(); }
+
+	LAMBDA62TxSemphr = xSemaphoreCreateBinary();
+	if (LAMBDA62TxSemphr == NULL) { Error_Handler(); }
 
 
-	// Initialise sensors
-	if (!InitialiseLSM6DSR(LSM6_FIFO_READNUM)) {
-		Error_Handler();
-	}
-	if (!InitialiseADXL375(ADXL_FIFO_READNUM)) {
-		Error_Handler();
-	}
-	if (!InitialiseBMP581(BMP_FIFO_READNUM)) {
-		Error_Handler();
-	}
-	if (!InitialiseMMC5983MA()) {
-		Error_Handler();
-	}
-	if (!InitialiseMAXM10S()) {
-		Error_Handler();
-	}
+	// Create tasks
+    xTaskCreate(ReadIncomingLAMBDA80, "LAMBDA80-Receive", 1024, NULL, 4, &LAMBDA80RxTaskNotif);
+    xTaskCreate(ReadIncomingLAMBDA62, "LAMBDA62-Receive", 1024, NULL, 4, &LAMBDA62RxTaskNotif);
+    xTaskCreate(TransactionManagerTask, "Transaction-Manager", 4096, NULL, 1, NULL);
 
 
-	float starttime = (float)uwTick;
+    printf("INIT\n");
 
-	// Super loop to gather data
-	while (1) {
-		if (lsm_data_ready) {
-			lsm_data_ready = false;
-			LSM6DSR_ReadFIFOData(lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM, lsm_data_time);
+    vTaskStartScheduler();
 
-			if (LogBuffA) {
-				LSM6DSR_AppendLogPacket(FlashLogBuffA, &FlashLogBuffAPos, FLASH_BUFFER_LEN, lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM);
-				FlashLogBuffAReadings += LSM6_FIFO_READNUM;
-			} else {
-				LSM6DSR_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM);
-				FlashLogBuffBReadings += LSM6_FIFO_READNUM;
-			}
-			printf("L");
-		}
-		if (adxl_data_ready) {
-			adxl_data_ready = false;
-			ADXL375_ReadFIFOData(adxl_accbuff, ADXL_FIFO_READNUM, adxl_data_time);
 
-			if (LogBuffA) {
-				ADXL375_AppendLogPacket(FlashLogBuffA, &FlashLogBuffAPos, FLASH_BUFFER_LEN, adxl_accbuff, ADXL_FIFO_READNUM);
-				FlashLogBuffAReadings += ADXL_FIFO_READNUM;
-			} else {
-				ADXL375_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, adxl_accbuff, ADXL_FIFO_READNUM);
-				FlashLogBuffBReadings += ADXL_FIFO_READNUM;
-			}
-			printf("A");
-		}
-		if (bmp_data_ready) {
-			bmp_data_ready = false;
-			BMP581_ReadFIFOData(bmp_buff, BMP_FIFO_READNUM, bmp_data_time);
-
-			if (LogBuffA) {
-				BMP581_AppendLogPacket(FlashLogBuffA, &FlashLogBuffAPos, FLASH_BUFFER_LEN, bmp_buff, BMP_FIFO_READNUM);
-				FlashLogBuffAReadings += BMP_FIFO_READNUM;
-			} else {
-				BMP581_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, bmp_buff, BMP_FIFO_READNUM);
-				FlashLogBuffBReadings += BMP_FIFO_READNUM;
-			}
-			printf("B");
-		}
-		if (mmc_data_ready) {
-			mmc_data_ready = false;
-			MMC5983MA_ReadData(&mmc_buff, mmc_data_time);
-
-			if (LogBuffA) {
-				MMC5983MA_AppendLogPacket(FlashLogBuffA, &FlashLogBuffAPos, FLASH_BUFFER_LEN, &mmc_buff, 1);
-				FlashLogBuffAReadings += 1;
-			} else {
-				MMC5983MA_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, &mmc_buff, 1);
-				FlashLogBuffBReadings += 1;
-			}
-			printf("M");
-		}
-
-		if (Poll_MAXM10S()) {
-			if (LogBuffA) {
-				MAXM10S_AppendLogPacket(FlashLogBuffA, &FlashLogBuffAPos, FLASH_BUFFER_LEN, &m10s_data, 1);
-				FlashLogBuffAReadings += 1;
-			} else {
-				MAXM10S_AppendLogPacket(FlashLogBuffB, &FlashLogBuffBPos, FLASH_BUFFER_LEN, &m10s_data, 1);
-				FlashLogBuffBReadings += 1;
-			}
-			printf("G");
-		}
-
-		if (WriteData) {
-			WriteData = false;
-			if ((float)uwTick - starttime < 100000) {   // Stop collecting data after 100s
-				WriteFullDataPacket();
-				ULED1_TOGGLE
-			}
-		}
-	}
-
-	for(;;);
+	while (1){}
 }
 
 
-
-
-bool Poll_MAXM10S() {
-	uint16_t bytes_available = MAXM10S_GetAvailableBytes();
-
-	if (bytes_available > 0) {
-		uint8_t i2c_data[bytes_available];
-
-		if (MAXM10S_ReadStream(i2c_data, bytes_available)) {
-			return MAXM10S_ParseStream(i2c_data, bytes_available, &m10s_data);
-		}
-	}
-
-	return false;
-}
-
-
-
-void WriteFullDataPacket() {
-	// Switch active buffer for collecting data
-	LogBuffA = !LogBuffA;
-
-	// Ready CRC unit
-	CRC->CR |= CRC_CR_RESET;
-	volatile uint8_t *CRC_DR8 = (volatile uint8_t *)&CRC->DR;
-
-	if (LogBuffA) {   // Send the inactive buffer's data to be written
-		// Calculate CRC for all bytes after header
-		for (uint16_t i = 8; i < FlashLogBuffBPos; i++) {
-			*CRC_DR8 = FlashLogBuffB[i];
-		}
-
-		// Load header into byte positions 4-7
-		FlashLogBuffB[4] = FlashLogBuffBReadings;
-		FlashLogBuffB[5] = (uint8_t)((FlashLogBuffBPos - 8) >> 8);
-		FlashLogBuffB[6] = (uint8_t)(FlashLogBuffBPos - 8);
-		FlashLogBuffB[7] = (uint8_t)(CRC->DR);
-
-		W25Q_WriteAppendData(FlashLogBuffB, FlashLogBuffBPos);
-		FlashLogBuffBPos = 8;   // Reset end point but leave space for header
-		FlashLogBuffBReadings = 0;
-	} else {
-		// Calculate CRC for all bytes after header
-		for (uint16_t i = 8; i < FlashLogBuffAPos; i++) {
-			*CRC_DR8 = FlashLogBuffA[i];
-		}
-
-		// Load header into byte positions 4-7
-		FlashLogBuffA[4] = FlashLogBuffAReadings;
-		FlashLogBuffA[5] = (uint8_t)((FlashLogBuffAPos - 8) >> 8);
-		FlashLogBuffA[6] = (uint8_t)(FlashLogBuffAPos - 8);
-		FlashLogBuffA[7] = (uint8_t)(CRC->DR);
-
-		W25Q_WriteAppendData(FlashLogBuffA, FlashLogBuffAPos);
-		FlashLogBuffAPos = 8;   // Reset end point but leave space for header
-		FlashLogBuffAReadings = 0;
-	}
-}
-
-
-
-void TransmitStoredData() {
-	if (!W25Q_NumDataBytes) { return; }   // No data
-
-	float starttime = (float)uwTick;
-	ULED1_TOGGLE
-
-	LAMBDA80_SetMode_Download();
-
-	uint8_t PacketLen = 100;
-	uint8_t buff[PacketLen + 12];   // Extra 12 bytes for header, sequence num, and terminator
-
-	// Preload header sync word and terminator
-	buff[0] = (uint8_t)(DOWNLOAD_PKT_SYNC_WORD >> 24);
-	buff[1] = (uint8_t)(DOWNLOAD_PKT_SYNC_WORD >> 16);
-	buff[2] = (uint8_t)(DOWNLOAD_PKT_SYNC_WORD >> 8);
-	buff[3] = (uint8_t)DOWNLOAD_PKT_SYNC_WORD;
-
-	buff[PacketLen + 8] = (uint8_t)(DOWNLOAD_PKT_TERM >> 24);
-	buff[PacketLen + 9] = (uint8_t)(DOWNLOAD_PKT_TERM >> 16);
-	buff[PacketLen + 10] = (uint8_t)(DOWNLOAD_PKT_TERM >> 8);
-	buff[PacketLen + 11] = (uint8_t)DOWNLOAD_PKT_TERM;
-
-	uint32_t ReadAddr = W25Q_DataStartAddr;
-	uint32_t ToRead = W25Q_NumDataBytes;
-	uint8_t ReadLen = PacketLen;
-
-	uint32_t SequenceNum = 0;
-
-	while (ToRead > 0) {   // Read and send packets until all data has been sent
-		while (!TxReady) {}
-		TxReady = false;
-
-		LAMBDA80_ClearIRQ(0xFFFF);
-
-		if (ToRead < PacketLen) {   // Ensure no reads past the data boundary
-			ReadLen = ToRead;
-
-			LAMBDA80_SetPacketParams(0x0C, 0, ReadLen + 12, 0x20, 0x40);
-
-			buff[ReadLen + 8] = (uint8_t)(DOWNLOAD_PKT_TERM >> 24);
-			buff[ReadLen + 9] = (uint8_t)(DOWNLOAD_PKT_TERM >> 16);
-			buff[ReadLen + 10] = (uint8_t)(DOWNLOAD_PKT_TERM >> 8);
-			buff[ReadLen + 11] = (uint8_t)DOWNLOAD_PKT_TERM;
-		}
-
-		// Read in data and update next read address
-		ReadAddr = W25Q_ReadVolumeSafe(ReadAddr, buff + 8, ReadLen);
-
-		// Update sequence num
-		buff[4] = (uint8_t)(SequenceNum >> 24);
-		buff[5] = (uint8_t)(SequenceNum >> 16);
-		buff[6] = (uint8_t)(SequenceNum >> 8);
-		buff[7] = (uint8_t)SequenceNum;
-
-		LAMBDA80_SendPacket(buff, PacketLen + 12);
-
-		while(LAMBDA80_CheckBusy()) {}
-
-		ToRead -= ReadLen;
-		SequenceNum++;
-
-		float newtime = (float)uwTick;
-		if (newtime - starttime > 50) {
-			starttime = newtime;
-			ULED1_TOGGLE
-		}
-	}
-}
 
 
 void TIM2_IRQHandler() {
 	if (TIM2->SR & TIM_SR_UIF) {
 		TIM2->SR &= ~TIM_SR_UIF;   // Clear interrupt flag
-		WriteData = true;   // Prime data logging task
 	}
 }
-
-
-
-
-
-
-void L80_SendTestPackets() {
-	LAMBDA80_SetMode_Download();
-	LAMBDA80_SetPacketParams(0x23, 0, 11, 0x20, 0x40);
-
-	uint8_t count = 0;
-	uint16_t count2 = 0;
-	while (1) {
-		if (TxReady) {
-			TxReady = false;
-
-			LAMBDA80_ClearIRQ(0xFFFF);
-
-			uint8_t packet[11] = "TestPacket0";
-			packet[10] = count;
-
-			LAMBDA80_SendPacket(packet, 11);
-
-			count++;
-			count2++;
-
-			if (count2 % 1000 == 0) {
-				ULED1_TOGGLE
-			}
-
-		}
-	}
-}
-
-
-
-
-
-
 
 
 

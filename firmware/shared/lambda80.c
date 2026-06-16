@@ -1,7 +1,36 @@
 #include "lambda80.h"
 
 
-void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi) {
+inline bool LAMBDA80_CheckBusy() {
+	return HAL_GPIO_ReadPin(L80_BUSY_PORT, L80_BUSY_PIN);
+}
+
+
+void LAMBDA80_WaitBusy(bool Blocking) {
+	if (Blocking) {
+		while (LAMBDA80_CheckBusy()) {}
+		return;
+	}
+
+    uint32_t startus = GET_MICROS;
+    bool firstpass = true;
+
+    while(LAMBDA80_CheckBusy()) {
+        if (firstpass) {   // Initially poll for 50us to catch quick events
+            uint32_t currus = GET_MICROS - startus;
+
+            if (currus > 50) {
+            	firstpass = false;
+                vTaskDelay(pdMS_TO_TICKS(1));
+            }
+        } else {   // Once over 1ms has passed, yield immediately once checked
+            vTaskDelay(pdMS_TO_TICKS(1));
+        }
+    }
+}
+
+
+void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi, bool Blocking) {
 	uint8_t tx[5] = {0};
 
 	// Hardware reset
@@ -9,7 +38,7 @@ void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi) {
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(L80_RST_PORT, L80_RST_PIN, GPIO_PIN_SET);
 
-	while (LAMBDA80_CheckBusy()) {}   // Wait for startup
+	LAMBDA80_WaitBusy(Blocking);   // Wait for startup
 
 	// Set packet type to LoRa
 	tx[0] = L80_PKT_TYPE;
@@ -19,7 +48,7 @@ void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi) {
 	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
 
-	while(LAMBDA80_CheckBusy()) {}
+	LAMBDA80_WaitBusy(Blocking);
 
 	// Set frequency to 2.4GHz (values from datasheet)
 	tx[0] = L80_RF_FREQ;
@@ -31,7 +60,7 @@ void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi) {
 	HAL_SPI_Transmit(hspi, tx, 4, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
 
-	while(LAMBDA80_CheckBusy()) {}
+	LAMBDA80_WaitBusy(Blocking);
 
 	// Set TX params (Power, RampTime)
 	tx[0] = L80_TX_PARAMS;
@@ -42,7 +71,7 @@ void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi) {
 	HAL_SPI_Transmit(hspi, tx, 3, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
 
-	while(LAMBDA80_CheckBusy()) {}
+	LAMBDA80_WaitBusy(Blocking);
 
 	// Set buffer base addresses (TX, RX)
 	tx[0] = L80_BUFF_BASE_ADDR;
@@ -60,12 +89,12 @@ void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi) {
 	HAL_SPI_Transmit(hspi, irq, 9, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
 
-	while(LAMBDA80_CheckBusy()) {}
+	LAMBDA80_WaitBusy(Blocking);
 }
 
 
-void LAMBDA80_SetMode_Telemetry(SPI_HandleTypeDef *hspi){
-	while(LAMBDA80_CheckBusy()) {}
+void LAMBDA80_SetMode_Telemetry(SPI_HandleTypeDef *hspi, bool Blocking){
+	LAMBDA80_WaitBusy(Blocking);
 
 	uint8_t tx[5] = {0};
 
@@ -76,7 +105,7 @@ void LAMBDA80_SetMode_Telemetry(SPI_HandleTypeDef *hspi){
 	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
 
-	while(LAMBDA80_CheckBusy()) {}
+	LAMBDA80_WaitBusy(Blocking);
 
 	// Set modulation params (SF, BW, CR)
 	tx[0] = L80_MOD_PARAMS;
@@ -88,19 +117,19 @@ void LAMBDA80_SetMode_Telemetry(SPI_HandleTypeDef *hspi){
 	HAL_SPI_Transmit(hspi, tx, 4, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
 
-	while(LAMBDA80_CheckBusy()) {}
+	LAMBDA80_WaitBusy(Blocking);
 
-	LAMBDA80_WriteReg(hspi, 0x925, 0x32);   // From datasheet for SF10
+	LAMBDA80_WriteReg(hspi, 0x925, 0x32, Blocking);   // From datasheet for SF10
 
 	// Set default packet parameters
-	LAMBDA80_SetPacketParams(hspi, 0x23, 0, 30, 0x20, 0x40);   // 12 bit preamble, explicit header, 30 byte payload, CRC on, normal IQ
+	LAMBDA80_SetPacketParams(hspi, 0x23, 0, 30, 0x20, 0x40, Blocking);   // 12 bit preamble, explicit header, 30 byte payload, CRC on, normal IQ
 
-	LAMBDA80_SetRx(hspi, 2, 0);   // Set to Rx continuous mode
+	LAMBDA80_SetRx(hspi, 2, 0, Blocking);   // Set to Rx continuous mode
 }
 
 
-void LAMBDA80_SetMode_Download(SPI_HandleTypeDef hspi) {
-	while(LAMBDA80_CheckBusy()) {}
+void LAMBDA80_SetMode_Download(SPI_HandleTypeDef *hspi, bool Blocking) {
+	LAMBDA80_WaitBusy(Blocking);
 
 	uint8_t tx[5] = {0};
 
@@ -111,7 +140,7 @@ void LAMBDA80_SetMode_Download(SPI_HandleTypeDef hspi) {
 	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
 
-	while(LAMBDA80_CheckBusy()) {}
+	LAMBDA80_WaitBusy(Blocking);
 
 	// Set modulation params (SF, BW, CR)
 	tx[0] = L80_MOD_PARAMS;
@@ -123,25 +152,19 @@ void LAMBDA80_SetMode_Download(SPI_HandleTypeDef hspi) {
 	HAL_SPI_Transmit(hspi, tx, 4, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
 
-	while(LAMBDA80_CheckBusy()) {}
+	LAMBDA80_WaitBusy(Blocking);
 
-	LAMBDA80_WriteReg(hspi, 0x925, 0x1E);   // From datasheet for SF5
+	LAMBDA80_WriteReg(hspi, 0x925, 0x1E, Blocking);   // From datasheet for SF5
 
 	// Set default packet parameters
-	LAMBDA80_SetPacketParams(hspi, 0x23, 0, 112, 0x20, 0x40);   // 12 bit preamble, explicit header, 112 byte payload, CRC on, normal IQ
+	LAMBDA80_SetPacketParams(hspi, 0x23, 0, 112, 0x20, 0x40, Blocking);   // 12 bit preamble, explicit header, 112 byte payload, CRC on, normal IQ
 
-	while(LAMBDA80_CheckBusy()) {}
+	LAMBDA80_WaitBusy(Blocking);
 }
 
 
-
-inline bool LAMBDA80_CheckBusy() {
-	return HAL_GPIO_ReadPin(L80_BUSY_PORT, L80_BUSY_PIN);
-}
-
-
-void LAMBDA80_ClearIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask) {
-	while(LAMBDA80_CheckBusy()) {}
+void LAMBDA80_ClearIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask, bool Blocking) {
+	LAMBDA80_WaitBusy(Blocking);
 
 	uint8_t tx[3] = {L80_CLEAR_IRQ, (uint8_t)(IRQMask >> 8), (uint8_t)IRQMask};
 
@@ -152,8 +175,8 @@ void LAMBDA80_ClearIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask) {
 
 
 
-void LAMBDA80_SetTx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout) {
-	while(LAMBDA80_CheckBusy()) {}
+void LAMBDA80_SetTx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout, bool Blocking) {
+	LAMBDA80_WaitBusy(Blocking);
 
 	// Timeout is timebase (see below for mappings) * timeout, 0 = no timeout
 	// 0x00 15.625 μs
@@ -168,8 +191,8 @@ void LAMBDA80_SetTx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout)
 }
 
 
-void LAMBDA80_SendPacket(SPI_HandleTypeDef *hspi, uint8_t *packet, uint8_t len) {
-	while(LAMBDA80_CheckBusy()) {}
+void LAMBDA80_SendPacket(SPI_HandleTypeDef *hspi, uint8_t *packet, uint8_t len, bool Blocking) {
+	LAMBDA80_WaitBusy(Blocking);
 
 	// Send opcode with offset then packet buffer
 	uint8_t tx[2] = {L80_WRITE_BUFF, L80_TX_BASE_ADDR};
@@ -179,14 +202,15 @@ void LAMBDA80_SendPacket(SPI_HandleTypeDef *hspi, uint8_t *packet, uint8_t len) 
 	HAL_SPI_Transmit(hspi, packet, len, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
 
-	while(LAMBDA80_CheckBusy()) {}
+	LAMBDA80_WaitBusy(Blocking);
 
-	LAMBDA80_SetTx(hspi, 0x2, L80_TX_TIMEOUT);
+	LAMBDA80_SetTx(hspi, 0x2, L80_TX_TIMEOUT, Blocking);
 }
 
 
-void LAMBDA80_SetPacketParams(SPI_HandleTypeDef *hspi, uint8_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ) {
-	while(LAMBDA80_CheckBusy()) {}
+void LAMBDA80_SetPacketParams(SPI_HandleTypeDef *hspi, uint8_t PreambleLen, uint8_t HeaderType, uint8_t len,
+							  uint8_t CRCType, uint8_t InvertIQ, bool Blocking) {
+	LAMBDA80_WaitBusy(Blocking);
 
 	uint8_t tx[8] = {L80_PKT_PARAMS, PreambleLen, HeaderType, len, CRCType, InvertIQ, 0x0, 0x0};   // Last 2 bytes not used for LoRa
 
@@ -196,8 +220,8 @@ void LAMBDA80_SetPacketParams(SPI_HandleTypeDef *hspi, uint8_t PreambleLen, uint
 }
 
 
-void LAMBDA80_SetRx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout) {
-	while(LAMBDA80_CheckBusy()) {}
+void LAMBDA80_SetRx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout, bool Blocking) {
+	LAMBDA80_WaitBusy(Blocking);
 
 	// Timeout is timebase (see below for mappings) * timeout, 0 = no timeout, 0xFFFF = continuous mode
 	// 0x00 15.625 μs
@@ -212,8 +236,8 @@ void LAMBDA80_SetRx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout)
 }
 
 
-void LAMBDA80_GetRxBufferStatus(SPI_HandleTypeDef *hspi, uint8_t *len, uint8_t *start) {
-	while(LAMBDA80_CheckBusy()) {}
+void LAMBDA80_GetRxBufferStatus(SPI_HandleTypeDef *hspi, uint8_t *len, uint8_t *start, bool Blocking) {
+	LAMBDA80_WaitBusy(Blocking);
 
 	uint8_t tx[4] = {L80_RX_BUFF_STATUS, 0, 0, 0};   	// Skip status return on 2nd byte
 	uint8_t rx[4] = {0};
@@ -227,8 +251,8 @@ void LAMBDA80_GetRxBufferStatus(SPI_HandleTypeDef *hspi, uint8_t *len, uint8_t *
 }
 
 
-void LAMBDA80_ReadBuffer(SPI_HandleTypeDef *hspi, uint8_t *buff, uint8_t StartAddr, uint8_t len) {
-	while(LAMBDA80_CheckBusy()) {}
+void LAMBDA80_ReadBuffer(SPI_HandleTypeDef *hspi, uint8_t *buff, uint8_t StartAddr, uint8_t len, bool Blocking) {
+	LAMBDA80_WaitBusy(Blocking);
 
 	// Send opcode with offset then read into buffer
 	uint8_t tx[3] = {L80_READ_BUFF, StartAddr, 0};
@@ -241,8 +265,8 @@ void LAMBDA80_ReadBuffer(SPI_HandleTypeDef *hspi, uint8_t *buff, uint8_t StartAd
 
 
 
-uint8_t LAMBDA80_ReadReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr) {
-	while(LAMBDA80_CheckBusy()) {}
+uint8_t LAMBDA80_ReadReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, bool Blocking) {
+	LAMBDA80_WaitBusy(Blocking);
 
 	uint8_t tx[5] = {0};   	// Skip status return on 4th byte
 	uint8_t rx[5] = {0};
@@ -259,8 +283,8 @@ uint8_t LAMBDA80_ReadReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr) {
 }
 
 
-void LAMBDA80_WriteReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, uint8_t val) {
-	while(LAMBDA80_CheckBusy()) {}
+void LAMBDA80_WriteReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, uint8_t val, bool Blocking) {
+	LAMBDA80_WaitBusy(Blocking);
 
 	uint8_t tx[4];
 

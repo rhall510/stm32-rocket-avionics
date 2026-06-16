@@ -8,7 +8,8 @@
 // Message/command type codes
 typedef enum {
 	USB_MTYPE_STATUS,
-	USB_MTYPE_ECHO
+	USB_MTYPE_ECHO,
+	USB_MTYPE_DISCOVERY
 } USBMessageType;
 
 

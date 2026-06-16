@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include "stm32g4xx.h"
 #include "pinconfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "misc.h"
 
 
 // Registers
@@ -51,27 +54,45 @@
 
 
 // Functions
-void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi);
+// Returns the state of the BUSY pin
+bool LAMBDA80_CheckBusy();
+
+// Blocks downstream code from running until the BUSY pin goes low. If 'Blocking' is true it will execute a blocking wait, otherwise
+// it will use a short 50us blocking polling loop to catch quick events followed by repeating 1ms FreeRTOS task delays
+void LAMBDA80_WaitBusy(bool Blocking);
+
+// Initialise some basic configuration options for the LAMBDA80
+void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi, bool Blocking);
 
 // Use optimised configuration for long range low data rate reception of telemetry packets
-void LAMBDA80_SetMode_Telemetry(SPI_HandleTypeDef *hspi);
+void LAMBDA80_SetMode_Telemetry(SPI_HandleTypeDef *hspi, bool Blocking);
 
 // Use optimised configuration for short range high data rate sending of packets
-void LAMBDA80_SetMode_Download(SPI_HandleTypeDef *hspi);
+void LAMBDA80_SetMode_Download(SPI_HandleTypeDef *hspi, bool Blocking);
 
-bool LAMBDA80_CheckBusy();
-void LAMBDA80_ClearIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask);
+// Clear all interrupt flags
+void LAMBDA80_ClearIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask, bool Blocking);
 
-void LAMBDA80_SetTx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout);
-void LAMBDA80_SendPacket(SPI_HandleTypeDef *hspi, uint8_t *packet, uint8_t len);
-void LAMBDA80_SetPacketParams(SPI_HandleTypeDef *hspi, uint8_t PreambleLen, uint8_t HeaderType, uint8_t len, uint8_t CRCType, uint8_t InvertIQ);
+// Set to Tx mode and transmit the contents of the buffer
+void LAMBDA80_SetTx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout, bool Blocking);
 
-void LAMBDA80_SetRx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout);
-void LAMBDA80_GetRxBufferStatus(SPI_HandleTypeDef *hspi, uint8_t *len, uint8_t *start);
-void LAMBDA80_ReadBuffer(SPI_HandleTypeDef *hspi, uint8_t *buff, uint8_t StartAddr, uint8_t len);
+// Writes the provided packet data into the Tx buffer and transmits it
+void LAMBDA80_SendPacket(SPI_HandleTypeDef *hspi, uint8_t *packet, uint8_t len, bool Blocking);
 
-uint8_t LAMBDA80_ReadReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr);
-void LAMBDA80_WriteReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, uint8_t val);
+void LAMBDA80_SetPacketParams(SPI_HandleTypeDef *hspi, uint8_t PreambleLen, uint8_t HeaderType, uint8_t len,
+							  uint8_t CRCType, uint8_t InvertIQ, bool Blocking);
+
+// Set to Rx mode
+void LAMBDA80_SetRx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout, bool Blocking);
+
+// Get the start position and length of the packet stored in the Rx buffer
+void LAMBDA80_GetRxBufferStatus(SPI_HandleTypeDef *hspi, uint8_t *len, uint8_t *start, bool Blocking);
+
+// Reads the Rx buffer into the provided buffer
+void LAMBDA80_ReadBuffer(SPI_HandleTypeDef *hspi, uint8_t *buff, uint8_t StartAddr, uint8_t len, bool Blocking);
+
+uint8_t LAMBDA80_ReadReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, bool Blocking);
+void LAMBDA80_WriteReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, uint8_t val, bool Blocking);
 
 
 #endif /* LAMBDA80_H_ */

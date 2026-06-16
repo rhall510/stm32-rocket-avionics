@@ -6,6 +6,7 @@
 #include "task.h"
 #include "semphr.h"
 #include "tusb.h"
+#include "timers.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -28,8 +29,6 @@ TaskHandle_t LAMBDA62RxTaskNotif = NULL;
 // Semaphores
 SemaphoreHandle_t LAMBDA80TxSemphr = NULL;
 SemaphoreHandle_t LAMBDA62TxSemphr = NULL;
-SemaphoreHandle_t LAMBDA80BusySemphr = NULL;
-SemaphoreHandle_t LAMBDA62BusySemphr = NULL;
 
 // Mutexes
 SemaphoreHandle_t USBTxMutex = NULL;
@@ -64,6 +63,7 @@ typedef enum {
 	TM_STATE_IDLE,
 	TM_ECHO_CMD,
 	TM_STATUS_CMD,
+	TM_DISC_CMD,
     TM_NUM_STATES   // Not an actual state, just useful for getting the number of possible states
 } TMState;
 
@@ -77,6 +77,14 @@ typedef TMState (*TMStateHandler)(USBPacket* pkt, NetPacket* resp);
 TMState HandleStateIdle(USBPacket* pkt, NetPacket* resp);
 TMState HandleStateEchoCmd(USBPacket* pkt, NetPacket* resp);
 TMState HandleStateStatusCmd(USBPacket* pkt, NetPacket* resp);
+TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp);
+
+
+
+// Periodic discovery packets
+TimerHandle_t DiscoveryTimer;
+
+void SendDiscoveryPacket(TimerHandle_t Timer);
 
 
 // USB packet functions
@@ -105,6 +113,7 @@ void ParseUSBBytes(uint8_t *bytestream, uint16_t len);
 void SystemClockConfig(void);
 void InitialiseGPIO();
 void InitialiseSPI();
+void InitialiseTimers();
 
 // Error handling
 void Error_Handler(void);

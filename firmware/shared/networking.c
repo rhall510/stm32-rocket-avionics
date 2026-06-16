@@ -3,7 +3,7 @@
 
 uint8_t ConstructNetPacket(uint8_t* buff, uint8_t maxlen, NetPacket* packetinfo) {
 	// Check if the buffer is long enough to hold the packet
-	if (maxlen < packetinfo->payloadlen + 3) { return 0; }
+	if (maxlen < packetinfo->payloadlen + 5) { return 0; }
 
 	buff[0] = packetinfo->recipient;
 	buff[1] = packetinfo->sender;

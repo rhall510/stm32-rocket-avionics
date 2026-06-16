@@ -12,12 +12,12 @@ void LAMBDA62_WaitBusy(bool Blocking) {
 		return;
 	}
 
-    uint32_t startus = GetMicros();
+    uint32_t startus = GET_MICROS;
     bool firstpass = true;
 
     while(LAMBDA62_CheckBusy()) {
         if (firstpass) {   // Initially poll for 50us to catch quick events
-            uint32_t currus = GetMicros() - startus;
+            uint32_t currus = GET_MICROS - startus;
 
             if (currus > 50) {
             	firstpass = false;
@@ -100,9 +100,9 @@ void InitialiseLAMBDA62LoRa(SPI_HandleTypeDef *hspi, bool Blocking) {
 	LAMBDA62_WaitBusy(Blocking);
 
 	// Optimise TxClampConfig to minimise losses in case of antenna mismatch (as per datasheet section 15.2)
-	uint8_t txconfig = LAMBDA62_ReadReg(hspi, L62_TXCLAMP);
+	uint8_t txconfig = LAMBDA62_ReadReg(hspi, L62_TXCLAMP, Blocking);
 	txconfig |= 0x1E;
-	LAMBDA62_WriteReg(hspi, L62_TXCLAMP, txconfig);
+	LAMBDA62_WriteReg(hspi, L62_TXCLAMP, txconfig, Blocking);
 
 	LAMBDA62_WaitBusy(Blocking);
 
@@ -129,7 +129,7 @@ void InitialiseLAMBDA62LoRa(SPI_HandleTypeDef *hspi, bool Blocking) {
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
 	// Set default packet parameters
-	LAMBDA62_SetPacketParamsLoRa(hspi, 8, 0, 10, 1, 0);   // 8 bit preamble, explicit header, CRC on, normal IQ
+	LAMBDA62_SetPacketParamsLoRa(hspi, 8, 0, 10, 1, 0, Blocking);   // 8 bit preamble, explicit header, CRC on, normal IQ
 
 	LAMBDA62_WaitBusy(Blocking);
 
@@ -203,9 +203,9 @@ void InitialiseLAMBDA62FSK(SPI_HandleTypeDef *hspi, bool Blocking) {
 	LAMBDA62_WaitBusy(Blocking);
 
 	// Optimise TxClampConfig to minimise losses in case of antenna mismatch (as per datasheet section 15.2)
-	uint8_t txconfig = LAMBDA62_ReadReg(hspi, L62_TXCLAMP);
+	uint8_t txconfig = LAMBDA62_ReadReg(hspi, L62_TXCLAMP, Blocking);
 	txconfig |= 0x1E;
-	LAMBDA62_WriteReg(hspi, L62_TXCLAMP, txconfig);
+	LAMBDA62_WriteReg(hspi, L62_TXCLAMP, txconfig, Blocking);
 
 	LAMBDA62_WaitBusy(Blocking);
 
@@ -236,7 +236,7 @@ void InitialiseLAMBDA62FSK(SPI_HandleTypeDef *hspi, bool Blocking) {
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
 	// Set default packet parameters
-	LAMBDA62_SetPacketParamsFSK(hspi, 32, 32, 32, 2, true, 10, 2, false);
+	LAMBDA62_SetPacketParamsFSK(hspi, 32, 32, 32, 2, true, 10, 2, false, Blocking);
 
 	LAMBDA62_WaitBusy(Blocking);
 
@@ -276,7 +276,7 @@ void LAMBDA62_SendPacket(SPI_HandleTypeDef *hspi, uint8_t *packet, uint8_t len, 
 	HAL_SPI_Transmit(hspi, packet, len, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
-	LAMBDA62_SetTx(hspi, L62_TX_TIMEOUT);
+	LAMBDA62_SetTx(hspi, L62_TX_TIMEOUT, Blocking);
 }
 
 

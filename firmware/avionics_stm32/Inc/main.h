@@ -2,6 +2,11 @@
 #define MAIN_H_
 
 #include "stm32g4xx.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "semphr.h"
+
 #include "pinconfig.h"
 #include "adxl375.h"
 #include "lsm6dsr.h"
@@ -11,12 +16,16 @@
 #include "w25q.h"
 #include "lambda62.h"
 #include "lambda80.h"
-#include "datatypes.h"
-#include "misc.h"
+
 #include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
+
+#include "datatypes.h"
+#include "misc.h"
+#include "networking.h"
 
 
 I2C_HandleTypeDef hi2c;
@@ -25,31 +34,49 @@ SPI_HandleTypeDef hspi2_str;
 SPI_HandleTypeDef hspi3_rf;
 
 
-#define LSM6_FIFO_READNUM 4
-#define ADXL_FIFO_READNUM 4
-#define BMP_FIFO_READNUM 1
+// Task notifications
+TaskHandle_t LAMBDA80RxTaskNotif = NULL;
+TaskHandle_t LAMBDA62RxTaskNotif = NULL;
 
-#define DOWNLOAD_PKT_SYNC_WORD 0x88442211
-#define DOWNLOAD_PKT_TERM 0x336699CC
+// Semaphores
+SemaphoreHandle_t LAMBDA80TxSemphr = NULL;
+SemaphoreHandle_t LAMBDA62TxSemphr = NULL;
 
+// Mutexes
+SemaphoreHandle_t SPIRfMutex = NULL;
 
-// Polls for available data. Returns true if a sentence is found
-bool Poll_MAXM10S();
-
-
-// Flash logging
-#define FLASH_BUFFER_LEN 1024
-#define FLASH_LOG_RATE 10   // Hz at which logging should be executed (handled by TIM2)
-
-// Write all accumulated data to flash and flip to accumulating in the other buffer
-void WriteFullDataPacket();
-
-// Transmit all data stored in flash over 2.4GHz
-void TransmitStoredData();
+// Queue handles
+QueueHandle_t RadioQueue;
 
 
 
-void L80_SendTestPackets();
+// Tasks
+// Read from radio modules and push the packet onto the radio receive queue
+// TODO Uses DMA transfers for packets above RADIO_PKTLEN_DMA_THRESH bytes long
+#define RADIO_PKTLEN_DMA_THRESH 100
+
+void ReadIncomingLAMBDA80(void *param);
+void ReadIncomingLAMBDA62(void *param);
+
+// Executes a state machine to handle all transaction types
+void TransactionManagerTask(void *param);
+
+// States for the transaction manager state machine
+typedef enum {
+	TM_STATE_IDLE,
+	TM_DISC_CMD,
+    TM_NUM_STATES   // Not an actual state, just useful for getting the number of possible states
+} TMState;
+
+// Transaction manager state handler function signature
+// All functions take in the most recent radio packet and return the state the transaction manager should transition to
+typedef TMState (*TMStateHandler)(NetPacket* pkt);
+
+// Transaction manager state handler functions
+TMState HandleStateIdle(NetPacket* pkt);
+TMState HandleStateDiscoveryCmd(NetPacket* pkt);
+
+
 
 // System initialisation
 void SystemClockConfig(void);

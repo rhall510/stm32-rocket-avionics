@@ -31,12 +31,22 @@ void ReadIncomingLAMBDA80(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+        	// Read the raw bytes from the radio buffer
 			uint8_t len = 0;
 			uint8_t start = 0;
-			LAMBDA80_GetRxBufferStatus(hspi3_rf, &len, &start);
+			LAMBDA80_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
 
 			uint8_t buff[256];
-			LAMBDA80_ReadBuffer(hspi3_rf, buff, start, len);
+			LAMBDA80_ReadBuffer(&hspi3_rf, buff, start, len, false);
+
+			// Decode raw bytes into a net packet
+			NetPacket pkt;
+			DecodeNetPacket(&pkt, buff, len);
+
+			// Place into the radio response queue
+			if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
+				printf("[ERROR] Radio response queue full");
+			}
         }
     }
 }
@@ -47,12 +57,22 @@ void ReadIncomingLAMBDA62(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+        	// Read the raw bytes from the radio buffer
 			uint8_t len = 0;
 			uint8_t start = 0;
-			LAMBDA62_GetRxBufferStatus(hspi3_rf, &len, &start);
+			LAMBDA62_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
 
 			uint8_t buff[256];
-			LAMBDA62_ReadBuffer(hspi3_rf, buff, start, len);
+			LAMBDA62_ReadBuffer(&hspi3_rf, buff, start, len, false);
+
+			// Decode raw bytes into a net packet
+			NetPacket pkt;
+			DecodeNetPacket(&pkt, buff, len);
+
+			// Place into the radio response queue
+			if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
+				printf("[ERROR] Radio response queue full");
+			}
         }
     }
 }
@@ -65,7 +85,8 @@ void TransactionManagerTask(void *param) {
 	static const TMStateHandler TMStateTable[TM_NUM_STATES] = {
 	    [TM_STATE_IDLE] = HandleStateIdle,
 	    [TM_ECHO_CMD] = HandleStateEchoCmd,
-		[TM_STATUS_CMD] = HandleStateStatusCmd
+		[TM_STATUS_CMD] = HandleStateStatusCmd,
+		[TM_DISC_CMD] = HandleStateDiscoveryCmd
 	};
 
     TMState currState = TM_STATE_IDLE;
@@ -105,6 +126,58 @@ TMState HandleStateStatusCmd(USBPacket* pkt, NetPacket* resp) {
 }
 
 
+TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
+	static TickType_t startTime = 0;
+	static bool isFirstCall = true;
+
+	// Initialise radio, send the discovery packet, and start the 500ms timer on first pass
+	if (isFirstCall) {
+		// Broadcast the discovery packet
+		NetPacket discpkt;
+		discpkt.recipient = NET_BROADCAST_ADDR;
+		discpkt.sender = NET_CONTROLLER_ADDR;
+		discpkt.status = 0x0;
+		discpkt.type = NET_MTYPE_DISCOVERY;
+		discpkt.seqnum = 0;
+		discpkt.payloadlen = 0;
+
+		uint8_t buff[5];
+		ConstructNetPacket(buff, 5, &discpkt);
+
+		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 32, 32, 2, true, 5, 2, false, false);
+		LAMBDA62_SendPacket(&hspi3_rf, buff, 5, false);
+
+		// Set to Rx mode for 500ms
+		LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+		startTime = xTaskGetTickCount();
+		isFirstCall = false;
+	}
+
+	// Try to receive ACKs from the radio response queue
+	if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(10)) == pdPASS) {
+		if (resp->type == NET_MTYPE_ACK) {
+			USBPacket status;
+			status.type = USB_MTYPE_STATUS;
+			status.payloadlen = 2;
+			status.payload[0] = 0xDD;
+			status.payload[1] = resp->sender;
+
+			SendPacketUSB(&status);
+		}
+	}
+
+	if ((xTaskGetTickCount() - startTime) >= pdMS_TO_TICKS(500)) {
+		// ACK receive window closed
+		isFirstCall = true;
+		return TM_STATE_IDLE;
+	}
+
+	// ACK receive window still open, stay in this state
+	return TM_DISC_CMD;
+}
+
+
 int main(void) {
     HAL_Init();
 
@@ -113,11 +186,14 @@ int main(void) {
 	InitialiseSPI();
 	InitialiseTimers();
 
+	InitialiseLAMBDA62FSK(&hspi3_rf, true);
+
 	__enable_irq();
 
 	tusb_init();
 
 
+	// Initialise FreeRTOS objects
 	RadioResponseQueue = xQueueCreate(5, sizeof(NetPacket));
 	if (RadioResponseQueue == NULL) { Error_Handler(); }
 
@@ -136,18 +212,17 @@ int main(void) {
 	LAMBDA62TxSemphr = xSemaphoreCreateBinary();
 	if (LAMBDA62TxSemphr == NULL) { Error_Handler(); }
 
-	LAMBDA80BusySemphr = xSemaphoreCreateBinary();
-	if (LAMBDA80BusySemphr == NULL) { Error_Handler(); }
 
-	LAMBDA62BusySemphr = xSemaphoreCreateBinary();
-	if (LAMBDA62BusySemphr == NULL) { Error_Handler(); }
-
-
+	// Create tasks
     xTaskCreate(RunTUDTask, "TUSB-Task", 1024, NULL, configMAX_PRIORITIES - 1, NULL);
     xTaskCreate(ReadIncomingUSB, "CMD-Receive", 1024, NULL, 4, &USBRxTaskNotif);
     xTaskCreate(ReadIncomingLAMBDA80, "LAMBDA80-Receive", 1024, NULL, 4, &LAMBDA80RxTaskNotif);
     xTaskCreate(ReadIncomingLAMBDA62, "LAMBDA62-Receive", 1024, NULL, 4, &LAMBDA62RxTaskNotif);
     xTaskCreate(TransactionManagerTask, "Transaction-Manager", 4096, NULL, 1, NULL);
+
+    DiscoveryTimer = xTimerCreate("DiscTimer", pdMS_TO_TICKS(10000), pdTRUE, (void *)0, SendDiscoveryPacket);
+    xTimerStart(DiscoveryTimer, 0);
+
 
     printf("INIT\n");
 
@@ -259,6 +334,17 @@ void ParseUSBBytes(uint8_t *bytestream, uint16_t len) {
 }
 
 
+
+void SendDiscoveryPacket(TimerHandle_t Timer) {
+	// Adds a discovery command to the command queue when triggered by DiscoveryTimer
+	USBPacket disccmd;
+	disccmd.type = USB_MTYPE_DISCOVERY;
+	disccmd.payloadlen = 0;
+
+	if (xQueueSend(CommandQueue, &disccmd, pdMS_TO_TICKS(10)) != pdPASS) {
+		printf("[ERROR] USB command queue full");
+	}
+}
 
 
 
@@ -480,6 +566,7 @@ void InitialiseSPI() {
 
 
 void InitialiseTimers() {
+	// TIM2 used as a microsecond clock
 	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;   // Enable clock
     __DSB();   // Ensure the clock is active before continuing
 
