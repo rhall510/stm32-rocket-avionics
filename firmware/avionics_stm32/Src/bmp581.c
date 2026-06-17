@@ -10,7 +10,7 @@ bool InitialiseBMP581(uint8_t Threshold) {
 
 	// Check device ID is correct
 	uint8_t buff[1] = {0};
-	HAL_StatusTypeDef status = HAL_I2C_Mem_Read(&hi2c, BMP_I2C_ADDR, BMP_ASIC_ID, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
+	HAL_I2C_Mem_Read(&hi2c, BMP_I2C_ADDR, BMP_ASIC_ID, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
 
 	if (buff[0] == 0) {
 		printf("BMP581 not responsive");
@@ -82,7 +82,7 @@ uint8_t BMP581_GetFIFOCount() {
 }
 
 
-void BMP581_ReadFIFOData(volatile struct TS_PressTemp *ptbuff, uint8_t readnum, float readytime) {
+void BMP581_ReadFIFOData(volatile TS_PressTemp *ptbuff, uint8_t readnum, float readytime) {
 	// Read specified number of frames from FIFO
 	uint8_t num = readnum * BMP_FIFO_DATA_BLOCK_SIZE;
 
@@ -109,7 +109,7 @@ void BMP581_ReadFIFOData(volatile struct TS_PressTemp *ptbuff, uint8_t readnum, 
 
 
 
-bool BMP581_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_PressTemp *databuff, uint8_t Readings) {
+bool BMP581_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_PressTemp *databuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * BMP_PKT_DATA_LEN;
 

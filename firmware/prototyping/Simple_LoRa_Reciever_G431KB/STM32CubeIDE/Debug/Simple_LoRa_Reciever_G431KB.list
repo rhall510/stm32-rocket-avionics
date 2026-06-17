@@ -27,25 +27,25 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000030  00000000  00000000  00006010  2**0
                   CONTENTS, READONLY
- 12 .debug_info   0000e8a9  00000000  00000000  00006040  2**0
+ 12 .debug_info   0000e8ba  00000000  00000000  00006040  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 00001fae  00000000  00000000  000148e9  2**0
+ 13 .debug_abbrev 00001fae  00000000  00000000  000148fa  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 00000be0  00000000  00000000  00016898  2**3
+ 14 .debug_aranges 00000be0  00000000  00000000  000168a8  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_rnglists 00000921  00000000  00000000  00017478  2**0
+ 15 .debug_rnglists 00000921  00000000  00000000  00017488  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  0001daff  00000000  00000000  00017d99  2**0
+ 16 .debug_macro  0000241b  00000000  00000000  00017da9  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   0000e6b0  00000000  00000000  00035898  2**0
+ 17 .debug_line   0000e6b1  00000000  00000000  0001a1c4  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    000b925b  00000000  00000000  00043f48  2**0
+ 18 .debug_str    000b926d  00000000  00000000  00028875  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000043  00000000  00000000  000fd1a3  2**0
+ 19 .comment      00000043  00000000  00000000  000e1ae2  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00002ddc  00000000  00000000  000fd1e8  2**2
+ 20 .debug_frame  00002ddc  00000000  00000000  000e1b28  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 00000088  00000000  00000000  000fffc4  2**0
+ 21 .debug_line_str 00000088  00000000  00000000  000e4904  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -1138,13 +1138,13 @@ int main(void) {
  8000a7c:	f002 fcc2 	bl	8003404 <HAL_UART_Transmit>
 
 	while (1) {
-		if (PacketReady) {
+		if (L80PacketReady) {
  8000a80:	4b33      	ldr	r3, [pc, #204]	@ (8000b50 <main+0x124>)
  8000a82:	781b      	ldrb	r3, [r3, #0]
  8000a84:	b2db      	uxtb	r3, r3
  8000a86:	2b00      	cmp	r3, #0
  8000a88:	d0fa      	beq.n	8000a80 <main+0x54>
-			PacketReady = false;
+			L80PacketReady = false;
  8000a8a:	4b31      	ldr	r3, [pc, #196]	@ (8000b50 <main+0x124>)
  8000a8c:	2200      	movs	r2, #0
  8000a8e:	701a      	strb	r2, [r3, #0]
@@ -1235,7 +1235,7 @@ int main(void) {
 			LAMBDA80_ClearIRQ(0xFFFF);
  8000b3e:	f64f 70ff 	movw	r0, #65535	@ 0xffff
  8000b42:	f7ff fe33 	bl	80007ac <LAMBDA80_ClearIRQ>
-		if (PacketReady) {
+		if (L80PacketReady) {
  8000b46:	e79b      	b.n	8000a80 <main+0x54>
  8000b48:	08004190 	.word	0x08004190
  8000b4c:	20000094 	.word	0x20000094
@@ -1905,7 +1905,7 @@ void EXTI9_5_IRQHandler(void) {
  8000f9a:	4b06      	ldr	r3, [pc, #24]	@ (8000fb4 <EXTI9_5_IRQHandler+0x74>)
  8000f9c:	f44f 7200 	mov.w	r2, #512	@ 0x200
  8000fa0:	615a      	str	r2, [r3, #20]
-		PacketReady = true;
+		L80PacketReady = true;
  8000fa2:	4b05      	ldr	r3, [pc, #20]	@ (8000fb8 <EXTI9_5_IRQHandler+0x78>)
  8000fa4:	2201      	movs	r2, #1
  8000fa6:	701a      	strb	r2, [r3, #0]

@@ -131,7 +131,7 @@ void MAXM10S_FlushBuffer() {
 }
 
 
-void MAXM10S_ProcessNMEASentence(const char *sentence, struct TS_GPS *data) {
+void MAXM10S_ProcessNMEASentence(const char *sentence, TS_GPS *data) {
 	int type = minmea_sentence_id(sentence, false);
 
 	if (type == MINMEA_SENTENCE_RMC) {
@@ -160,7 +160,7 @@ void MAXM10S_ProcessNMEASentence(const char *sentence, struct TS_GPS *data) {
 }
 
 
-bool MAXM10S_ParseStream(uint8_t *i2c_data, uint16_t length, struct TS_GPS *data) {
+bool MAXM10S_ParseStream(uint8_t *i2c_data, uint16_t length, TS_GPS *data) {
 	bool SentenceFound = false;
 
 	for (uint16_t i = 0; i < length; i++) {
@@ -185,7 +185,7 @@ bool MAXM10S_ParseStream(uint8_t *i2c_data, uint16_t length, struct TS_GPS *data
 
 
 
-bool MAXM10S_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_GPS *databuff, uint8_t Readings) {
+bool MAXM10S_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_GPS *databuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * M10S_PKT_DATA_LEN;
 

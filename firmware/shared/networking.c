@@ -3,19 +3,20 @@
 
 uint8_t ConstructNetPacket(uint8_t* buff, uint8_t maxlen, NetPacket* packetinfo) {
 	// Check if the buffer is long enough to hold the packet
-	if (maxlen < packetinfo->payloadlen + 5) { return 0; }
+	if (maxlen < packetinfo->payloadlen + 6) { return 0; }
 
-	buff[0] = packetinfo->recipient;
-	buff[1] = packetinfo->sender;
-	buff[2] = packetinfo->status;
-	buff[3] = packetinfo->type;
-	buff[4] = packetinfo->seqnum;
+	buff[0] = packetinfo->payloadlen + 5;   // Start with length EXCLUDING itself in variable length mode
+	buff[1] = packetinfo->recipient;
+	buff[2] = packetinfo->sender;
+	buff[3] = packetinfo->status;
+	buff[4] = packetinfo->type;
+	buff[5] = packetinfo->seqnum;
 
 	for (int i = 0; i < packetinfo->payloadlen; i++) {
-		buff[i + 5] = packetinfo->payload[i];
+		buff[i + 6] = packetinfo->payload[i];
 	}
 
-	return packetinfo->payloadlen + 5;
+	return packetinfo->payloadlen + 6;
 }
 
 void DecodeNetPacket(NetPacket* packetinfo, uint8_t* buff, uint8_t bufflen) {

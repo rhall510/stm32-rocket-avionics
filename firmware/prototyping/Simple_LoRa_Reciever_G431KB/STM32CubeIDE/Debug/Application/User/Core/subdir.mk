@@ -5,6 +5,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../Application/User/Core/lambda62.c \
 ../Application/User/Core/lambda80.c \
 C:/Dev/Avionics/firmware/prototyping/Simple_LoRa_Reciever_G431KB/Core/Src/main.c \
 C:/Dev/Avionics/firmware/prototyping/Simple_LoRa_Reciever_G431KB/Core/Src/stm32g4xx_hal_msp.c \
@@ -13,6 +14,7 @@ C:/Dev/Avionics/firmware/prototyping/Simple_LoRa_Reciever_G431KB/Core/Src/stm32g
 ../Application/User/Core/sysmem.c 
 
 OBJS += \
+./Application/User/Core/lambda62.o \
 ./Application/User/Core/lambda80.o \
 ./Application/User/Core/main.o \
 ./Application/User/Core/stm32g4xx_hal_msp.o \
@@ -21,6 +23,7 @@ OBJS += \
 ./Application/User/Core/sysmem.o 
 
 C_DEPS += \
+./Application/User/Core/lambda62.d \
 ./Application/User/Core/lambda80.d \
 ./Application/User/Core/main.d \
 ./Application/User/Core/stm32g4xx_hal_msp.d \
@@ -42,7 +45,7 @@ Application/User/Core/stm32g4xx_it.o: C:/Dev/Avionics/firmware/prototyping/Simpl
 clean: clean-Application-2f-User-2f-Core
 
 clean-Application-2f-User-2f-Core:
-	-$(RM) ./Application/User/Core/lambda80.cyclo ./Application/User/Core/lambda80.d ./Application/User/Core/lambda80.o ./Application/User/Core/lambda80.su ./Application/User/Core/main.cyclo ./Application/User/Core/main.d ./Application/User/Core/main.o ./Application/User/Core/main.su ./Application/User/Core/stm32g4xx_hal_msp.cyclo ./Application/User/Core/stm32g4xx_hal_msp.d ./Application/User/Core/stm32g4xx_hal_msp.o ./Application/User/Core/stm32g4xx_hal_msp.su ./Application/User/Core/stm32g4xx_it.cyclo ./Application/User/Core/stm32g4xx_it.d ./Application/User/Core/stm32g4xx_it.o ./Application/User/Core/stm32g4xx_it.su ./Application/User/Core/syscalls.cyclo ./Application/User/Core/syscalls.d ./Application/User/Core/syscalls.o ./Application/User/Core/syscalls.su ./Application/User/Core/sysmem.cyclo ./Application/User/Core/sysmem.d ./Application/User/Core/sysmem.o ./Application/User/Core/sysmem.su
+	-$(RM) ./Application/User/Core/lambda62.cyclo ./Application/User/Core/lambda62.d ./Application/User/Core/lambda62.o ./Application/User/Core/lambda62.su ./Application/User/Core/lambda80.cyclo ./Application/User/Core/lambda80.d ./Application/User/Core/lambda80.o ./Application/User/Core/lambda80.su ./Application/User/Core/main.cyclo ./Application/User/Core/main.d ./Application/User/Core/main.o ./Application/User/Core/main.su ./Application/User/Core/stm32g4xx_hal_msp.cyclo ./Application/User/Core/stm32g4xx_hal_msp.d ./Application/User/Core/stm32g4xx_hal_msp.o ./Application/User/Core/stm32g4xx_hal_msp.su ./Application/User/Core/stm32g4xx_it.cyclo ./Application/User/Core/stm32g4xx_it.d ./Application/User/Core/stm32g4xx_it.o ./Application/User/Core/stm32g4xx_it.su ./Application/User/Core/syscalls.cyclo ./Application/User/Core/syscalls.d ./Application/User/Core/syscalls.o ./Application/User/Core/syscalls.su ./Application/User/Core/sysmem.cyclo ./Application/User/Core/sysmem.d ./Application/User/Core/sysmem.o ./Application/User/Core/sysmem.su
 
 .PHONY: clean-Application-2f-User-2f-Core
 

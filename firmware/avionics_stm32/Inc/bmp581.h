@@ -38,9 +38,9 @@ bool InitialiseBMP581(uint8_t Threshold);
 void BMP581_Reset();
 
 uint8_t BMP581_GetFIFOCount();
-void BMP581_ReadFIFOData(volatile struct TS_PressTemp *ptbuff, uint8_t readnum, float readytime);
+void BMP581_ReadFIFOData(volatile TS_PressTemp *ptbuff, uint8_t readnum, float readytime);
 
 // Constructs a flash logging packet from the given data and appends it to the buffer
-bool BMP581_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_PressTemp *databuff, uint8_t Readings);
+bool BMP581_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_PressTemp *databuff, uint8_t Readings);
 
 #endif /* BMP581_H_ */

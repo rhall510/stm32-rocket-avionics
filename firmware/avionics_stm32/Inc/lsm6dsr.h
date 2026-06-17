@@ -40,13 +40,13 @@
 bool InitialiseLSM6DSR(uint16_t WatermarkReads);
 void LSM6DSR_Reset();
 
-struct Vector3 LSM6DSR_ReadInstAccelData();
-struct Vector3 LSM6DSR_ReadInstGyroData();
+Vec3 LSM6DSR_ReadInstAccelData();
+Vec3 LSM6DSR_ReadInstGyroData();
 
-void LSM6DSR_ReadFIFOData(volatile struct TS_Vec3 *accbuff, volatile struct TS_Vec3 *gyrbuff, uint16_t readnum, float readytime);
+void LSM6DSR_ReadFIFOData(volatile TS_Vec3 *accbuff, volatile TS_Vec3 *gyrbuff, uint16_t readnum, float readytime);
 uint16_t LSM6DSR_GetFIFOStatus();
 
 // Constructs a flash logging packet from the given data and appends it to the buffer
-bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_Vec3 *accbuff, volatile struct TS_Vec3 *gyrbuff, uint8_t Readings);
+bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_Vec3 *accbuff, volatile TS_Vec3 *gyrbuff, uint8_t Readings);
 
 #endif /* LSM6DSR_H_ */

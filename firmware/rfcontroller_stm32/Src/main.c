@@ -16,6 +16,7 @@ void ReadIncomingUSB(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+        	printf("Reading USB command\n");
         	while (tud_cdc_available() > 0) {
 				uint8_t buff[512];
 				uint32_t count = tud_cdc_read(buff, sizeof(buff));
@@ -31,21 +32,28 @@ void ReadIncomingLAMBDA80(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-        	// Read the raw bytes from the radio buffer
-			uint8_t len = 0;
-			uint8_t start = 0;
-			LAMBDA80_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
+			if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
+				printf("Reading L80\n");
+				// Read the raw bytes from the radio buffer
+				uint8_t len = 0;
+				uint8_t start = 0;
+				LAMBDA80_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
 
-			uint8_t buff[256];
-			LAMBDA80_ReadBuffer(&hspi3_rf, buff, start, len, false);
+				uint8_t buff[256];
+				LAMBDA80_ReadBuffer(&hspi3_rf, buff, start, len, false);
 
-			// Decode raw bytes into a net packet
-			NetPacket pkt;
-			DecodeNetPacket(&pkt, buff, len);
+				xSemaphoreGive(SPIRfMutex);
 
-			// Place into the radio response queue
-			if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
-				printf("[ERROR] Radio response queue full");
+				// Decode raw bytes into a net packet
+				NetPacket pkt;
+				DecodeNetPacket(&pkt, buff, len);
+
+				// Place into the radio response queue
+				if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
+					printf("[ERROR] Radio response queue full\n");
+				}
+			} else {
+				printf("[ERROR] LAMBDA80 read timed out due to unreleased SPI mutex\n");
 			}
         }
     }
@@ -57,22 +65,29 @@ void ReadIncomingLAMBDA62(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-        	// Read the raw bytes from the radio buffer
-			uint8_t len = 0;
-			uint8_t start = 0;
-			LAMBDA62_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
+        	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
+        		printf("Reading L62\n");
+            	// Read the raw bytes from the radio buffer
+    			uint8_t len = 0;
+    			uint8_t start = 0;
+    			LAMBDA62_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
 
-			uint8_t buff[256];
-			LAMBDA62_ReadBuffer(&hspi3_rf, buff, start, len, false);
+    			uint8_t buff[256];
+    			LAMBDA62_ReadBuffer(&hspi3_rf, buff, start, len, false);
 
-			// Decode raw bytes into a net packet
-			NetPacket pkt;
-			DecodeNetPacket(&pkt, buff, len);
+    			xSemaphoreGive(SPIRfMutex);
 
-			// Place into the radio response queue
-			if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
-				printf("[ERROR] Radio response queue full");
-			}
+    			// Decode raw bytes into a net packet
+    			NetPacket pkt;
+    			DecodeNetPacket(&pkt, buff, len);
+
+    			// Place into the radio response queue
+    			if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
+    				printf("[ERROR] Radio response queue full\n");
+    			}
+        	} else {
+        		printf("[ERROR] LAMBDA62 read timed out due to unreleased SPI mutex\n");
+        	}
         }
     }
 }
@@ -105,18 +120,22 @@ TMState HandleStateIdle(USBPacket* pkt, NetPacket* resp) {
 	if (xQueueReceive(CommandQueue, pkt, portMAX_DELAY) == pdPASS) {
 		if (pkt->type == USB_MTYPE_ECHO) { return TM_ECHO_CMD; }
 		if (pkt->type == USB_MTYPE_STATUS) { return TM_STATUS_CMD; }
+		if (pkt->type == USB_MTYPE_DISCOVERY) { return TM_DISC_CMD; }
 	}
 	return TM_STATE_IDLE;
 }
 
 
 TMState HandleStateEchoCmd(USBPacket* pkt, NetPacket* resp) {
+	printf("Executing ECHO command\n");
 	SendPacketUSB(pkt);
 	return TM_STATE_IDLE;
 }
 
 
 TMState HandleStateStatusCmd(USBPacket* pkt, NetPacket* resp) {
+	printf("Executing STATUS command\n");
+
 	pkt->payloadlen = 2;
 	pkt->payload[0] = 0xFA;
 	pkt->payload[1] = 0xBB;
@@ -132,26 +151,41 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 
 	// Initialise radio, send the discovery packet, and start the 500ms timer on first pass
 	if (isFirstCall) {
-		// Broadcast the discovery packet
-		NetPacket discpkt;
-		discpkt.recipient = NET_BROADCAST_ADDR;
-		discpkt.sender = NET_CONTROLLER_ADDR;
-		discpkt.status = 0x0;
-		discpkt.type = NET_MTYPE_DISCOVERY;
-		discpkt.seqnum = 0;
-		discpkt.payloadlen = 0;
+		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
+			printf("Executing DISCOVERY command\n");
 
-		uint8_t buff[5];
-		ConstructNetPacket(buff, 5, &discpkt);
+			USBPacket status;
+			status.type = USB_MTYPE_STATUS;
+			status.payloadlen = 1;
+			status.payload[0] = 0xDD;
 
-		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 32, 32, 2, true, 5, 2, false, false);
-		LAMBDA62_SendPacket(&hspi3_rf, buff, 5, false);
+			SendPacketUSB(&status);
 
-		// Set to Rx mode for 500ms
-		LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+			// Broadcast the discovery packet
+			NetPacket discpkt;
+			discpkt.recipient = NET_BROADCAST_ADDR;
+			discpkt.sender = NET_CONTROLLER_ADDR;
+			discpkt.status = 0x0;
+			discpkt.type = NET_MTYPE_DISCOVERY;
+			discpkt.seqnum = 0;
+			discpkt.payloadlen = 0;
 
-		startTime = xTaskGetTickCount();
-		isFirstCall = false;
+			uint8_t buff[6];
+			ConstructNetPacket(buff, 6, &discpkt);
+
+			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 32, 32, 2, true, 6, 2, false, false);
+			LAMBDA62_SendPacket(&hspi3_rf, buff, 6, false);
+
+			// Set to Rx mode for 500ms
+			LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+			xSemaphoreGive(SPIRfMutex);
+
+			startTime = xTaskGetTickCount();
+			isFirstCall = false;
+		} else {
+			return TM_STATE_IDLE;
+		}
 	}
 
 	// Try to receive ACKs from the radio response queue
@@ -266,7 +300,7 @@ void SendPacketUSB(USBPacket* packetinfo) {
         // Release USB Tx mutex when finished
         xSemaphoreGive(USBTxMutex);
     } else {
-    	printf("[ERROR] USB write timed out");
+    	printf("[ERROR] USB write timed out\n");
     }
 }
 
@@ -306,7 +340,7 @@ void ParseUSBBytes(uint8_t *bytestream, uint16_t len) {
 
             	if (packet.payloadlen == 0) {
 					if (xQueueSend(CommandQueue, &packet, pdMS_TO_TICKS(10)) != pdPASS) {
-						printf("[ERROR] USB command queue full");
+						printf("[ERROR] USB command queue full\n");
 					}
 					state = USBPARSER_WAIT_SYNC_HIGH;
 				} else {
@@ -320,11 +354,11 @@ void ParseUSBBytes(uint8_t *bytestream, uint16_t len) {
 
             	if (payloadidx >= packet.payloadlen) {
 					if (xQueueSend(CommandQueue, &packet, pdMS_TO_TICKS(10)) != pdPASS) {
-						printf("[ERROR] USB command queue full");
+						printf("[ERROR] USB command queue full\n");
 					}
 					state = USBPARSER_WAIT_SYNC_HIGH;
 				} else if (payloadidx >= USB_PAYLOAD_MAXLEN) {
-                	printf("[ERROR] USB parser found longer than allowed payload");
+                	printf("[ERROR] USB parser found longer than allowed payload\n");
                     state = USBPARSER_WAIT_SYNC_HIGH;
                 }
 
@@ -342,7 +376,7 @@ void SendDiscoveryPacket(TimerHandle_t Timer) {
 	disccmd.payloadlen = 0;
 
 	if (xQueueSend(CommandQueue, &disccmd, pdMS_TO_TICKS(10)) != pdPASS) {
-		printf("[ERROR] USB command queue full");
+		printf("[ERROR] USB command queue full\n");
 	}
 }
 

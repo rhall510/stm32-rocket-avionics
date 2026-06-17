@@ -6,21 +6,29 @@ void ReadIncomingLAMBDA80(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-        	// Read the raw bytes from the radio buffer
-			uint8_t len = 0;
-			uint8_t start = 0;
-			LAMBDA80_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
+				if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
+				// Read the raw bytes from the radio buffer
+				uint8_t len = 0;
+				uint8_t start = 0;
+				LAMBDA80_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
 
-			uint8_t buff[256];
-			LAMBDA80_ReadBuffer(&hspi3_rf, buff, start, len, false);
+				uint8_t buff[256];
+				LAMBDA80_ReadBuffer(&hspi3_rf, buff, start, len, false);
 
-			// Decode raw bytes into a net packet
-			NetPacket pkt;
-			DecodeNetPacket(&pkt, buff, len);
+				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
-			// Place into the radio response queue
-			if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
-				printf("[ERROR] Radio response queue full");
+				xSemaphoreGive(SPIRfMutex);
+
+				// Decode raw bytes into a net packet
+				NetPacket pkt;
+				DecodeNetPacket(&pkt, buff, len);
+
+				// Place into the radio response queue
+				if (xQueueSend(RadioQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
+					printf("[ERROR] Radio response queue full\n");
+				}
+			} else {
+				printf("[ERROR] LAMBDA80 read timed out due to unreleased SPI mutex\n");
 			}
         }
     }
@@ -32,21 +40,29 @@ void ReadIncomingLAMBDA62(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-        	// Read the raw bytes from the radio buffer
-			uint8_t len = 0;
-			uint8_t start = 0;
-			LAMBDA62_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
+				if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
+				// Read the raw bytes from the radio buffer
+				uint8_t len = 0;
+				uint8_t start = 0;
+				LAMBDA62_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
 
-			uint8_t buff[256];
-			LAMBDA62_ReadBuffer(&hspi3_rf, buff, start, len, false);
+				uint8_t buff[256];
+				LAMBDA62_ReadBuffer(&hspi3_rf, buff, start, len, false);
 
-			// Decode raw bytes into a net packet
-			NetPacket pkt;
-			DecodeNetPacket(&pkt, buff, len);
+				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
-			// Place into the radio response queue
-			if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
-				printf("[ERROR] Radio response queue full");
+				xSemaphoreGive(SPIRfMutex);
+
+				// Decode raw bytes into a net packet
+				NetPacket pkt;
+				DecodeNetPacket(&pkt, buff, len);
+
+				// Place into the radio response queue
+				if (xQueueSend(RadioQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
+					printf("[ERROR] Radio response queue full\n");
+				}
+			} else {
+				printf("[ERROR] LAMBDA62 read timed out due to unreleased SPI mutex\n");
 			}
         }
     }
@@ -82,6 +98,32 @@ TMState HandleStateIdle(NetPacket* pkt) {
 
 
 TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
+	printf("Sending ACK response to discovery call\n");
+
+	// Stagger response by 50ms * address to prevent collisions
+	vTaskDelay(pdMS_TO_TICKS(NET_ADDRESS * 50));
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+		NetPacket ackpkt;
+		ackpkt.recipient = NET_CONTROLLER_ADDR;
+		ackpkt.sender = NET_ADDRESS;
+		ackpkt.status = 0x0;
+		ackpkt.type = NET_MTYPE_ACK;
+		ackpkt.seqnum = 0;
+		ackpkt.payloadlen = 0;
+
+		uint8_t buff[6];
+		ConstructNetPacket(buff, 6, &ackpkt);
+
+		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 32, 32, 2, true, 6, 2, false, false);
+		LAMBDA62_SendPacket(&hspi3_rf, buff, 6, false);
+
+		xSemaphoreGive(SPIRfMutex);
+	} else {
+		printf("[ERROR] Discovery ACK response timed out due to unreleased SPI mutex\n");
+	}
+
+	return TM_STATE_IDLE;
 }
 
 
@@ -103,6 +145,8 @@ int main(void) {
 
 	// Initialise RF modules
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 32, 32, 2, true, 5, 2, false, true);
+	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, true);
 
 
 	// Initialise FreeRTOS objects
@@ -300,7 +344,7 @@ void InitialiseSPI() {
 	hspi3_rf.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
 	hspi3_rf.Init.CRCPolynomial = 7;
 	hspi3_rf.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-	hspi3_rf.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+	hspi3_rf.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
 
 	if (HAL_SPI_Init(&hspi3_rf) != HAL_OK) { Error_Handler(); }
 }
@@ -319,19 +363,19 @@ void InitialiseGPIO() {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
 	// ULED
-	HAL_GPIO_WritePin(ULED_PORT, ULED_PIN, GPIO_PIN_RESET);
-	GPIO_InitStruct.Pin = ULED_PIN;
+	HAL_GPIO_WritePin(ULED1_PORT, ULED1_PIN, GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = ULED1_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(ULED_PORT, &GPIO_InitStruct);
+	HAL_GPIO_Init(ULED1_PORT, &GPIO_InitStruct);
 
 
 	// UBUTTON
-	GPIO_InitStruct.Pin = UBTN_PIN;
+	GPIO_InitStruct.Pin = UBTN1_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(UBTN_PORT, &GPIO_InitStruct);
+	HAL_GPIO_Init(UBTN1_PORT, &GPIO_InitStruct);
 
 
 	// LSM6DSR pins
@@ -453,7 +497,7 @@ void InitialiseGPIO() {
 
 	GPIO_InitStruct.Pin = L80_DIO1_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(L80_DIO1_PORT, &GPIO_InitStruct);
 
 	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
@@ -461,7 +505,7 @@ void InitialiseGPIO() {
 
 	GPIO_InitStruct.Pin = L80_DIO2_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(L80_DIO2_PORT, &GPIO_InitStruct);
 
 	HAL_NVIC_SetPriority(EXTI3_IRQn, 5, 0);
@@ -496,7 +540,7 @@ void InitialiseGPIO() {
 
 	GPIO_InitStruct.Pin = L62_DIO2_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(L62_DIO2_PORT, &GPIO_InitStruct);
 
 	HAL_NVIC_SetPriority(EXTI2_IRQn, 5, 0);
@@ -535,16 +579,26 @@ void InitialiseCRC() {
 
 
 void InitialiseTimers() {
-	// TIM2
+//	// TIM2
+//	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;   // Enable clock
+//    __DSB();   // Ensure the clock is active before continuing
+//
+//	TIM2->PSC = 16999;   // Set prescaler and ARR to generate 10Hz interrupts
+//	TIM2->ARR = 10000 / FLASH_LOG_RATE - 1;
+//
+//	TIM2->DIER |= TIM_DIER_UIE;   // Enable update interrupt
+//	NVIC_EnableIRQ(TIM2_IRQn);
+//	NVIC_SetPriority(TIM2_IRQn, 5);
+//
+//	TIM2->CR1 |= TIM_CR1_CEN;   // Enable TIM2
+
+
+	// TIM2 used as a microsecond clock
 	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;   // Enable clock
     __DSB();   // Ensure the clock is active before continuing
 
-	TIM2->PSC = 16999;   // Set prescaler and ARR to generate 10Hz interrupts
-	TIM2->ARR = 10000 / FLASH_LOG_RATE - 1;
-
-	TIM2->DIER |= TIM_DIER_UIE;   // Enable update interrupt
-	NVIC_EnableIRQ(TIM2_IRQn);
-	NVIC_SetPriority(TIM2_IRQn, 5);
+	TIM2->PSC = 143;   // Set prescaler to count once per microsecond (1MHz)
+	TIM2->ARR |= 0xFFFFFFFF;   // Max auto reload for use as a microsecond timer
 
 	TIM2->CR1 |= TIM_CR1_CEN;   // Enable TIM2
 }
@@ -554,34 +608,45 @@ void InitialiseTimers() {
 // External interrupt handlers
 void EXTI0_IRQHandler(void) {
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_0);
-	adxl_data_ready = true;
-	adxl_data_time = (float)uwTick / 1000.0f;
 }
 
 void EXTI1_IRQHandler(void) {
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_1);
 }
 
-void EXTI2_IRQHandler(void) {
+void EXTI2_IRQHandler(void) {   // LAMBDA62 Rx done
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_2);
+
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	vTaskNotifyGiveFromISR(LAMBDA62RxTaskNotif, &xHigherPriorityTaskWoken);
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-void EXTI3_IRQHandler(void) {
+void EXTI3_IRQHandler(void) {   // LAMBDA80 Rx done
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_3);
+
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	vTaskNotifyGiveFromISR(LAMBDA80RxTaskNotif, &xHigherPriorityTaskWoken);
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-void EXTI4_IRQHandler(void) {
+void EXTI4_IRQHandler(void) {   // LAMBDA62 Tx done
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_4);
-	lsm_data_ready = true;
-	lsm_data_time = (float)uwTick / 1000.0f;
+
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	xSemaphoreGiveFromISR(LAMBDA62TxSemphr, &xHigherPriorityTaskWoken);
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 void EXTI9_5_IRQHandler(void) {
 	if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_5) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_5);
-	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_6) != RESET) {
+	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_6) != RESET) {   // LAMBDA80 Tx done
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_6);
-		TxReady = true;
+
+		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+		xSemaphoreGiveFromISR(LAMBDA80TxSemphr, &xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_7) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_7);
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_8) != RESET) {
@@ -594,12 +659,8 @@ void EXTI9_5_IRQHandler(void) {
 void EXTI15_10_IRQHandler(void) {
 	if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_10) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_10);
-		mmc_data_ready = true;
-		mmc_data_time = (float)uwTick / 1000.0f;
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_11) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_11);
-		bmp_data_ready = true;
-		bmp_data_time = (float)uwTick / 1000.0f;
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_12) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_12);
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_13) != RESET) {
@@ -637,20 +698,28 @@ void UsageFault_Handler(void) {
     while (1) {}
 }
 
-void SVC_Handler(void) {}
 
 void DebugMon_Handler(void) {}
 
-void PendSV_Handler(void) {}
+extern void xPortSysTickHandler(void);
 
 void SysTick_Handler(void) {
 	HAL_IncTick();
+
+	if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+		xPortSysTickHandler();
+	}
 }
 
 
 
 // General error handler
 void Error_Handler(void) {
+    __disable_irq();
+    while (1) {}
+}
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
     __disable_irq();
     while (1) {}
 }

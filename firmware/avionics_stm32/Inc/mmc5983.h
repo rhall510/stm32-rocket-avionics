@@ -31,9 +31,9 @@ bool InitialiseMMC5983MA();
 void MMC5983MA_Reset();
 
 uint8_t MMC5983MA_GetStatus();
-void MMC5983MA_ReadData(volatile struct TS_Vec3 *mout, float readytime);
+void MMC5983MA_ReadData(volatile TS_Vec3 *mout, float readytime);
 
 // Constructs a flash logging packet from the given data and appends it to the buffer
-bool MMC5983MA_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_Vec3 *databuff, uint8_t Readings);
+bool MMC5983MA_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_Vec3 *databuff, uint8_t Readings);
 
 #endif /* MMC5983_H_ */

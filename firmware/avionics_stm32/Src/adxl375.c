@@ -95,7 +95,7 @@ void ADXL375_SetStandby() {
 
 
 
-struct Vector3 ADXL375_ReadSingleAccelData() {
+Vec3 ADXL375_ReadSingleAccelData() {
 	// Request data from the 6 contiguous accelerometer registers
 	uint8_t tx[7] = {ADXL_DATA | (3U << 6), 0, 0, 0, 0, 0 ,0};   // Set first bit for read, second bit for sequential addresses
 	uint8_t rx[7] = {0};
@@ -110,7 +110,7 @@ struct Vector3 ADXL375_ReadSingleAccelData() {
 	int16_t az_raw = (int16_t)((rx[6] << 8) | rx[5]);
 
 	// Convert to gs
-	struct Vector3 outvec;
+	Vec3 outvec;
 
 	outvec.X = ax_raw * 0.049f;   // 49mg/LSB
 	outvec.Y = ay_raw * 0.049f;
@@ -120,10 +120,10 @@ struct Vector3 ADXL375_ReadSingleAccelData() {
 }
 
 
-void ADXL375_ReadFIFOData(volatile struct TS_Vec3 *accbuff, uint8_t readnum, float readytime) {
+void ADXL375_ReadFIFOData(volatile TS_Vec3 *accbuff, uint8_t readnum, float readytime) {
 	for (int word = 0; word < readnum; word++) {
-		struct Vector3 acc = ADXL375_ReadSingleAccelData();
-		struct TS_Vec3 out;
+		Vec3 acc = ADXL375_ReadSingleAccelData();
+		TS_Vec3 out;
 		out.X = acc.X;
 		out.Y = acc.Y;
 		out.Z = acc.Z;
@@ -151,7 +151,7 @@ uint8_t ADXL375_GetFIFOStatus() {
 
 
 
-bool ADXL375_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_Vec3 *databuff, uint8_t Readings) {
+bool ADXL375_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_Vec3 *databuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * ADXL_PKT_DATA_LEN;
 

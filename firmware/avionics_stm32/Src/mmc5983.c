@@ -44,7 +44,7 @@ uint8_t MMC5983MA_GetStatus() {
 }
 
 
-void MMC5983MA_ReadData(volatile struct TS_Vec3 *mout, float readytime) {
+void MMC5983MA_ReadData(volatile TS_Vec3 *mout, float readytime) {
 	uint8_t buff[7] = {0};
 	HAL_I2C_Mem_Read(&hi2c, MMC_I2C_ADDR, MMC_DATA, I2C_MEMADD_SIZE_8BIT, buff, 7, HAL_MAX_DELAY);
 
@@ -65,7 +65,7 @@ void MMC5983MA_ReadData(volatile struct TS_Vec3 *mout, float readytime) {
 }
 
 
-bool MMC5983MA_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_Vec3 *databuff, uint8_t Readings) {
+bool MMC5983MA_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_Vec3 *databuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * MMC_PKT_DATA_LEN;
 

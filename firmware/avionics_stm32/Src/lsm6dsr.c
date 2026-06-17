@@ -109,7 +109,7 @@ void LSM6DSR_Reset() {
 }
 
 
-struct Vector3 LSM6DSR_ReadInstAccelData() {
+Vec3 LSM6DSR_ReadInstAccelData() {
 	// Request data from the 6 contiguous accelerometer registers
 	uint8_t tx[7] = {LSM6_OUT_A | (1U << 7), 0, 0, 0, 0, 0 ,0};
 	uint8_t rx[7] = {0};
@@ -124,7 +124,7 @@ struct Vector3 LSM6DSR_ReadInstAccelData() {
 	int16_t az_raw = (int16_t)((rx[6] << 8) | rx[5]);
 
 	// Convert to gs
-	struct Vector3 outvec;
+	Vec3 outvec;
 
 	outvec.X = (ax_raw * 0.488f) / 1000.0f;
 	outvec.Y = (ay_raw * 0.488f) / 1000.0f;
@@ -134,7 +134,7 @@ struct Vector3 LSM6DSR_ReadInstAccelData() {
 }
 
 
-struct Vector3 LSM6DSR_ReadInstGyroData() {
+Vec3 LSM6DSR_ReadInstGyroData() {
 	// Request data from the 6 contiguous accelerometer registers
 	uint8_t tx[7] = {LSM6_OUT_G | (1U << 7), 0, 0, 0, 0, 0 ,0};
 	uint8_t rx[7] = {0};
@@ -149,7 +149,7 @@ struct Vector3 LSM6DSR_ReadInstGyroData() {
 	int16_t gz_raw = (int16_t)((rx[6] << 8) | rx[5]);
 
 	// Convert to dps
-	struct Vector3 outvec;
+	Vec3 outvec;
 
 	outvec.X = (gx_raw * 70.0f) / 1000.0f;
 	outvec.Y = (gy_raw * 70.0f) / 1000.0f;
@@ -159,7 +159,7 @@ struct Vector3 LSM6DSR_ReadInstGyroData() {
 }
 
 
-void LSM6DSR_ReadFIFOData(volatile struct TS_Vec3 *accbuff, volatile struct TS_Vec3 *gyrbuff, uint16_t readnum, float readytime) {
+void LSM6DSR_ReadFIFOData(volatile TS_Vec3 *accbuff, volatile TS_Vec3 *gyrbuff, uint16_t readnum, float readytime) {
 	uint16_t words = readnum * LSM6_FIFO_DATA_BLOCK_SIZE;
 	float starttime = 0.0f;
 
@@ -224,7 +224,7 @@ uint16_t LSM6DSR_GetFIFOStatus() {
 }
 
 
-bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_Vec3 *accbuff, volatile struct TS_Vec3 *gyrbuff, uint8_t Readings) {
+bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_Vec3 *accbuff, volatile TS_Vec3 *gyrbuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * 2 * LSM6_PKT_DATA_LEN;
 

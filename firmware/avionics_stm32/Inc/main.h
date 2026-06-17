@@ -34,6 +34,9 @@ SPI_HandleTypeDef hspi2_str;
 SPI_HandleTypeDef hspi3_rf;
 
 
+#define NET_ADDRESS NET_AVIONICS_ADDR
+
+
 // Task notifications
 TaskHandle_t LAMBDA80RxTaskNotif = NULL;
 TaskHandle_t LAMBDA62RxTaskNotif = NULL;
@@ -47,7 +50,6 @@ SemaphoreHandle_t SPIRfMutex = NULL;
 
 // Queue handles
 QueueHandle_t RadioQueue;
-
 
 
 // Tasks

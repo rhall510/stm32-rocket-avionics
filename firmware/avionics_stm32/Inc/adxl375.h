@@ -32,13 +32,13 @@
 bool InitialiseADXL375(uint8_t WatermarkWords);
 void ADXL375_SetStandby();
 
-struct Vector3 ADXL375_ReadSingleAccelData();
+Vec3 ADXL375_ReadSingleAccelData();
 
-void ADXL375_ReadFIFOData(volatile struct TS_Vec3 *accbuff, uint8_t readnum, float readytime);
+void ADXL375_ReadFIFOData(volatile TS_Vec3 *accbuff, uint8_t readnum, float readytime);
 uint8_t ADXL375_GetFIFOStatus();
 
 // Constructs a flash logging packet from the given data and appends it to the buffer
-bool ADXL375_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile struct TS_Vec3 *databuff, uint8_t Readings);
+bool ADXL375_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_Vec3 *databuff, uint8_t Readings);
 
 
 #endif /* ADXL375_H_ */
