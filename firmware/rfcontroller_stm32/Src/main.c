@@ -67,6 +67,10 @@ void ReadIncomingLAMBDA62(void *param) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
         	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
         		printf("Reading L62\n");
+
+        		// Clear Rx interrupt
+        		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+
             	// Read the raw bytes from the radio buffer
     			uint8_t len = 0;
     			uint8_t start = 0;
@@ -170,19 +174,30 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 			discpkt.seqnum = 0;
 			discpkt.payloadlen = 0;
 
-			uint8_t buff[6];
-			ConstructNetPacket(buff, 6, &discpkt);
+			uint8_t buff[10];
+			uint8_t len = ConstructNetPacket(buff, 10, &discpkt);
 
-			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 32, 32, 2, true, 6, 2, false, false);
-			LAMBDA62_SendPacket(&hspi3_rf, buff, 6, false);
+			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 32, 0, true, len, 2, false, false);
+			LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
 
-			// Set to Rx mode for 500ms
-			LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+			// Wait for Tx to finish before continuing
+			if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(200)) == pdTRUE) {
+				// Clear Tx interrupt
+				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
-			xSemaphoreGive(SPIRfMutex);
+				// Set to Rx mode for 500ms
+				LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
-			startTime = xTaskGetTickCount();
-			isFirstCall = false;
+				xSemaphoreGive(SPIRfMutex);
+
+				startTime = xTaskGetTickCount();
+				isFirstCall = false;
+			} else {
+				xSemaphoreGive(SPIRfMutex);
+				printf("[ERROR] Discovery packet Tx timed out\n");
+				return TM_STATE_IDLE;
+			}
 		} else {
 			return TM_STATE_IDLE;
 		}

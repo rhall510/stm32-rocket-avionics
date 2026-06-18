@@ -141,6 +141,8 @@ void InitialiseLAMBDA62LoRa(SPI_HandleTypeDef *hspi, bool Blocking) {
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
 	LAMBDA62_WaitBusy(Blocking);
+
+	LAMBDA62_ClearIRQ(hspi, 0xFFFF, Blocking);
 }
 
 
@@ -236,7 +238,7 @@ void InitialiseLAMBDA62FSK(SPI_HandleTypeDef *hspi, bool Blocking) {
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
 	// Set default packet parameters
-	LAMBDA62_SetPacketParamsFSK(hspi, 32, 32, 32, 2, true, 10, 2, false, Blocking);
+	LAMBDA62_SetPacketParamsFSK(hspi, 32, 7, 32, 0, true, 10, 2, false, Blocking);
 
 	LAMBDA62_WaitBusy(Blocking);
 
@@ -346,12 +348,13 @@ void LAMBDA62_GetRxBufferStatus(SPI_HandleTypeDef *hspi, uint8_t *len, uint8_t *
 void LAMBDA62_ReadBuffer(SPI_HandleTypeDef *hspi, uint8_t *buff, uint8_t StartAddr, uint8_t len, bool Blocking) {
 	LAMBDA62_WaitBusy(Blocking);
 
-	// Send opcode with offset then read into buffer
-	uint8_t tx[3] = {L62_READ_BUFF, StartAddr, 0};
+	uint8_t tx[259] = {0};
+	tx[0] = L62_READ_BUFF;
+	tx[1] = StartAddr;
+	tx[2] = 0;
 
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi, tx, 3, HAL_MAX_DELAY);
-	HAL_SPI_Receive(hspi, buff, len, HAL_MAX_DELAY);
+	HAL_SPI_TransmitReceive(hspi, tx, buff, len + 3, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 }
 

@@ -112,13 +112,21 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 		ackpkt.seqnum = 0;
 		ackpkt.payloadlen = 0;
 
-		uint8_t buff[6];
-		ConstructNetPacket(buff, 6, &ackpkt);
+		uint8_t buff[10];
+		uint8_t len = ConstructNetPacket(buff, 10, &ackpkt);
 
-		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 32, 32, 2, true, 6, 2, false, false);
-		LAMBDA62_SendPacket(&hspi3_rf, buff, 6, false);
+		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 32, 0, true, len, 2, false, false);
+		LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
 
 		xSemaphoreGive(SPIRfMutex);
+
+		if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(200)) == pdTRUE) {
+			// Clear Tx interrupt
+			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+		} else {
+			printf("[ERROR] Discovery ACK response Tx timed out\n");
+		}
 	} else {
 		printf("[ERROR] Discovery ACK response timed out due to unreleased SPI mutex\n");
 	}
@@ -145,7 +153,7 @@ int main(void) {
 
 	// Initialise RF modules
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
-	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 32, 32, 2, true, 5, 2, false, true);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 32, 0, true, 250, 2, false, true);
 	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, true);
 
 
@@ -388,12 +396,9 @@ void InitialiseGPIO() {
 
 
 	GPIO_InitStruct.Pin = LSM6_INT1_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(LSM6_INT1_PORT, &GPIO_InitStruct);
-
-	HAL_NVIC_SetPriority(EXTI4_IRQn, 5, 0);
-	HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
 
 	GPIO_InitStruct.Pin = LSM6_INT2_PIN;
@@ -532,11 +537,13 @@ void InitialiseGPIO() {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(L62_BUSY_PORT, &GPIO_InitStruct);
 
-	// DIO1 cannot be used as an EXTI interrupt due to LSM6DSR
 	GPIO_InitStruct.Pin = L62_DIO1_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(L62_DIO1_PORT, &GPIO_InitStruct);
+
+	HAL_NVIC_SetPriority(EXTI4_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
 	GPIO_InitStruct.Pin = L62_DIO2_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
