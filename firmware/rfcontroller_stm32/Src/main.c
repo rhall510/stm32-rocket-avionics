@@ -33,7 +33,9 @@ void ReadIncomingLAMBDA80(void *param) {
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
 			if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
-				printf("Reading L80\n");
+        		// Clear Rx interrupt
+        		LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+
 				// Read the raw bytes from the radio buffer
 				uint8_t len = 0;
 				uint8_t start = 0;
@@ -66,8 +68,6 @@ void ReadIncomingLAMBDA62(void *param) {
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
         	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
-        		printf("Reading L62\n");
-
         		// Clear Rx interrupt
         		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
@@ -121,7 +121,7 @@ void TransactionManagerTask(void *param) {
 
 TMState HandleStateIdle(USBPacket* pkt, NetPacket* resp) {
 	// Wait for a command to arrive over USB
-	if (xQueueReceive(CommandQueue, pkt, portMAX_DELAY) == pdPASS) {
+	if (xQueueReceive(CommandQueue, pkt, pdMS_TO_TICKS(50)) == pdPASS) {
 		if (pkt->type == USB_MTYPE_ECHO) { return TM_ECHO_CMD; }
 		if (pkt->type == USB_MTYPE_STATUS) { return TM_STATUS_CMD; }
 		if (pkt->type == USB_MTYPE_DISCOVERY) { return TM_DISC_CMD; }
@@ -157,6 +157,8 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 	if (isFirstCall) {
 		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
 			printf("Executing DISCOVERY command\n");
+//			volatile uint8_t l80status = LAMBDA80_Status(&hspi3_rf, true);
+//			printf("%i", l80status);
 
 			USBPacket status;
 			status.type = USB_MTYPE_STATUS;
@@ -178,7 +180,7 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 			uint8_t len = ConstructNetPacket(buff, 10, &discpkt);
 
 			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 32, 0, true, len, 2, false, false);
+			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, len, 2, false, false);
 			LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
 
 			// Wait for Tx to finish before continuing
@@ -187,6 +189,7 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
 				// Set to Rx mode for 500ms
+				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, 250, 2, false, false);
 				LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
 				xSemaphoreGive(SPIRfMutex);
@@ -228,6 +231,7 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 
 
 int main(void) {
+	// System init
     HAL_Init();
 
 	SystemClockConfig();
@@ -235,9 +239,13 @@ int main(void) {
 	InitialiseSPI();
 	InitialiseTimers();
 
-	InitialiseLAMBDA62FSK(&hspi3_rf, true);
+	HAL_Delay(2000);   // Startup delay to avoid code executing inbetween debug sessions
 
 	__enable_irq();
+
+	// Initialise RF modules
+	InitialiseLAMBDA62FSK(&hspi3_rf, true);
+	InitialiseLAMBDA80(&hspi3_rf, true);
 
 	tusb_init();
 
@@ -269,7 +277,7 @@ int main(void) {
     xTaskCreate(ReadIncomingLAMBDA62, "LAMBDA62-Receive", 1024, NULL, 4, &LAMBDA62RxTaskNotif);
     xTaskCreate(TransactionManagerTask, "Transaction-Manager", 4096, NULL, 1, NULL);
 
-    DiscoveryTimer = xTimerCreate("DiscTimer", pdMS_TO_TICKS(10000), pdTRUE, (void *)0, SendDiscoveryPacket);
+    DiscoveryTimer = xTimerCreate("DiscTimer", pdMS_TO_TICKS(4000), pdTRUE, (void *)0, SendDiscoveryPacket);
     xTimerStart(DiscoveryTimer, 0);
 
 

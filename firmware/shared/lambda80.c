@@ -1,6 +1,20 @@
 #include "lambda80.h"
 
 
+uint8_t LAMBDA80_Status(SPI_HandleTypeDef *hspi, bool Blocking) {
+    uint8_t tx[2] = {L80_STATUS, 0x00};
+    uint8_t rx[2] = {0};
+
+    HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(hspi, tx, rx, 2, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
+
+    LAMBDA80_WaitBusy(Blocking);
+
+    return rx[1];
+}
+
+
 inline bool LAMBDA80_CheckBusy() {
 	return HAL_GPIO_ReadPin(L80_BUSY_PORT, L80_BUSY_PIN);
 }
@@ -81,6 +95,8 @@ void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi, bool Blocking) {
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(hspi, tx, 3, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
+
+	LAMBDA80_WaitBusy(Blocking);
 
 	// Set Tx done interrupt on DIO1 and Rx done interrupt on DIO2
 	uint8_t irq[9] = {L80_SET_IRQ, 0x00, 0x03, 0x00, 0x01, 0x00, 0x02, 0x00, 0x00};

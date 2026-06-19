@@ -15,7 +15,7 @@ void ReadIncomingLAMBDA80(void *param) {
 				uint8_t buff[256];
 				LAMBDA80_ReadBuffer(&hspi3_rf, buff, start, len, false);
 
-				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+				LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
 				xSemaphoreGive(SPIRfMutex);
 
@@ -40,7 +40,10 @@ void ReadIncomingLAMBDA62(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-				if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
+			if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
+        		// Clear Rx interrupt
+        		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+
 				// Read the raw bytes from the radio buffer
 				uint8_t len = 0;
 				uint8_t start = 0;
@@ -48,8 +51,6 @@ void ReadIncomingLAMBDA62(void *param) {
 
 				uint8_t buff[256];
 				LAMBDA62_ReadBuffer(&hspi3_rf, buff, start, len, false);
-
-				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
 				xSemaphoreGive(SPIRfMutex);
 
@@ -116,10 +117,8 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 		uint8_t len = ConstructNetPacket(buff, 10, &ackpkt);
 
 		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 32, 0, true, len, 2, false, false);
+		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, len, 2, false, false);
 		LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
-
-		xSemaphoreGive(SPIRfMutex);
 
 		if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(200)) == pdTRUE) {
 			// Clear Tx interrupt
@@ -127,9 +126,13 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 		} else {
 			printf("[ERROR] Discovery ACK response Tx timed out\n");
 		}
+		xSemaphoreGive(SPIRfMutex);
 	} else {
 		printf("[ERROR] Discovery ACK response timed out due to unreleased SPI mutex\n");
 	}
+
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, 250, 2, false, false);
+	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
 	return TM_STATE_IDLE;
 }
@@ -152,8 +155,10 @@ int main(void) {
 	__enable_irq();
 
 	// Initialise RF modules
+	InitialiseLAMBDA80(&hspi3_rf, true);
+
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
-	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 32, 0, true, 250, 2, false, true);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, 250, 2, false, true);
 	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, true);
 
 
@@ -275,60 +280,60 @@ void InitialiseSPI() {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
 	// Turn on clocks
-    __HAL_RCC_SPI1_CLK_ENABLE();
-    __HAL_RCC_SPI2_CLK_ENABLE();
+//    __HAL_RCC_SPI1_CLK_ENABLE();
+//    __HAL_RCC_SPI2_CLK_ENABLE();
     __HAL_RCC_SPI3_CLK_ENABLE();
 
-	// Initialise SPI1 (accelerometers)
-    GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-	hspi1_acc.Instance = SPI1;
-	hspi1_acc.Init.Mode = SPI_MODE_MASTER;
-	hspi1_acc.Init.Direction = SPI_DIRECTION_2LINES;   // Standard full-duplex SPI
-	hspi1_acc.Init.DataSize = SPI_DATASIZE_8BIT;
-	hspi1_acc.Init.CLKPolarity = SPI_POLARITY_HIGH;   // Clock is high when idle
-	hspi1_acc.Init.CLKPhase = SPI_PHASE_2EDGE;   // Data is read on the rising edge of the clock
-	hspi1_acc.Init.NSS = SPI_NSS_SOFT;   // CS pins must be manually controlled
-	hspi1_acc.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;   // Must be low enough for ADXL 5MHz limit
-	hspi1_acc.Init.FirstBit = SPI_FIRSTBIT_MSB;
-	hspi1_acc.Init.TIMode = SPI_TIMODE_DISABLE;
-	hspi1_acc.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;   // Disable CRC check to save processing time
-	hspi1_acc.Init.CRCPolynomial = 7;
-	hspi1_acc.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-	hspi1_acc.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;   // Enable CS pin pulse to reset logic between frames
-
-	if (HAL_SPI_Init(&hspi1_acc) != HAL_OK) { Error_Handler(); }
-
-
-	// Initialise SPI2 (storage)
-    GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-	hspi2_str.Instance = SPI2;
-	hspi2_str.Init.Mode = SPI_MODE_MASTER;
-	hspi2_str.Init.Direction = SPI_DIRECTION_2LINES;
-	hspi2_str.Init.DataSize = SPI_DATASIZE_8BIT;
-	hspi2_str.Init.CLKPolarity = SPI_POLARITY_LOW;
-	hspi2_str.Init.CLKPhase = SPI_PHASE_1EDGE;
-	hspi2_str.Init.NSS = SPI_NSS_SOFT;
-	hspi2_str.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
-	hspi2_str.Init.FirstBit = SPI_FIRSTBIT_MSB;
-	hspi2_str.Init.TIMode = SPI_TIMODE_DISABLE;
-	hspi2_str.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-	hspi2_str.Init.CRCPolynomial = 7;
-	hspi2_str.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-	hspi2_str.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-
-	if (HAL_SPI_Init(&hspi2_str) != HAL_OK) { Error_Handler(); }
+//	// Initialise SPI1 (accelerometers)
+//    GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
+//    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+//    GPIO_InitStruct.Pull = GPIO_PULLUP;
+//    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+//    GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+//    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+//
+//	hspi1_acc.Instance = SPI1;
+//	hspi1_acc.Init.Mode = SPI_MODE_MASTER;
+//	hspi1_acc.Init.Direction = SPI_DIRECTION_2LINES;   // Standard full-duplex SPI
+//	hspi1_acc.Init.DataSize = SPI_DATASIZE_8BIT;
+//	hspi1_acc.Init.CLKPolarity = SPI_POLARITY_HIGH;   // Clock is high when idle
+//	hspi1_acc.Init.CLKPhase = SPI_PHASE_2EDGE;   // Data is read on the rising edge of the clock
+//	hspi1_acc.Init.NSS = SPI_NSS_SOFT;   // CS pins must be manually controlled
+//	hspi1_acc.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;   // Must be low enough for ADXL 5MHz limit
+//	hspi1_acc.Init.FirstBit = SPI_FIRSTBIT_MSB;
+//	hspi1_acc.Init.TIMode = SPI_TIMODE_DISABLE;
+//	hspi1_acc.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;   // Disable CRC check to save processing time
+//	hspi1_acc.Init.CRCPolynomial = 7;
+//	hspi1_acc.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+//	hspi1_acc.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;   // Enable CS pin pulse to reset logic between frames
+//
+//	if (HAL_SPI_Init(&hspi1_acc) != HAL_OK) { Error_Handler(); }
+//
+//
+//	// Initialise SPI2 (storage)
+//    GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
+//    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+//    GPIO_InitStruct.Pull = GPIO_NOPULL;
+//    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+//    GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
+//    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+//
+//	hspi2_str.Instance = SPI2;
+//	hspi2_str.Init.Mode = SPI_MODE_MASTER;
+//	hspi2_str.Init.Direction = SPI_DIRECTION_2LINES;
+//	hspi2_str.Init.DataSize = SPI_DATASIZE_8BIT;
+//	hspi2_str.Init.CLKPolarity = SPI_POLARITY_LOW;
+//	hspi2_str.Init.CLKPhase = SPI_PHASE_1EDGE;
+//	hspi2_str.Init.NSS = SPI_NSS_SOFT;
+//	hspi2_str.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+//	hspi2_str.Init.FirstBit = SPI_FIRSTBIT_MSB;
+//	hspi2_str.Init.TIMode = SPI_TIMODE_DISABLE;
+//	hspi2_str.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+//	hspi2_str.Init.CRCPolynomial = 7;
+//	hspi2_str.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+//	hspi2_str.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+//
+//	if (HAL_SPI_Init(&hspi2_str) != HAL_OK) { Error_Handler(); }
 
 
 	// Initialise SPI3 (RF communication)
@@ -386,98 +391,98 @@ void InitialiseGPIO() {
 	HAL_GPIO_Init(UBTN1_PORT, &GPIO_InitStruct);
 
 
-	// LSM6DSR pins
-	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);   // Default SPI CS pins to high
-	GPIO_InitStruct.Pin = LSM6_CS_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-	HAL_GPIO_Init(LSM6_CS_PORT, &GPIO_InitStruct);
-
-
-	GPIO_InitStruct.Pin = LSM6_INT1_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(LSM6_INT1_PORT, &GPIO_InitStruct);
-
-
-	GPIO_InitStruct.Pin = LSM6_INT2_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(LSM6_INT2_PORT, &GPIO_InitStruct);
-
-	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
-	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
-
-
-	// ADXL375 pins
-	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);   // Default SPI CS pins to high
-	GPIO_InitStruct.Pin = ADXL_CS_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-	HAL_GPIO_Init(ADXL_CS_PORT, &GPIO_InitStruct);
-
-
-	GPIO_InitStruct.Pin = ADXL_INT1_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(ADXL_INT1_PORT, &GPIO_InitStruct);
-
-	HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
-	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-
-
-	GPIO_InitStruct.Pin = ADXL_INT2_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(ADXL_INT2_PORT, &GPIO_InitStruct);
-
-	HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
-	HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-
-
-	// BMP581 pins
-	GPIO_InitStruct.Pin = BMP_INT_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(BMP_INT_PORT, &GPIO_InitStruct);
-
-	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
-	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-
-
-	// MMC5983MA pins
-	GPIO_InitStruct.Pin = MMC_INT_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(MMC_INT_PORT, &GPIO_InitStruct);
-
-	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
-	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-
-
-	// W25Q pins
-	HAL_GPIO_WritePin(W25Q_CS_PORT, W25Q_CS_PIN, GPIO_PIN_SET);   // Default SPI CS pins to high
-	GPIO_InitStruct.Pin = W25Q_CS_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-	HAL_GPIO_Init(W25Q_CS_PORT, &GPIO_InitStruct);
-
-	HAL_GPIO_WritePin(W25Q_WP_PORT, W25Q_WP_PIN, GPIO_PIN_SET);   // MUST BE HELD HIGH TO ALLOW WRITES TO STATUS REGISTER
-	GPIO_InitStruct.Pin = W25Q_WP_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-	HAL_GPIO_Init(W25Q_WP_PORT, &GPIO_InitStruct);
-
-	HAL_GPIO_WritePin(W25Q_HOLD_PORT, W25Q_HOLD_PIN, GPIO_PIN_SET);   // MUST BE HELD HIGH TO ALLOW COMMUNICATIONS
-	GPIO_InitStruct.Pin = W25Q_HOLD_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-	HAL_GPIO_Init(W25Q_HOLD_PORT, &GPIO_InitStruct);
+//	// LSM6DSR pins
+//	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);   // Default SPI CS pins to high
+//	GPIO_InitStruct.Pin = LSM6_CS_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+//	HAL_GPIO_Init(LSM6_CS_PORT, &GPIO_InitStruct);
+//
+//
+//	GPIO_InitStruct.Pin = LSM6_INT1_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	HAL_GPIO_Init(LSM6_INT1_PORT, &GPIO_InitStruct);
+//
+//
+//	GPIO_InitStruct.Pin = LSM6_INT2_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	HAL_GPIO_Init(LSM6_INT2_PORT, &GPIO_InitStruct);
+//
+//	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
+//	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+//
+//
+//	// ADXL375 pins
+//	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);   // Default SPI CS pins to high
+//	GPIO_InitStruct.Pin = ADXL_CS_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+//	HAL_GPIO_Init(ADXL_CS_PORT, &GPIO_InitStruct);
+//
+//
+//	GPIO_InitStruct.Pin = ADXL_INT1_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	HAL_GPIO_Init(ADXL_INT1_PORT, &GPIO_InitStruct);
+//
+//	HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
+//	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+//
+//
+//	GPIO_InitStruct.Pin = ADXL_INT2_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	HAL_GPIO_Init(ADXL_INT2_PORT, &GPIO_InitStruct);
+//
+//	HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
+//	HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+//
+//
+//	// BMP581 pins
+//	GPIO_InitStruct.Pin = BMP_INT_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	HAL_GPIO_Init(BMP_INT_PORT, &GPIO_InitStruct);
+//
+//	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+//	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+//
+//
+//	// MMC5983MA pins
+//	GPIO_InitStruct.Pin = MMC_INT_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	HAL_GPIO_Init(MMC_INT_PORT, &GPIO_InitStruct);
+//
+//	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+//	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+//
+//
+//	// W25Q pins
+//	HAL_GPIO_WritePin(W25Q_CS_PORT, W25Q_CS_PIN, GPIO_PIN_SET);   // Default SPI CS pins to high
+//	GPIO_InitStruct.Pin = W25Q_CS_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+//	HAL_GPIO_Init(W25Q_CS_PORT, &GPIO_InitStruct);
+//
+//	HAL_GPIO_WritePin(W25Q_WP_PORT, W25Q_WP_PIN, GPIO_PIN_SET);   // MUST BE HELD HIGH TO ALLOW WRITES TO STATUS REGISTER
+//	GPIO_InitStruct.Pin = W25Q_WP_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+//	HAL_GPIO_Init(W25Q_WP_PORT, &GPIO_InitStruct);
+//
+//	HAL_GPIO_WritePin(W25Q_HOLD_PORT, W25Q_HOLD_PIN, GPIO_PIN_SET);   // MUST BE HELD HIGH TO ALLOW COMMUNICATIONS
+//	GPIO_InitStruct.Pin = W25Q_HOLD_PIN;
+//	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+//	HAL_GPIO_Init(W25Q_HOLD_PORT, &GPIO_InitStruct);
 
 
 	// LAMBDA80 pins

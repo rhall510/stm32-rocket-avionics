@@ -54,6 +54,9 @@
 
 
 // Functions
+// Get the current status of the module
+uint8_t LAMBDA80_Status(SPI_HandleTypeDef *hspi, bool Blocking);
+
 // Returns the state of the BUSY pin
 bool LAMBDA80_CheckBusy();
 

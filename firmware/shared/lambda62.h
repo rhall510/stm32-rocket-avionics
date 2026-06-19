@@ -52,7 +52,7 @@
 #define L62_RX_TIMEOUT 0xFFFFFFU   // 0x0 to disable timeout (single mode), 0xFFFFFF for continuous mode
 
 #define L62_TX_BASE_ADDR 0x0U   // Buffer base address for transmit packets
-#define L62_RX_BASE_ADDR 0x0U   // Buffer base address for receive packets
+#define L62_RX_BASE_ADDR 0x20U   // Buffer base address for receive packets
 
 // FXTAL is 32MHz
 
