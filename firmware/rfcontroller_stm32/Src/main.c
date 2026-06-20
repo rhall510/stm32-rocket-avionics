@@ -105,7 +105,8 @@ void TransactionManagerTask(void *param) {
 	    [TM_STATE_IDLE] = HandleStateIdle,
 	    [TM_ECHO_CMD] = HandleStateEchoCmd,
 		[TM_STATUS_CMD] = HandleStateStatusCmd,
-		[TM_DISC_CMD] = HandleStateDiscoveryCmd
+		[TM_DISC_CMD] = HandleStateDiscoveryCmd,
+		[TM_PKTTEST_CMD] = HandleStatePktTestCmd
 	};
 
     TMState currState = TM_STATE_IDLE;
@@ -125,6 +126,7 @@ TMState HandleStateIdle(USBPacket* pkt, NetPacket* resp) {
 		if (pkt->type == USB_MTYPE_ECHO) { return TM_ECHO_CMD; }
 		if (pkt->type == USB_MTYPE_STATUS) { return TM_STATUS_CMD; }
 		if (pkt->type == USB_MTYPE_DISCOVERY) { return TM_DISC_CMD; }
+		if (pkt->type == USB_MTYPE_PKTTEST) { return TM_PKTTEST_CMD; }
 	}
 	return TM_STATE_IDLE;
 }
@@ -157,8 +159,6 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 	if (isFirstCall) {
 		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
 			printf("Executing DISCOVERY command\n");
-//			volatile uint8_t l80status = LAMBDA80_Status(&hspi3_rf, true);
-//			printf("%i", l80status);
 
 			USBPacket status;
 			status.type = USB_MTYPE_STATUS;
@@ -189,7 +189,7 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
 				// Set to Rx mode for 500ms
-				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, 250, 2, false, false);
+				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
 				LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
 				xSemaphoreGive(SPIRfMutex);
@@ -228,6 +228,119 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 	// ACK receive window still open, stay in this state
 	return TM_DISC_CMD;
 }
+
+
+TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
+	if (!(pkt->type == USB_MTYPE_PKTTEST && pkt->payloadlen == 1)) {
+		printf("Invalid USB packet format for packet test command");
+		return TM_STATE_IDLE;
+	}
+
+	printf("Executing PKTTEST command\n");
+
+	xTimerStop(DiscoveryTimer, 0);
+
+	uint8_t TargetAddr = pkt->payload[0];
+	TickType_t startTime = xTaskGetTickCount();
+	uint32_t SeqNum = 0;
+
+	// Continuously request test packets from the targeted node
+	while (1) {
+		if (xQueueReceive(CommandQueue, pkt, pdMS_TO_TICKS(1)) == pdPASS) {
+			if (pkt->type == USB_MTYPE_STOP) {
+				xTimerReset(DiscoveryTimer, 0);
+				return TM_STATE_IDLE;
+			}
+		}
+
+		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
+			SeqNum++;
+			printf("Sending test packet sequence num: %lu\n", SeqNum);
+
+			// Send the request packet
+			NetPacket discpkt;
+			discpkt.recipient = TargetAddr;
+			discpkt.sender = NET_CONTROLLER_ADDR;
+			discpkt.status = 0x0;
+			discpkt.type = NET_MTYPE_PKTTEST;
+			discpkt.seqnum = 0;
+			discpkt.payloadlen = 5;
+
+			discpkt.payload[0] = 0;
+			discpkt.payload[1] = (int8_t)(SeqNum >> 24);
+			discpkt.payload[2] = (int8_t)(SeqNum >> 16);
+			discpkt.payload[3] = (int8_t)(SeqNum >> 8);
+			discpkt.payload[4] = (int8_t)SeqNum;
+
+
+			uint8_t buff[15];
+			uint8_t len = ConstructNetPacket(buff, 15, &discpkt);
+
+			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, len, 2, false, false);
+			LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+
+			// Wait for Tx to finish before continuing
+			if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(50)) == pdTRUE) {
+				// Clear Tx interrupt
+				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+
+				// Set to Rx mode for 500ms
+				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+				LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+				xSemaphoreGive(SPIRfMutex);
+
+				startTime = xTaskGetTickCount();
+			} else {
+				xSemaphoreGive(SPIRfMutex);
+				printf("[ERROR] Packet test stopped due to Tx time out\n");
+				xTimerReset(DiscoveryTimer, 0);
+				return TM_STATE_IDLE;
+			}
+		} else {
+			printf("[ERROR] Packet test stopped due to unreleased RF SPI mutex\n");
+			xTimerReset(DiscoveryTimer, 0);
+			return TM_STATE_IDLE;
+		}
+
+		// Try to receive ACKs from the radio response queue
+		TickType_t recStartTime = xTaskGetTickCount();
+		while ((xTaskGetTickCount() - recStartTime) < pdMS_TO_TICKS(250)) {
+			if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(1)) == pdPASS) {
+				if (resp->type == NET_MTYPE_ACK && resp->sender == TargetAddr && resp->payloadlen == 5) {
+					uint32_t recseqn = ((int32_t)resp->payload[1] << 24) | ((int32_t)resp->payload[2] << 16) | \
+									   ((int32_t)resp->payload[3] << 8) | resp->payload[4];
+
+
+					uint8_t rxstatus = 0;
+					int8_t rssisync = 0;
+					int8_t rssiavg = 0;
+					if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+						LAMBDA62_GetPktStatusFSK(&hspi3_rf, &rxstatus, &rssisync, &rssiavg, false);
+						xSemaphoreGive(SPIRfMutex);
+					}
+
+					if (resp->payload[1]) {
+						printf("Received response on 2.4GHz from NetID: %i, Sequence num: %lu\n", TargetAddr, recseqn);
+					} else {
+						printf("RESP 868MHz from 0x%i, Seq: %lu, RSSI: %i\n", TargetAddr, recseqn, rssiavg);
+					}
+
+//					USBPacket status;
+//					status.type = USB_MTYPE_STATUS;
+//					status.payloadlen = 2;
+//					status.payload[0] = 0xDD;
+//					status.payload[1] = resp->sender;
+//
+//					SendPacketUSB(&status);
+				}
+			}
+		}
+	}
+}
+
+
 
 
 int main(void) {

@@ -13,8 +13,11 @@
 
 
 // Message type codes
-#define NET_MTYPE_ACK 0x0U
-#define NET_MTYPE_DISCOVERY 0x1U
+typedef enum {
+	NET_MTYPE_ACK,
+	NET_MTYPE_DISCOVERY,
+	NET_MTYPE_PKTTEST
+} NetMessageType;
 
 
 // Packets

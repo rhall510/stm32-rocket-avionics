@@ -76,6 +76,9 @@ void LAMBDA80_SetMode_Download(SPI_HandleTypeDef *hspi, bool Blocking);
 // Clear all interrupt flags
 void LAMBDA80_ClearIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask, bool Blocking);
 
+// Get interrupt status
+uint16_t LAMBDA80_GetIRQStatus(SPI_HandleTypeDef *hspi, bool Blocking);
+
 // Set to Tx mode and transmit the contents of the buffer
 void LAMBDA80_SetTx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout, bool Blocking);
 
@@ -93,6 +96,10 @@ void LAMBDA80_GetRxBufferStatus(SPI_HandleTypeDef *hspi, uint8_t *len, uint8_t *
 
 // Reads the Rx buffer into the provided buffer
 void LAMBDA80_ReadBuffer(SPI_HandleTypeDef *hspi, uint8_t *buff, uint8_t StartAddr, uint8_t len, bool Blocking);
+
+// Get the status of the most recently received packet
+void LAMBDA80_GetPktStatusLoRa(SPI_HandleTypeDef *hspi, int8_t *rssiSync, int8_t *snr, bool Blocking);
+void LAMBDA80_GetPktStatusFSK(SPI_HandleTypeDef *hspi, int8_t *rssiSync, uint8_t *errors, uint8_t *status, uint8_t *sync, bool Blocking);
 
 uint8_t LAMBDA80_ReadReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, bool Blocking);
 void LAMBDA80_WriteReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, uint8_t val, bool Blocking);

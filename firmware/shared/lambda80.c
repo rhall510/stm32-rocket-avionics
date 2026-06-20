@@ -2,14 +2,14 @@
 
 
 uint8_t LAMBDA80_Status(SPI_HandleTypeDef *hspi, bool Blocking) {
-    uint8_t tx[2] = {L80_STATUS, 0x00};
+	LAMBDA80_WaitBusy(Blocking);
+
+    uint8_t tx[2] = {L80_STATUS, 0};
     uint8_t rx[2] = {0};
 
     HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_RESET);
     HAL_SPI_TransmitReceive(hspi, tx, rx, 2, HAL_MAX_DELAY);
     HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
-
-    LAMBDA80_WaitBusy(Blocking);
 
     return rx[1];
 }
@@ -190,6 +190,20 @@ void LAMBDA80_ClearIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask, bool Blocking)
 }
 
 
+uint16_t LAMBDA80_GetIRQStatus(SPI_HandleTypeDef *hspi, bool Blocking) {
+	LAMBDA80_WaitBusy(Blocking);
+
+    uint8_t tx[4] = {L80_IRQ_STATUS, 0, 0, 0};
+    uint8_t rx[4] = {0};
+
+    HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(hspi, tx, rx, 4, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
+
+    return ((uint16_t)rx[2] << 8) | rx[3];
+}
+
+
 
 void LAMBDA80_SetTx(SPI_HandleTypeDef *hspi, uint8_t TimeBase, uint16_t Timeout, bool Blocking) {
 	LAMBDA80_WaitBusy(Blocking);
@@ -277,6 +291,44 @@ void LAMBDA80_ReadBuffer(SPI_HandleTypeDef *hspi, uint8_t *buff, uint8_t StartAd
 	HAL_SPI_Transmit(hspi, tx, 3, HAL_MAX_DELAY);
 	HAL_SPI_Receive(hspi, buff, len, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
+}
+
+
+void LAMBDA80_GetPktStatusLoRa(SPI_HandleTypeDef *hspi, int8_t *rssi, int8_t *snr, bool Blocking) {
+	// This function returns the ACTUAL values for RSSI and SNR
+	// Actual RSSI = -rssiSync / 2
+	// Actual SNR = snr / 4
+
+	LAMBDA80_WaitBusy(Blocking);
+
+    uint8_t tx[4] = {L80_PKT_STATUS, 0, 0, 0};
+    uint8_t rx[4] = {0};
+
+    HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(hspi, tx, rx, 5, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
+
+    *rssi = -rx[2] / 2;
+    *snr = rx[3] / 4;
+}
+
+void LAMBDA80_GetPktStatusFSK(SPI_HandleTypeDef *hspi, int8_t *rssiSync, uint8_t *errors, uint8_t *status, uint8_t *sync, bool Blocking) {
+	// This function returns the ACTUAL value for RSSI
+	// Actual RSSI = -rssiSync / 2
+
+	LAMBDA80_WaitBusy(Blocking);
+
+    uint8_t tx[7] = {L80_PKT_STATUS, 0, 0, 0, 0, 0, 0};
+    uint8_t rx[7] = {0};
+
+    HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(hspi, tx, rx, 7, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
+
+    *rssiSync = -rx[3] / 2;
+    *errors = rx[4];
+    *status = rx[5];
+    *sync = rx[6];
 }
 
 

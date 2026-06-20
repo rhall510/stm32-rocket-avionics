@@ -64,6 +64,7 @@ typedef enum {
 	TM_ECHO_CMD,
 	TM_STATUS_CMD,
 	TM_DISC_CMD,
+	TM_PKTTEST_CMD,
     TM_NUM_STATES   // Not an actual state, just useful for getting the number of possible states
 } TMState;
 
@@ -78,6 +79,7 @@ TMState HandleStateIdle(USBPacket* pkt, NetPacket* resp);
 TMState HandleStateEchoCmd(USBPacket* pkt, NetPacket* resp);
 TMState HandleStateStatusCmd(USBPacket* pkt, NetPacket* resp);
 TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp);
+TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp);
 
 
 
@@ -101,8 +103,6 @@ typedef enum {
 } USBParserState;
 
 void ParseUSBBytes(uint8_t *bytestream, uint16_t len);
-
-
 
 
 

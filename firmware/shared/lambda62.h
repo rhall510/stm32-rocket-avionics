@@ -57,6 +57,9 @@
 // FXTAL is 32MHz
 
 // Functions
+// Get the current status of the module
+uint8_t LAMBDA62_Status(SPI_HandleTypeDef *hspi, bool Blocking);
+
 // Returns the state of the BUSY pin
 bool LAMBDA62_CheckBusy();
 
@@ -72,6 +75,9 @@ void InitialiseLAMBDA62FSK(SPI_HandleTypeDef *hspi, bool Blocking);
 
 // Clear all interrupt flags
 void LAMBDA62_ClearIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask, bool Blocking);
+
+// Get interrupt status
+uint16_t LAMBDA62_GetIRQStatus(SPI_HandleTypeDef *hspi, bool Blocking);
 
 // Set to Tx mode and transmit the contents of the buffer
 void LAMBDA62_SetTx(SPI_HandleTypeDef *hspi, uint32_t Timeout, bool Blocking);
@@ -93,6 +99,11 @@ void LAMBDA62_GetRxBufferStatus(SPI_HandleTypeDef *hspi, uint8_t *len, uint8_t *
 
 // Reads the Rx buffer into the provided buffer
 void LAMBDA62_ReadBuffer(SPI_HandleTypeDef *hspi, uint8_t *buff, uint8_t StartAddr, uint8_t len, bool Blocking);
+
+// Get the status of the most recently received packet
+void LAMBDA62_GetPktStatusLoRa(SPI_HandleTypeDef *hspi, int8_t *rssi, int8_t *snr, int8_t *sigrssi, bool Blocking);
+void LAMBDA62_GetPktStatusFSK(SPI_HandleTypeDef *hspi, uint8_t *rxstatus, int8_t *rssisync, int8_t *rssiavg, bool Blocking);
+
 
 uint8_t LAMBDA62_ReadReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, bool Blocking);
 void LAMBDA62_WriteReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, uint8_t val, bool Blocking);

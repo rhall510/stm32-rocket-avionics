@@ -67,6 +67,7 @@ void TransactionManagerTask(void *param);
 typedef enum {
 	TM_STATE_IDLE,
 	TM_DISC_CMD,
+	TM_PKTTEST_CMD,
     TM_NUM_STATES   // Not an actual state, just useful for getting the number of possible states
 } TMState;
 
@@ -77,6 +78,7 @@ typedef TMState (*TMStateHandler)(NetPacket* pkt);
 // Transaction manager state handler functions
 TMState HandleStateIdle(NetPacket* pkt);
 TMState HandleStateDiscoveryCmd(NetPacket* pkt);
+TMState HandleStatePktTestCmd(NetPacket* resp);
 
 
 

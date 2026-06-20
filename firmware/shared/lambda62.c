@@ -1,6 +1,20 @@
 #include "lambda62.h"
 
 
+uint8_t LAMBDA62_Status(SPI_HandleTypeDef *hspi, bool Blocking) {
+	LAMBDA62_WaitBusy(Blocking);
+
+    uint8_t tx[2] = {L62_STATUS, 0};
+    uint8_t rx[2] = {0};
+
+    HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(hspi, tx, rx, 2, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+
+    return rx[1];
+}
+
+
 inline bool LAMBDA62_CheckBusy() {
 	return HAL_GPIO_ReadPin(L62_BUSY_PORT, L62_BUSY_PIN);
 }
@@ -38,6 +52,20 @@ void LAMBDA62_ClearIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask, bool Blocking)
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(hspi, tx, 3, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+}
+
+
+uint16_t LAMBDA62_GetIRQStatus(SPI_HandleTypeDef *hspi, bool Blocking) {
+	LAMBDA62_WaitBusy(Blocking);
+
+    uint8_t tx[4] = {L62_IRQ_STATUS, 0, 0, 0};
+    uint8_t rx[4] = {0};
+
+    HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(hspi, tx, rx, 4, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+
+    return ((uint16_t)rx[2] << 8) | rx[3];
 }
 
 
@@ -355,6 +383,46 @@ void LAMBDA62_ReadBuffer(SPI_HandleTypeDef *hspi, uint8_t *buff, uint8_t StartAd
 	HAL_SPI_Receive(hspi, buff, len, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 }
+
+
+void LAMBDA62_GetPktStatusLoRa(SPI_HandleTypeDef *hspi, int8_t *rssi, int8_t *snr, int8_t *sigrssi, bool Blocking) {
+	// This function returns the ACTUAL values for RSSI and SNR
+	// Actual RSSI = -Rssi[...] / 2
+	// Actual SNR = SnrPkt / 4
+
+	LAMBDA62_WaitBusy(Blocking);
+
+    uint8_t tx[5] = {L62_PKT_STATUS, 0, 0, 0, 0};
+    uint8_t rx[5] = {0};
+
+    HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(hspi, tx, rx, 5, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+
+    *rssi = -rx[2] / 2;
+    *snr = rx[3] / 4;
+    *sigrssi = -rx[4] / 2;
+}
+
+
+void LAMBDA62_GetPktStatusFSK(SPI_HandleTypeDef *hspi, uint8_t *rxstatus, int8_t *rssisync, int8_t *rssiavg, bool Blocking) {
+	// This function returns the ACTUAL values for RSSI
+	// Actual RSSI = -Rssi[...] / 2
+
+	LAMBDA62_WaitBusy(Blocking);
+
+    uint8_t tx[5] = {L62_PKT_STATUS, 0, 0, 0, 0};
+    uint8_t rx[5] = {0};
+
+    HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(hspi, tx, rx, 5, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+
+    *rxstatus = rx[2];
+    *rssisync = -rx[3] / 2;
+    *rssiavg = -rx[4] / 2;
+}
+
 
 
 uint8_t LAMBDA62_ReadReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, bool Blocking) {
