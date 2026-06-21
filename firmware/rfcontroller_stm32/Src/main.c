@@ -244,6 +244,9 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 	TickType_t startTime = xTaskGetTickCount();
 	uint32_t SeqNum = 0;
 
+	// Whether to send the packet request on 2.4GHz or 868MHz
+	bool RequestOn24 = false;
+
 	// Continuously request test packets from the targeted node
 	while (1) {
 		if (xQueueReceive(CommandQueue, pkt, pdMS_TO_TICKS(1)) == pdPASS) {
@@ -255,7 +258,11 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 
 		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
 			SeqNum++;
-			printf("Sending test packet sequence num: %lu\n", SeqNum);
+			if (RequestOn24) {
+				printf("Sending test packet request on 2.4GHz, SEQ: %lu\n", SeqNum);
+			} else {
+				printf("Sending test packet request on 868MHz, SEQ: %lu\n", SeqNum);
+			}
 
 			// Send the request packet
 			NetPacket discpkt;
@@ -266,7 +273,7 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 			discpkt.seqnum = 0;
 			discpkt.payloadlen = 5;
 
-			discpkt.payload[0] = 0;
+			discpkt.payload[0] = RequestOn24;
 			discpkt.payload[1] = (int8_t)(SeqNum >> 24);
 			discpkt.payload[2] = (int8_t)(SeqNum >> 16);
 			discpkt.payload[3] = (int8_t)(SeqNum >> 8);
@@ -276,28 +283,55 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 			uint8_t buff[15];
 			uint8_t len = ConstructNetPacket(buff, 15, &discpkt);
 
-			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, len, 2, false, false);
-			LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+			if (RequestOn24) {
+				LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+				LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, len, 0x20, 0x40, false);
+				LAMBDA80_SendPacket(&hspi3_rf, buff, len, false);
 
-			// Wait for Tx to finish before continuing
-			if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(50)) == pdTRUE) {
-				// Clear Tx interrupt
-				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+				// Wait for Tx to finish before continuing
+				if (xSemaphoreTake(LAMBDA80TxSemphr, pdMS_TO_TICKS(50)) == pdTRUE) {
+					// Clear Tx interrupt
+					LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
-				// Set to Rx mode for 500ms
-				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
-				LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+					// Set to Rx mode for 500ms
+					LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, NET_PAYLOAD_MAXLEN, 0x20, 0x40, false);
+					LAMBDA80_SetRx(&hspi3_rf, 0, 0xFFFF, false);
 
-				xSemaphoreGive(SPIRfMutex);
+					xSemaphoreGive(SPIRfMutex);
 
-				startTime = xTaskGetTickCount();
+					startTime = xTaskGetTickCount();
+				} else {
+					xSemaphoreGive(SPIRfMutex);
+					printf("[ERROR] Packet test stopped due to L80 Tx time out\n");
+					xTimerReset(DiscoveryTimer, 0);
+					return TM_STATE_IDLE;
+				}
 			} else {
-				xSemaphoreGive(SPIRfMutex);
-				printf("[ERROR] Packet test stopped due to Tx time out\n");
-				xTimerReset(DiscoveryTimer, 0);
-				return TM_STATE_IDLE;
+				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, len, 2, false, false);
+				LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+
+				// Wait for Tx to finish before continuing
+				if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(50)) == pdTRUE) {
+					// Clear Tx interrupt
+					LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+
+					// Set to Rx mode for 500ms
+					LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+					LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+					xSemaphoreGive(SPIRfMutex);
+
+					startTime = xTaskGetTickCount();
+				} else {
+					xSemaphoreGive(SPIRfMutex);
+					printf("[ERROR] Packet test stopped due to L62 Tx time out\n");
+					xTimerReset(DiscoveryTimer, 0);
+					return TM_STATE_IDLE;
+				}
 			}
+
+
 		} else {
 			printf("[ERROR] Packet test stopped due to unreleased RF SPI mutex\n");
 			xTimerReset(DiscoveryTimer, 0);
@@ -306,24 +340,35 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 
 		// Try to receive ACKs from the radio response queue
 		TickType_t recStartTime = xTaskGetTickCount();
-		while ((xTaskGetTickCount() - recStartTime) < pdMS_TO_TICKS(250)) {
-			if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(1)) == pdPASS) {
+		bool received = false;
+		while ((xTaskGetTickCount() - recStartTime) < pdMS_TO_TICKS(1000)) {
+			if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(5)) == pdPASS) {
+				received = true;
+
 				if (resp->type == NET_MTYPE_ACK && resp->sender == TargetAddr && resp->payloadlen == 5) {
 					uint32_t recseqn = ((int32_t)resp->payload[1] << 24) | ((int32_t)resp->payload[2] << 16) | \
 									   ((int32_t)resp->payload[3] << 8) | resp->payload[4];
 
 
-					uint8_t rxstatus = 0;
-					int8_t rssisync = 0;
-					int8_t rssiavg = 0;
-					if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
-						LAMBDA62_GetPktStatusFSK(&hspi3_rf, &rxstatus, &rssisync, &rssiavg, false);
-						xSemaphoreGive(SPIRfMutex);
-					}
+					if (resp->payload[0]) {
+						int8_t snr = 0;
+						int8_t rssi = 0;
+						if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+							LAMBDA80_GetPktStatusLoRa(&hspi3_rf, &rssi, &snr, false);
+							xSemaphoreGive(SPIRfMutex);
+						}
 
-					if (resp->payload[1]) {
-						printf("Received response on 2.4GHz from NetID: %i, Sequence num: %lu\n", TargetAddr, recseqn);
+						printf("RESP 2.4GHz from 0x%i, Seq: %lu, RSSI: %i, SNR: %i\n", TargetAddr, recseqn, rssi, snr);
 					} else {
+						uint8_t rxstatus = 0;
+						int8_t rssisync = 0;
+						int8_t rssiavg = 0;
+
+						if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+							LAMBDA62_GetPktStatusFSK(&hspi3_rf, &rxstatus, &rssisync, &rssiavg, false);
+							xSemaphoreGive(SPIRfMutex);
+						}
+
 						printf("RESP 868MHz from 0x%i, Seq: %lu, RSSI: %i\n", TargetAddr, recseqn, rssiavg);
 					}
 
@@ -336,6 +381,12 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 //					SendPacketUSB(&status);
 				}
 			}
+		}
+
+		RequestOn24 = !RequestOn24;
+
+		if (!received) {
+			printf("No response\n");
 		}
 	}
 }
@@ -359,6 +410,7 @@ int main(void) {
 	// Initialise RF modules
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
 	InitialiseLAMBDA80(&hspi3_rf, true);
+	LAMBDA80_SetMode_Telemetry(&hspi3_rf, true);
 
 	tusb_init();
 

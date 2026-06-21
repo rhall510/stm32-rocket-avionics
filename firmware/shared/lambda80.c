@@ -138,9 +138,9 @@ void LAMBDA80_SetMode_Telemetry(SPI_HandleTypeDef *hspi, bool Blocking){
 	LAMBDA80_WriteReg(hspi, 0x925, 0x32, Blocking);   // From datasheet for SF10
 
 	// Set default packet parameters
-	LAMBDA80_SetPacketParams(hspi, 0x23, 0, 30, 0x20, 0x40, Blocking);   // 12 bit preamble, explicit header, 30 byte payload, CRC on, normal IQ
+	LAMBDA80_SetPacketParams(hspi, 0x23, 0, 128, 0x20, 0x40, Blocking);   // 12 bit preamble, explicit header, 128 byte payload, CRC on, normal IQ
 
-	LAMBDA80_SetRx(hspi, 2, 0, Blocking);   // Set to Rx continuous mode
+	LAMBDA80_SetRx(hspi, 2, 0xFFFF, Blocking);   // Set to Rx continuous mode
 }
 
 
@@ -305,7 +305,7 @@ void LAMBDA80_GetPktStatusLoRa(SPI_HandleTypeDef *hspi, int8_t *rssi, int8_t *sn
     uint8_t rx[4] = {0};
 
     HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(hspi, tx, rx, 5, HAL_MAX_DELAY);
+    HAL_SPI_TransmitReceive(hspi, tx, rx, 4, HAL_MAX_DELAY);
     HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
 
     *rssi = -rx[2] / 2;
