@@ -1,11 +1,23 @@
 #include "main.h"
 
 
+volatile uint8_t rxstatus = 0xFF;
+volatile int8_t rssisync = 0xFF;
+volatile int8_t rssiavg = 0xFF;
+
+volatile uint16_t deverrors = 0xFF;
+
+volatile uint8_t rxlen = 0xFF;
+volatile uint8_t rxstart = 0xFF;
+
+volatile uint8_t devstatus = 0xFF;
+
+
 void ReadIncomingLAMBDA80(void *param) {
 	(void) param;
 
 	if (xSemaphoreTake(SPIRfMutex, portMAX_DELAY) == pdTRUE) {
-		LAMBDA80_SetMode_Telemetry(&hspi3_rf, false);
+//		LAMBDA80_SetMode_Telemetry(&hspi3_rf, false);
 		xSemaphoreGive(SPIRfMutex);
 	}
 
@@ -46,6 +58,7 @@ void ReadIncomingLAMBDA62(void *param) {
 
 	if (xSemaphoreTake(SPIRfMutex, portMAX_DELAY) == pdTRUE) {
 		LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+		devstatus = LAMBDA62_Status(&hspi3_rf, true);
 		xSemaphoreGive(SPIRfMutex);
 	}
 
@@ -103,8 +116,17 @@ void TransactionManagerTask(void *param) {
 
 
 TMState HandleStateIdle(NetPacket* pkt) {
+//	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+//		printf("a\n");
+//		LAMBDA62_GetPktStatusFSK(&hspi3_rf, &rxstatus, &rssisync, &rssiavg, false);
+//		LAMBDA62_GetRxBufferStatus(&hspi3_rf, &rxlen, &rxstart, false);
+//		deverrors = LAMBDA62_DevErrors(&hspi3_rf, false);
+//		devstatus = LAMBDA62_Status(&hspi3_rf, false);
+//		xSemaphoreGive(SPIRfMutex);
+//	}
+
 	// Wait for a command to arrive over radio
-	if (xQueueReceive(RadioQueue, pkt, 500) == pdPASS) {
+	if (xQueueReceive(RadioQueue, pkt, pdMS_TO_TICKS(500)) == pdPASS) {
 		if (pkt->type == NET_MTYPE_DISCOVERY) { return TM_DISC_CMD; }
 		if (pkt->type == NET_MTYPE_PKTTEST) { return TM_PKTTEST_CMD; }
 	}
@@ -224,9 +246,9 @@ int main(void) {
 
 	SystemClockConfig();
 	InitialiseGPIO();
-	InitialiseI2C();
+//	InitialiseI2C();
 	InitialiseSPI();
-	InitialiseCRC();
+//	InitialiseCRC();
 	InitialiseTimers();
 
 //	HAL_Delay(2000);   // Startup delay to avoid code executing inbetween debug sessions
@@ -237,7 +259,10 @@ int main(void) {
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
 	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, true);
 
-	InitialiseLAMBDA80(&hspi3_rf, true);
+	devstatus = LAMBDA62_Status(&hspi3_rf, true);
+
+
+//	InitialiseLAMBDA80(&hspi3_rf, true);
 
 
 	// Initialise FreeRTOS objects
@@ -415,11 +440,25 @@ void InitialiseSPI() {
 
 
 	// Initialise SPI3 (RF communication)
-    GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12;
+//    GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12;
+//    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+//    GPIO_InitStruct.Pull = GPIO_NOPULL;
+//    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+//    GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+//    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    // 1. Initialise SCK (Pin 10) and MOSI (Pin 12) - No Pulls required
+    GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_12;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    // 2. Initialise MISO (Pin 11) - Pulldown applied to prevent floating
+    GPIO_InitStruct.Pin = GPIO_PIN_11;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    // Mode, Speed, and Alternate are already set correctly in the struct from above
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 	hspi3_rf.Instance = SPI3;
@@ -585,7 +624,7 @@ void InitialiseGPIO() {
 
 	GPIO_InitStruct.Pin = L80_DIO1_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(L80_DIO1_PORT, &GPIO_InitStruct);
 
 	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
@@ -593,7 +632,7 @@ void InitialiseGPIO() {
 
 	GPIO_InitStruct.Pin = L80_DIO2_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(L80_DIO2_PORT, &GPIO_InitStruct);
 
 	HAL_NVIC_SetPriority(EXTI3_IRQn, 5, 0);
@@ -630,7 +669,7 @@ void InitialiseGPIO() {
 
 	GPIO_InitStruct.Pin = L62_DIO2_PIN;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(L62_DIO2_PORT, &GPIO_InitStruct);
 
 	HAL_NVIC_SetPriority(EXTI2_IRQn, 5, 0);

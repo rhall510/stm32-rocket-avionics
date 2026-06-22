@@ -31,6 +31,7 @@
 #define L62_CLEAR_IRQ 0x02U
 
 #define L62_RF_FREQ 0x86U
+#define L62_IMG_CAL 0x98U
 #define L62_PA_CFG 0x95U
 #define L62_BUFF_BASE_ADDR 0x8FU
 #define L62_PKT_TYPE 0x8AU
@@ -45,6 +46,7 @@
 #define L62_INST_RSSI 0x15U
 #define L62_STATS 0x10U
 #define L62_RESET_STATS 0x00U
+#define L62_DEV_ERRORS 0x17U
 
 
 // Other
@@ -52,13 +54,16 @@
 #define L62_RX_TIMEOUT 0xFFFFFFU   // 0x0 to disable timeout (single mode), 0xFFFFFF for continuous mode
 
 #define L62_TX_BASE_ADDR 0x0U   // Buffer base address for transmit packets
-#define L62_RX_BASE_ADDR 0x20U   // Buffer base address for receive packets
+#define L62_RX_BASE_ADDR 0x0U   // Buffer base address for receive packets
 
 // FXTAL is 32MHz
 
 // Functions
 // Get the current status of the module
 uint8_t LAMBDA62_Status(SPI_HandleTypeDef *hspi, bool Blocking);
+
+// Get the status of any device errors
+uint16_t LAMBDA62_DevErrors(SPI_HandleTypeDef *hspi, bool Blocking);
 
 // Returns the state of the BUSY pin
 bool LAMBDA62_CheckBusy();

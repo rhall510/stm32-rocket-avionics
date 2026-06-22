@@ -15,6 +15,20 @@ uint8_t LAMBDA62_Status(SPI_HandleTypeDef *hspi, bool Blocking) {
 }
 
 
+uint16_t LAMBDA62_DevErrors(SPI_HandleTypeDef *hspi, bool Blocking) {
+	LAMBDA62_WaitBusy(Blocking);
+
+    uint8_t tx[4] = {L62_DEV_ERRORS, 0, 0, 0};
+    uint8_t rx[4] = {0};
+
+    HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(hspi, tx, rx, 4, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+
+    return (((uint16_t)rx[2] << 8) | rx[3]) & 0b1111111010000000;
+}
+
+
 inline bool LAMBDA62_CheckBusy() {
 	return HAL_GPIO_ReadPin(L62_BUSY_PORT, L62_BUSY_PIN);
 }
@@ -182,6 +196,8 @@ void InitialiseLAMBDA62FSK(SPI_HandleTypeDef *hspi, bool Blocking) {
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(L62_RST_PORT, L62_RST_PIN, GPIO_PIN_SET);
 
+	HAL_Delay(5);
+
 	LAMBDA62_WaitBusy(Blocking);   // Wait for startup
 
 	// Set packet type to FSK
@@ -203,6 +219,25 @@ void InitialiseLAMBDA62FSK(SPI_HandleTypeDef *hspi, bool Blocking) {
 
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(hspi, tx, 5, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+
+	LAMBDA62_WaitBusy(Blocking);
+
+
+	uint8_t tx_stdby[2] = {L62_STDBY, 0x01}; // 0x01 = STDBY_XOSC
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(hspi, tx_stdby, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+	LAMBDA62_WaitBusy(Blocking);
+
+
+	// Image calibration for 863-870MHz
+	tx[0] = L62_IMG_CAL;
+	tx[1] = 0xD7;
+	tx[2] = 0xDB;
+
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(hspi, tx, 3, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
 	LAMBDA62_WaitBusy(Blocking);
