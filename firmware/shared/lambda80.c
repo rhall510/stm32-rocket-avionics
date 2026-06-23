@@ -87,6 +87,13 @@ void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi, bool Blocking) {
 
 	LAMBDA80_WaitBusy(Blocking);
 
+	// Enable high sensitivity mode - from datasheet
+	uint8_t hsreg = LAMBDA80_ReadReg(hspi, 0x891, Blocking);
+	hsreg |= 0b11000000;
+	LAMBDA80_WriteReg(hspi, 0x891, hsreg, Blocking);
+
+	LAMBDA80_WaitBusy(Blocking);
+
 	// Set buffer base addresses (TX, RX)
 	tx[0] = L80_BUFF_BASE_ADDR;
 	tx[1] = L80_TX_BASE_ADDR;
@@ -125,7 +132,7 @@ void LAMBDA80_SetMode_Telemetry(SPI_HandleTypeDef *hspi, bool Blocking){
 
 	// Set modulation params (SF, BW, CR)
 	tx[0] = L80_MOD_PARAMS;
-	tx[1] = 0xA0;   // SF10
+	tx[1] = 0x80;   // SF8
 	tx[2] = 0x18;   // BW 812.5KHz
 	tx[3] = 0x01;   // CR 4/5
 
@@ -231,8 +238,6 @@ void LAMBDA80_SendPacket(SPI_HandleTypeDef *hspi, uint8_t *packet, uint8_t len, 
 	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_SPI_Transmit(hspi, packet, len, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L80_CS_PORT, L80_CS_PIN, GPIO_PIN_SET);
-
-	LAMBDA80_WaitBusy(Blocking);
 
 	LAMBDA80_SetTx(hspi, 0x2, L80_TX_TIMEOUT, Blocking);
 }

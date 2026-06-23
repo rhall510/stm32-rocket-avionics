@@ -1,0 +1,859 @@
+SWV ITM Data Console - ITM Port: 0
+INIT
+Executing DISCOVERY command
+Executing DISCOVERY command
+Executing DISCOVERY command
+Executing DISCOVERY command
+Executing DISCOVERY command
+Reading USB command
+Executing PKTTEST command
+Sending test packet request on 868MHz, SEQ: 1
+RESP 868MHz from 0x1, Seq: 1, RSSI: -62
+Sending test packet request on 2.4GHz, SEQ: 2
+RESP 2.4GHz from 0x1, Seq: 2, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 3
+RESP 868MHz from 0x1, Seq: 3, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 4
+RESP 2.4GHz from 0x1, Seq: 4, RSSI: -53, SNR: 12
+Sending test packet request on 868MHz, SEQ: 5
+RESP 868MHz from 0x1, Seq: 5, RSSI: -56
+Sending test packet request on 2.4GHz, SEQ: 6
+RESP 2.4GHz from 0x1, Seq: 6, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 7
+RESP 868MHz from 0x1, Seq: 7, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 8
+RESP 2.4GHz from 0x1, Seq: 8, RSSI: -46, SNR: 14
+Sending test packet request on 868MHz, SEQ: 9
+RESP 868MHz from 0x1, Seq: 9, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 10
+RESP 2.4GHz from 0x1, Seq: 10, RSSI: -46, SNR: 14
+Sending test packet request on 868MHz, SEQ: 11
+RESP 868MHz from 0x1, Seq: 11, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 12
+RESP 2.4GHz from 0x1, Seq: 12, RSSI: -46, SNR: 14
+Sending test packet request on 868MHz, SEQ: 13
+RESP 868MHz from 0x1, Seq: 13, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 14
+RESP 2.4GHz from 0x1, Seq: 14, RSSI: -46, SNR: 12
+Sending test packet request on 868MHz, SEQ: 15
+RESP 868MHz from 0x1, Seq: 15, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 16
+RESP 2.4GHz from 0x1, Seq: 16, RSSI: -46, SNR: 12
+Sending test packet request on 868MHz, SEQ: 17
+RESP 868MHz from 0x1, Seq: 17, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 18
+RESP 2.4GHz from 0x1, Seq: 18, RSSI: -46, SNR: 14
+Sending test packet request on 868MHz, SEQ: 19
+RESP 868MHz from 0x1, Seq: 19, RSSI: -54
+Sending test packet request on 2.4GHz, SEQ: 20
+RESP 2.4GHz from 0x1, Seq: 20, RSSI: -46, SNR: 15
+Sending test packet request on 868MHz, SEQ: 21
+RESP 868MHz from 0x1, Seq: 21, RSSI: -54
+Sending test packet request on 2.4GHz, SEQ: 22
+RESP 2.4GHz from 0x1, Seq: 22, RSSI: -48, SNR: 12
+Sending test packet request on 868MHz, SEQ: 23
+RESP 868MHz from 0x1, Seq: 23, RSSI: -54
+Sending test packet request on 2.4GHz, SEQ: 24
+RESP 2.4GHz from 0x1, Seq: 24, RSSI: -48, SNR: 12
+Sending test packet request on 868MHz, SEQ: 25
+RESP 868MHz from 0x1, Seq: 25, RSSI: -54
+Sending test packet request on 2.4GHz, SEQ: 26
+RESP 2.4GHz from 0x1, Seq: 26, RSSI: -48, SNR: 12
+Sending test packet request on 868MHz, SEQ: 27
+RESP 868MHz from 0x1, Seq: 27, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 28
+RESP 2.4GHz from 0x1, Seq: 28, RSSI: -48, SNR: 12
+Sending test packet request on 868MHz, SEQ: 29
+RESP 868MHz from 0x1, Seq: 29, RSSI: -54
+Sending test packet request on 2.4GHz, SEQ: 30
+RESP 2.4GHz from 0x1, Seq: 30, RSSI: -46, SNR: 12
+Sending test packet request on 868MHz, SEQ: 31
+RESP 868MHz from 0x1, Seq: 31, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 32
+RESP 2.4GHz from 0x1, Seq: 32, RSSI: -46, SNR: 14
+Sending test packet request on 868MHz, SEQ: 33
+RESP 868MHz from 0x1, Seq: 33, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 34
+RESP 2.4GHz from 0x1, Seq: 34, RSSI: -46, SNR: 14
+Sending test packet request on 868MHz, SEQ: 35
+RESP 868MHz from 0x1, Seq: 35, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 36
+RESP 2.4GHz from 0x1, Seq: 36, RSSI: -46, SNR: 14
+Sending test packet request on 868MHz, SEQ: 37
+RESP 868MHz from 0x1, Seq: 37, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 38
+RESP 2.4GHz from 0x1, Seq: 38, RSSI: -46, SNR: 15
+Sending test packet request on 868MHz, SEQ: 39
+RESP 868MHz from 0x1, Seq: 39, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 40
+RESP 2.4GHz from 0x1, Seq: 40, RSSI: -46, SNR: 12
+Sending test packet request on 868MHz, SEQ: 41
+RESP 868MHz from 0x1, Seq: 41, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 42
+RESP 2.4GHz from 0x1, Seq: 42, RSSI: -46, SNR: 14
+Sending test packet request on 868MHz, SEQ: 43
+RESP 868MHz from 0x1, Seq: 43, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 44
+RESP 2.4GHz from 0x1, Seq: 44, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 45
+RESP 868MHz from 0x1, Seq: 45, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 46
+RESP 2.4GHz from 0x1, Seq: 46, RSSI: -48, SNR: 12
+Sending test packet request on 868MHz, SEQ: 47
+RESP 868MHz from 0x1, Seq: 47, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 48
+RESP 2.4GHz from 0x1, Seq: 48, RSSI: -55, SNR: 12
+Sending test packet request on 868MHz, SEQ: 49
+RESP 868MHz from 0x1, Seq: 49, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 50
+RESP 2.4GHz from 0x1, Seq: 50, RSSI: -50, SNR: 14
+Sending test packet request on 868MHz, SEQ: 51
+RESP 868MHz from 0x1, Seq: 51, RSSI: -64
+Sending test packet request on 2.4GHz, SEQ: 52
+RESP 2.4GHz from 0x1, Seq: 52, RSSI: -50, SNR: 11
+Sending test packet request on 868MHz, SEQ: 53
+RESP 868MHz from 0x1, Seq: 53, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 54
+RESP 2.4GHz from 0x1, Seq: 54, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 55
+RESP 868MHz from 0x1, Seq: 55, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 56
+RESP 2.4GHz from 0x1, Seq: 56, RSSI: -44, SNR: 14
+Sending test packet request on 868MHz, SEQ: 57
+RESP 868MHz from 0x1, Seq: 57, RSSI: -62
+Sending test packet request on 2.4GHz, SEQ: 58
+RESP 2.4GHz from 0x1, Seq: 58, RSSI: -46, SNR: 13
+Sending test packet request on 868MHz, SEQ: 59
+RESP 868MHz from 0x1, Seq: 59, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 60
+RESP 2.4GHz from 0x1, Seq: 60, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 61
+RESP 868MHz from 0x1, Seq: 61, RSSI: -62
+Sending test packet request on 2.4GHz, SEQ: 62
+RESP 2.4GHz from 0x1, Seq: 62, RSSI: -48, SNR: 12
+Sending test packet request on 868MHz, SEQ: 63
+RESP 868MHz from 0x1, Seq: 63, RSSI: -62
+Sending test packet request on 2.4GHz, SEQ: 64
+RESP 2.4GHz from 0x1, Seq: 64, RSSI: -48, SNR: 12
+Sending test packet request on 868MHz, SEQ: 65
+RESP 868MHz from 0x1, Seq: 65, RSSI: -62
+Sending test packet request on 2.4GHz, SEQ: 66
+RESP 2.4GHz from 0x1, Seq: 66, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 67
+RESP 868MHz from 0x1, Seq: 67, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 68
+RESP 2.4GHz from 0x1, Seq: 68, RSSI: -59, SNR: 14
+Sending test packet request on 868MHz, SEQ: 69
+RESP 868MHz from 0x1, Seq: 69, RSSI: -70
+Sending test packet request on 2.4GHz, SEQ: 70
+RESP 2.4GHz from 0x1, Seq: 70, RSSI: -46, SNR: 12
+Sending test packet request on 868MHz, SEQ: 71
+RESP 868MHz from 0x1, Seq: 71, RSSI: -62
+Sending test packet request on 2.4GHz, SEQ: 72
+RESP 2.4GHz from 0x1, Seq: 72, RSSI: -49, SNR: 13
+Sending test packet request on 868MHz, SEQ: 73
+RESP 868MHz from 0x1, Seq: 73, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 74
+RESP 2.4GHz from 0x1, Seq: 74, RSSI: -48, SNR: 12
+Sending test packet request on 868MHz, SEQ: 75
+RESP 868MHz from 0x1, Seq: 75, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 76
+RESP 2.4GHz from 0x1, Seq: 76, RSSI: -51, SNR: 12
+Sending test packet request on 868MHz, SEQ: 77
+RESP 868MHz from 0x1, Seq: 77, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 78
+RESP 2.4GHz from 0x1, Seq: 78, RSSI: -59, SNR: 13
+Sending test packet request on 868MHz, SEQ: 79
+RESP 868MHz from 0x1, Seq: 79, RSSI: -57
+Sending test packet request on 2.4GHz, SEQ: 80
+RESP 2.4GHz from 0x1, Seq: 80, RSSI: -49, SNR: 14
+Sending test packet request on 868MHz, SEQ: 81
+RESP 868MHz from 0x1, Seq: 81, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 82
+RESP 2.4GHz from 0x1, Seq: 82, RSSI: -48, SNR: 12
+Sending test packet request on 868MHz, SEQ: 83
+RESP 868MHz from 0x1, Seq: 83, RSSI: -63
+Sending test packet request on 2.4GHz, SEQ: 84
+RESP 2.4GHz from 0x1, Seq: 84, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 85
+RESP 868MHz from 0x1, Seq: 85, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 86
+RESP 2.4GHz from 0x1, Seq: 86, RSSI: -46, SNR: 12
+Sending test packet request on 868MHz, SEQ: 87
+RESP 868MHz from 0x1, Seq: 87, RSSI: -75
+Sending test packet request on 2.4GHz, SEQ: 88
+RESP 2.4GHz from 0x1, Seq: 88, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 89
+RESP 868MHz from 0x1, Seq: 89, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 90
+RESP 2.4GHz from 0x1, Seq: 90, RSSI: -46, SNR: 12
+Sending test packet request on 868MHz, SEQ: 91
+RESP 868MHz from 0x1, Seq: 91, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 92
+RESP 2.4GHz from 0x1, Seq: 92, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 93
+RESP 868MHz from 0x1, Seq: 93, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 94
+RESP 2.4GHz from 0x1, Seq: 94, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 95
+RESP 868MHz from 0x1, Seq: 95, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 96
+RESP 2.4GHz from 0x1, Seq: 96, RSSI: -48, SNR: 12
+Sending test packet request on 868MHz, SEQ: 97
+RESP 868MHz from 0x1, Seq: 97, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 98
+RESP 2.4GHz from 0x1, Seq: 98, RSSI: -48, SNR: 12
+Sending test packet request on 868MHz, SEQ: 99
+RESP 868MHz from 0x1, Seq: 99, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 100
+RESP 2.4GHz from 0x1, Seq: 100, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 101
+RESP 868MHz from 0x1, Seq: 101, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 102
+RESP 2.4GHz from 0x1, Seq: 102, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 103
+RESP 868MHz from 0x1, Seq: 103, RSSI: -76
+Sending test packet request on 2.4GHz, SEQ: 104
+RESP 2.4GHz from 0x1, Seq: 104, RSSI: -49, SNR: 12
+Sending test packet request on 868MHz, SEQ: 105
+RESP 868MHz from 0x1, Seq: 105, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 106
+RESP 2.4GHz from 0x1, Seq: 106, RSSI: -49, SNR: 14
+Sending test packet request on 868MHz, SEQ: 107
+RESP 868MHz from 0x1, Seq: 107, RSSI: -65
+Sending test packet request on 2.4GHz, SEQ: 108
+RESP 2.4GHz from 0x1, Seq: 108, RSSI: -46, SNR: 12
+Sending test packet request on 868MHz, SEQ: 109
+RESP 868MHz from 0x1, Seq: 109, RSSI: -63
+Sending test packet request on 2.4GHz, SEQ: 110
+RESP 2.4GHz from 0x1, Seq: 110, RSSI: -56, SNR: 14
+Sending test packet request on 868MHz, SEQ: 111
+RESP 868MHz from 0x1, Seq: 111, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 112
+RESP 2.4GHz from 0x1, Seq: 112, RSSI: -53, SNR: 13
+Sending test packet request on 868MHz, SEQ: 113
+RESP 868MHz from 0x1, Seq: 113, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 114
+RESP 2.4GHz from 0x1, Seq: 114, RSSI: -49, SNR: 14
+Sending test packet request on 868MHz, SEQ: 115
+RESP 868MHz from 0x1, Seq: 115, RSSI: -57
+Sending test packet request on 2.4GHz, SEQ: 116
+RESP 2.4GHz from 0x1, Seq: 116, RSSI: -56, SNR: 12
+Sending test packet request on 868MHz, SEQ: 117
+RESP 868MHz from 0x1, Seq: 117, RSSI: -55
+Sending test packet request on 2.4GHz, SEQ: 118
+RESP 2.4GHz from 0x1, Seq: 118, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 119
+RESP 868MHz from 0x1, Seq: 119, RSSI: -53
+Sending test packet request on 2.4GHz, SEQ: 120
+RESP 2.4GHz from 0x1, Seq: 120, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 121
+RESP 868MHz from 0x1, Seq: 121, RSSI: -57
+Sending test packet request on 2.4GHz, SEQ: 122
+RESP 2.4GHz from 0x1, Seq: 122, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 123
+RESP 868MHz from 0x1, Seq: 123, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 124
+RESP 2.4GHz from 0x1, Seq: 124, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 125
+RESP 868MHz from 0x1, Seq: 125, RSSI: -56
+Sending test packet request on 2.4GHz, SEQ: 126
+RESP 2.4GHz from 0x1, Seq: 126, RSSI: -53, SNR: 12
+Sending test packet request on 868MHz, SEQ: 127
+RESP 868MHz from 0x1, Seq: 127, RSSI: -53
+Sending test packet request on 2.4GHz, SEQ: 128
+RESP 2.4GHz from 0x1, Seq: 128, RSSI: -52, SNR: 14
+Sending test packet request on 868MHz, SEQ: 129
+RESP 868MHz from 0x1, Seq: 129, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 130
+RESP 2.4GHz from 0x1, Seq: 130, RSSI: -52, SNR: 12
+Sending test packet request on 868MHz, SEQ: 131
+RESP 868MHz from 0x1, Seq: 131, RSSI: -54
+Sending test packet request on 2.4GHz, SEQ: 132
+RESP 2.4GHz from 0x1, Seq: 132, RSSI: -55, SNR: 14
+Sending test packet request on 868MHz, SEQ: 133
+RESP 868MHz from 0x1, Seq: 133, RSSI: -54
+Sending test packet request on 2.4GHz, SEQ: 134
+RESP 2.4GHz from 0x1, Seq: 134, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 135
+RESP 868MHz from 0x1, Seq: 135, RSSI: -53
+Sending test packet request on 2.4GHz, SEQ: 136
+RESP 2.4GHz from 0x1, Seq: 136, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 137
+RESP 868MHz from 0x1, Seq: 137, RSSI: -54
+Sending test packet request on 2.4GHz, SEQ: 138
+RESP 2.4GHz from 0x1, Seq: 138, RSSI: -55, SNR: 13
+Sending test packet request on 868MHz, SEQ: 139
+RESP 868MHz from 0x1, Seq: 139, RSSI: -53
+Sending test packet request on 2.4GHz, SEQ: 140
+RESP 2.4GHz from 0x1, Seq: 140, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 141
+RESP 868MHz from 0x1, Seq: 141, RSSI: -53
+Sending test packet request on 2.4GHz, SEQ: 142
+RESP 2.4GHz from 0x1, Seq: 142, RSSI: -50, SNR: 12
+Sending test packet request on 868MHz, SEQ: 143
+RESP 868MHz from 0x1, Seq: 143, RSSI: -53
+Sending test packet request on 2.4GHz, SEQ: 144
+RESP 2.4GHz from 0x1, Seq: 144, RSSI: -50, SNR: 14
+Sending test packet request on 868MHz, SEQ: 145
+RESP 868MHz from 0x1, Seq: 145, RSSI: -53
+Sending test packet request on 2.4GHz, SEQ: 146
+RESP 2.4GHz from 0x1, Seq: 146, RSSI: -52, SNR: 14
+Sending test packet request on 868MHz, SEQ: 147
+RESP 868MHz from 0x1, Seq: 147, RSSI: -54
+Sending test packet request on 2.4GHz, SEQ: 148
+RESP 2.4GHz from 0x1, Seq: 148, RSSI: -50, SNR: 12
+Sending test packet request on 868MHz, SEQ: 149
+RESP 868MHz from 0x1, Seq: 149, RSSI: -53
+Sending test packet request on 2.4GHz, SEQ: 150
+RESP 2.4GHz from 0x1, Seq: 150, RSSI: -51, SNR: 12
+Sending test packet request on 868MHz, SEQ: 151
+RESP 868MHz from 0x1, Seq: 151, RSSI: -56
+Sending test packet request on 2.4GHz, SEQ: 152
+RESP 2.4GHz from 0x1, Seq: 152, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 153
+RESP 868MHz from 0x1, Seq: 153, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 154
+RESP 2.4GHz from 0x1, Seq: 154, RSSI: -55, SNR: 14
+Sending test packet request on 868MHz, SEQ: 155
+RESP 868MHz from 0x1, Seq: 155, RSSI: -62
+Sending test packet request on 2.4GHz, SEQ: 156
+RESP 2.4GHz from 0x1, Seq: 156, RSSI: -51, SNR: 12
+Sending test packet request on 868MHz, SEQ: 157
+RESP 868MHz from 0x1, Seq: 157, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 158
+RESP 2.4GHz from 0x1, Seq: 158, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 159
+RESP 868MHz from 0x1, Seq: 159, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 160
+RESP 2.4GHz from 0x1, Seq: 160, RSSI: -52, SNR: 12
+Sending test packet request on 868MHz, SEQ: 161
+RESP 868MHz from 0x1, Seq: 161, RSSI: -63
+Sending test packet request on 2.4GHz, SEQ: 162
+RESP 2.4GHz from 0x1, Seq: 162, RSSI: -53, SNR: 12
+Sending test packet request on 868MHz, SEQ: 163
+RESP 868MHz from 0x1, Seq: 163, RSSI: -64
+Sending test packet request on 2.4GHz, SEQ: 164
+RESP 2.4GHz from 0x1, Seq: 164, RSSI: -46, SNR: 14
+Sending test packet request on 868MHz, SEQ: 165
+RESP 868MHz from 0x1, Seq: 165, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 166
+RESP 2.4GHz from 0x1, Seq: 166, RSSI: -50, SNR: 12
+Sending test packet request on 868MHz, SEQ: 167
+RESP 868MHz from 0x1, Seq: 167, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 168
+RESP 2.4GHz from 0x1, Seq: 168, RSSI: -52, SNR: 12
+Sending test packet request on 868MHz, SEQ: 169
+RESP 868MHz from 0x1, Seq: 169, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 170
+RESP 2.4GHz from 0x1, Seq: 170, RSSI: -47, SNR: 14
+Sending test packet request on 868MHz, SEQ: 171
+RESP 868MHz from 0x1, Seq: 171, RSSI: -56
+Sending test packet request on 2.4GHz, SEQ: 172
+RESP 2.4GHz from 0x1, Seq: 172, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 173
+RESP 868MHz from 0x1, Seq: 173, RSSI: -62
+Sending test packet request on 2.4GHz, SEQ: 174
+RESP 2.4GHz from 0x1, Seq: 174, RSSI: -45, SNR: 14
+Sending test packet request on 868MHz, SEQ: 175
+RESP 868MHz from 0x1, Seq: 175, RSSI: -64
+Sending test packet request on 2.4GHz, SEQ: 176
+RESP 2.4GHz from 0x1, Seq: 176, RSSI: -43, SNR: 12
+Sending test packet request on 868MHz, SEQ: 177
+RESP 868MHz from 0x1, Seq: 177, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 178
+RESP 2.4GHz from 0x1, Seq: 178, RSSI: -47, SNR: 12
+Sending test packet request on 868MHz, SEQ: 179
+RESP 868MHz from 0x1, Seq: 179, RSSI: -67
+Sending test packet request on 2.4GHz, SEQ: 180
+RESP 2.4GHz from 0x1, Seq: 180, RSSI: -50, SNR: 12
+Sending test packet request on 868MHz, SEQ: 181
+RESP 868MHz from 0x1, Seq: 181, RSSI: -54
+Sending test packet request on 2.4GHz, SEQ: 182
+RESP 2.4GHz from 0x1, Seq: 182, RSSI: -52, SNR: 12
+Sending test packet request on 868MHz, SEQ: 183
+RESP 868MHz from 0x1, Seq: 183, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 184
+RESP 2.4GHz from 0x1, Seq: 184, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 185
+RESP 868MHz from 0x1, Seq: 185, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 186
+RESP 2.4GHz from 0x1, Seq: 186, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 187
+RESP 868MHz from 0x1, Seq: 187, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 188
+RESP 2.4GHz from 0x1, Seq: 188, RSSI: -56, SNR: 14
+Sending test packet request on 868MHz, SEQ: 189
+RESP 868MHz from 0x1, Seq: 189, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 190
+RESP 2.4GHz from 0x1, Seq: 190, RSSI: -55, SNR: 14
+Sending test packet request on 868MHz, SEQ: 191
+RESP 868MHz from 0x1, Seq: 191, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 192
+RESP 2.4GHz from 0x1, Seq: 192, RSSI: -55, SNR: 14
+Sending test packet request on 868MHz, SEQ: 193
+RESP 868MHz from 0x1, Seq: 193, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 194
+RESP 2.4GHz from 0x1, Seq: 194, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 195
+RESP 868MHz from 0x1, Seq: 195, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 196
+RESP 2.4GHz from 0x1, Seq: 196, RSSI: -54, SNR: 11
+Sending test packet request on 868MHz, SEQ: 197
+RESP 868MHz from 0x1, Seq: 197, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 198
+RESP 2.4GHz from 0x1, Seq: 198, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 199
+RESP 868MHz from 0x1, Seq: 199, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 200
+RESP 2.4GHz from 0x1, Seq: 200, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 201
+RESP 868MHz from 0x1, Seq: 201, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 202
+RESP 2.4GHz from 0x1, Seq: 202, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 203
+RESP 868MHz from 0x1, Seq: 203, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 204
+RESP 2.4GHz from 0x1, Seq: 204, RSSI: -53, SNR: 12
+Sending test packet request on 868MHz, SEQ: 205
+RESP 868MHz from 0x1, Seq: 205, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 206
+RESP 2.4GHz from 0x1, Seq: 206, RSSI: -52, SNR: 12
+Sending test packet request on 868MHz, SEQ: 207
+RESP 868MHz from 0x1, Seq: 207, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 208
+RESP 2.4GHz from 0x1, Seq: 208, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 209
+RESP 868MHz from 0x1, Seq: 209, RSSI: -57
+Sending test packet request on 2.4GHz, SEQ: 210
+RESP 2.4GHz from 0x1, Seq: 210, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 211
+RESP 868MHz from 0x1, Seq: 211, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 212
+RESP 2.4GHz from 0x1, Seq: 212, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 213
+RESP 868MHz from 0x1, Seq: 213, RSSI: -57
+Sending test packet request on 2.4GHz, SEQ: 214
+RESP 2.4GHz from 0x1, Seq: 214, RSSI: -52, SNR: 14
+Sending test packet request on 868MHz, SEQ: 215
+RESP 868MHz from 0x1, Seq: 215, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 216
+RESP 2.4GHz from 0x1, Seq: 216, RSSI: -55, SNR: 14
+Sending test packet request on 868MHz, SEQ: 217
+RESP 868MHz from 0x1, Seq: 217, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 218
+RESP 2.4GHz from 0x1, Seq: 218, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 219
+RESP 868MHz from 0x1, Seq: 219, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 220
+RESP 2.4GHz from 0x1, Seq: 220, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 221
+RESP 868MHz from 0x1, Seq: 221, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 222
+RESP 2.4GHz from 0x1, Seq: 222, RSSI: -52, SNR: 14
+Sending test packet request on 868MHz, SEQ: 223
+RESP 868MHz from 0x1, Seq: 223, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 224
+RESP 2.4GHz from 0x1, Seq: 224, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 225
+RESP 868MHz from 0x1, Seq: 225, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 226
+RESP 2.4GHz from 0x1, Seq: 226, RSSI: -52, SNR: 14
+Sending test packet request on 868MHz, SEQ: 227
+RESP 868MHz from 0x1, Seq: 227, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 228
+RESP 2.4GHz from 0x1, Seq: 228, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 229
+RESP 868MHz from 0x1, Seq: 229, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 230
+RESP 2.4GHz from 0x1, Seq: 230, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 231
+RESP 868MHz from 0x1, Seq: 231, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 232
+RESP 2.4GHz from 0x1, Seq: 232, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 233
+RESP 868MHz from 0x1, Seq: 233, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 234
+RESP 2.4GHz from 0x1, Seq: 234, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 235
+RESP 868MHz from 0x1, Seq: 235, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 236
+RESP 2.4GHz from 0x1, Seq: 236, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 237
+RESP 868MHz from 0x1, Seq: 237, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 238
+RESP 2.4GHz from 0x1, Seq: 238, RSSI: -55, SNR: 14
+Sending test packet request on 868MHz, SEQ: 239
+RESP 868MHz from 0x1, Seq: 239, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 240
+RESP 2.4GHz from 0x1, Seq: 240, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 241
+RESP 868MHz from 0x1, Seq: 241, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 242
+RESP 2.4GHz from 0x1, Seq: 242, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 243
+RESP 868MHz from 0x1, Seq: 243, RSSI: -58
+Sending test packet request on 2.4GHz, SEQ: 244
+RESP 2.4GHz from 0x1, Seq: 244, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 245
+RESP 868MHz from 0x1, Seq: 245, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 246
+RESP 2.4GHz from 0x1, Seq: 246, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 247
+RESP 868MHz from 0x1, Seq: 247, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 248
+RESP 2.4GHz from 0x1, Seq: 248, RSSI: -52, SNR: 12
+Sending test packet request on 868MHz, SEQ: 249
+RESP 868MHz from 0x1, Seq: 249, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 250
+RESP 2.4GHz from 0x1, Seq: 250, RSSI: -52, SNR: 12
+Sending test packet request on 868MHz, SEQ: 251
+RESP 868MHz from 0x1, Seq: 251, RSSI: -65
+Sending test packet request on 2.4GHz, SEQ: 252
+RESP 2.4GHz from 0x1, Seq: 252, RSSI: -50, SNR: 12
+Sending test packet request on 868MHz, SEQ: 253
+RESP 868MHz from 0x1, Seq: 253, RSSI: -68
+Sending test packet request on 2.4GHz, SEQ: 254
+RESP 2.4GHz from 0x1, Seq: 254, RSSI: -55, SNR: 12
+Sending test packet request on 868MHz, SEQ: 255
+RESP 868MHz from 0x1, Seq: 255, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 256
+RESP 2.4GHz from 0x1, Seq: 256, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 257
+RESP 868MHz from 0x1, Seq: 257, RSSI: -63
+Sending test packet request on 2.4GHz, SEQ: 258
+RESP 2.4GHz from 0x1, Seq: 258, RSSI: -53, SNR: 14
+Sending test packet request on 868MHz, SEQ: 259
+RESP 868MHz from 0x1, Seq: 259, RSSI: -63
+Sending test packet request on 2.4GHz, SEQ: 260
+RESP 2.4GHz from 0x1, Seq: 260, RSSI: -54, SNR: 13
+Sending test packet request on 868MHz, SEQ: 261
+RESP 868MHz from 0x1, Seq: 261, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 262
+RESP 2.4GHz from 0x1, Seq: 262, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 263
+RESP 868MHz from 0x1, Seq: 263, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 264
+RESP 2.4GHz from 0x1, Seq: 264, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 265
+RESP 868MHz from 0x1, Seq: 265, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 266
+RESP 2.4GHz from 0x1, Seq: 266, RSSI: -59, SNR: 13
+Sending test packet request on 868MHz, SEQ: 267
+RESP 868MHz from 0x1, Seq: 267, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 268
+RESP 2.4GHz from 0x1, Seq: 268, RSSI: -57, SNR: 12
+Sending test packet request on 868MHz, SEQ: 269
+RESP 868MHz from 0x1, Seq: 269, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 270
+RESP 2.4GHz from 0x1, Seq: 270, RSSI: -59, SNR: 12
+Sending test packet request on 868MHz, SEQ: 271
+RESP 868MHz from 0x1, Seq: 271, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 272
+RESP 2.4GHz from 0x1, Seq: 272, RSSI: -57, SNR: 12
+Sending test packet request on 868MHz, SEQ: 273
+RESP 868MHz from 0x1, Seq: 273, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 274
+RESP 2.4GHz from 0x1, Seq: 274, RSSI: -57, SNR: 12
+Sending test packet request on 868MHz, SEQ: 275
+RESP 868MHz from 0x1, Seq: 275, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 276
+RESP 2.4GHz from 0x1, Seq: 276, RSSI: -57, SNR: 12
+Sending test packet request on 868MHz, SEQ: 277
+RESP 868MHz from 0x1, Seq: 277, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 278
+RESP 2.4GHz from 0x1, Seq: 278, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 279
+RESP 868MHz from 0x1, Seq: 279, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 280
+RESP 2.4GHz from 0x1, Seq: 280, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 281
+RESP 868MHz from 0x1, Seq: 281, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 282
+RESP 2.4GHz from 0x1, Seq: 282, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 283
+RESP 868MHz from 0x1, Seq: 283, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 284
+RESP 2.4GHz from 0x1, Seq: 284, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 285
+RESP 868MHz from 0x1, Seq: 285, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 286
+RESP 2.4GHz from 0x1, Seq: 286, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 287
+RESP 868MHz from 0x1, Seq: 287, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 288
+RESP 2.4GHz from 0x1, Seq: 288, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 289
+RESP 868MHz from 0x1, Seq: 289, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 290
+RESP 2.4GHz from 0x1, Seq: 290, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 291
+RESP 868MHz from 0x1, Seq: 291, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 292
+RESP 2.4GHz from 0x1, Seq: 292, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 293
+RESP 868MHz from 0x1, Seq: 293, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 294
+RESP 2.4GHz from 0x1, Seq: 294, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 295
+RESP 868MHz from 0x1, Seq: 295, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 296
+RESP 2.4GHz from 0x1, Seq: 296, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 297
+RESP 868MHz from 0x1, Seq: 297, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 298
+RESP 2.4GHz from 0x1, Seq: 298, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 299
+RESP 868MHz from 0x1, Seq: 299, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 300
+RESP 2.4GHz from 0x1, Seq: 300, RSSI: -58, SNR: 11
+Sending test packet request on 868MHz, SEQ: 301
+RESP 868MHz from 0x1, Seq: 301, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 302
+RESP 2.4GHz from 0x1, Seq: 302, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 303
+RESP 868MHz from 0x1, Seq: 303, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 304
+RESP 2.4GHz from 0x1, Seq: 304, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 305
+RESP 868MHz from 0x1, Seq: 305, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 306
+RESP 2.4GHz from 0x1, Seq: 306, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 307
+RESP 868MHz from 0x1, Seq: 307, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 308
+RESP 2.4GHz from 0x1, Seq: 308, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 309
+RESP 868MHz from 0x1, Seq: 309, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 310
+RESP 2.4GHz from 0x1, Seq: 310, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 311
+RESP 868MHz from 0x1, Seq: 311, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 312
+RESP 2.4GHz from 0x1, Seq: 312, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 313
+RESP 868MHz from 0x1, Seq: 313, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 314
+RESP 2.4GHz from 0x1, Seq: 314, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 315
+RESP 868MHz from 0x1, Seq: 315, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 316
+RESP 2.4GHz from 0x1, Seq: 316, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 317
+RESP 868MHz from 0x1, Seq: 317, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 318
+RESP 2.4GHz from 0x1, Seq: 318, RSSI: -58, SNR: 12
+Sending test packet request on 868MHz, SEQ: 319
+RESP 868MHz from 0x1, Seq: 319, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 320
+RESP 2.4GHz from 0x1, Seq: 320, RSSI: -57, SNR: 12
+Sending test packet request on 868MHz, SEQ: 321
+RESP 868MHz from 0x1, Seq: 321, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 322
+RESP 2.4GHz from 0x1, Seq: 322, RSSI: -56, SNR: 12
+Sending test packet request on 868MHz, SEQ: 323
+RESP 868MHz from 0x1, Seq: 323, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 324
+RESP 2.4GHz from 0x1, Seq: 324, RSSI: -57, SNR: 12
+Sending test packet request on 868MHz, SEQ: 325
+RESP 868MHz from 0x1, Seq: 325, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 326
+RESP 2.4GHz from 0x1, Seq: 326, RSSI: -53, SNR: 12
+Sending test packet request on 868MHz, SEQ: 327
+RESP 868MHz from 0x1, Seq: 327, RSSI: -64
+Sending test packet request on 2.4GHz, SEQ: 328
+RESP 2.4GHz from 0x1, Seq: 328, RSSI: -55, SNR: 14
+Sending test packet request on 868MHz, SEQ: 329
+RESP 868MHz from 0x1, Seq: 329, RSSI: -65
+Sending test packet request on 2.4GHz, SEQ: 330
+RESP 2.4GHz from 0x1, Seq: 330, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 331
+RESP 868MHz from 0x1, Seq: 331, RSSI: -63
+Sending test packet request on 2.4GHz, SEQ: 332
+RESP 2.4GHz from 0x1, Seq: 332, RSSI: -53, SNR: 12
+Sending test packet request on 868MHz, SEQ: 333
+RESP 868MHz from 0x1, Seq: 333, RSSI: -62
+Sending test packet request on 2.4GHz, SEQ: 334
+RESP 2.4GHz from 0x1, Seq: 334, RSSI: -59, SNR: 13
+Sending test packet request on 868MHz, SEQ: 335
+RESP 868MHz from 0x1, Seq: 335, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 336
+RESP 2.4GHz from 0x1, Seq: 336, RSSI: -59, SNR: 14
+Sending test packet request on 868MHz, SEQ: 337
+RESP 868MHz from 0x1, Seq: 337, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 338
+RESP 2.4GHz from 0x1, Seq: 338, RSSI: -59, SNR: 14
+Sending test packet request on 868MHz, SEQ: 339
+RESP 868MHz from 0x1, Seq: 339, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 340
+RESP 2.4GHz from 0x1, Seq: 340, RSSI: -59, SNR: 14
+Sending test packet request on 868MHz, SEQ: 341
+RESP 868MHz from 0x1, Seq: 341, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 342
+RESP 2.4GHz from 0x1, Seq: 342, RSSI: -59, SNR: 14
+Sending test packet request on 868MHz, SEQ: 343
+RESP 868MHz from 0x1, Seq: 343, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 344
+RESP 2.4GHz from 0x1, Seq: 344, RSSI: -59, SNR: 14
+Sending test packet request on 868MHz, SEQ: 345
+RESP 868MHz from 0x1, Seq: 345, RSSI: -61
+Sending test packet request on 2.4GHz, SEQ: 346
+RESP 2.4GHz from 0x1, Seq: 346, RSSI: -59, SNR: 14
+Sending test packet request on 868MHz, SEQ: 347
+RESP 868MHz from 0x1, Seq: 347, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 348
+RESP 2.4GHz from 0x1, Seq: 348, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 349
+RESP 868MHz from 0x1, Seq: 349, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 350
+RESP 2.4GHz from 0x1, Seq: 350, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 351
+RESP 868MHz from 0x1, Seq: 351, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 352
+RESP 2.4GHz from 0x1, Seq: 352, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 353
+RESP 868MHz from 0x1, Seq: 353, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 354
+RESP 2.4GHz from 0x1, Seq: 354, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 355
+RESP 868MHz from 0x1, Seq: 355, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 356
+RESP 2.4GHz from 0x1, Seq: 356, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 357
+RESP 868MHz from 0x1, Seq: 357, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 358
+RESP 2.4GHz from 0x1, Seq: 358, RSSI: -54, SNR: 13
+Sending test packet request on 868MHz, SEQ: 359
+RESP 868MHz from 0x1, Seq: 359, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 360
+RESP 2.4GHz from 0x1, Seq: 360, RSSI: -54, SNR: 12
+Sending test packet request on 868MHz, SEQ: 361
+RESP 868MHz from 0x1, Seq: 361, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 362
+RESP 2.4GHz from 0x1, Seq: 362, RSSI: -55, SNR: 14
+Sending test packet request on 868MHz, SEQ: 363
+RESP 868MHz from 0x1, Seq: 363, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 364
+RESP 2.4GHz from 0x1, Seq: 364, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 365
+RESP 868MHz from 0x1, Seq: 365, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 366
+RESP 2.4GHz from 0x1, Seq: 366, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 367
+RESP 868MHz from 0x1, Seq: 367, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 368
+RESP 2.4GHz from 0x1, Seq: 368, RSSI: -61, SNR: 11
+Sending test packet request on 868MHz, SEQ: 369
+RESP 868MHz from 0x1, Seq: 369, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 370
+RESP 2.4GHz from 0x1, Seq: 370, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 371
+RESP 868MHz from 0x1, Seq: 371, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 372
+RESP 2.4GHz from 0x1, Seq: 372, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 373
+RESP 868MHz from 0x1, Seq: 373, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 374
+RESP 2.4GHz from 0x1, Seq: 374, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 375
+RESP 868MHz from 0x1, Seq: 375, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 376
+RESP 2.4GHz from 0x1, Seq: 376, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 377
+RESP 868MHz from 0x1, Seq: 377, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 378
+RESP 2.4GHz from 0x1, Seq: 378, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 379
+RESP 868MHz from 0x1, Seq: 379, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 380
+RESP 2.4GHz from 0x1, Seq: 380, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 381
+RESP 868MHz from 0x1, Seq: 381, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 382
+RESP 2.4GHz from 0x1, Seq: 382, RSSI: -59, SNR: 12
+Sending test packet request on 868MHz, SEQ: 383
+RESP 868MHz from 0x1, Seq: 383, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 384
+RESP 2.4GHz from 0x1, Seq: 384, RSSI: -57, SNR: 13
+Sending test packet request on 868MHz, SEQ: 385
+RESP 868MHz from 0x1, Seq: 385, RSSI: -63
+Sending test packet request on 2.4GHz, SEQ: 386
+RESP 2.4GHz from 0x1, Seq: 386, RSSI: -60, SNR: 14
+Sending test packet request on 868MHz, SEQ: 387
+RESP 868MHz from 0x1, Seq: 387, RSSI: -62
+Sending test packet request on 2.4GHz, SEQ: 388
+RESP 2.4GHz from 0x1, Seq: 388, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 389
+RESP 868MHz from 0x1, Seq: 389, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 390
+RESP 2.4GHz from 0x1, Seq: 390, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 391
+RESP 868MHz from 0x1, Seq: 391, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 392
+RESP 2.4GHz from 0x1, Seq: 392, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 393
+RESP 868MHz from 0x1, Seq: 393, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 394
+RESP 2.4GHz from 0x1, Seq: 394, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 395
+RESP 868MHz from 0x1, Seq: 395, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 396
+RESP 2.4GHz from 0x1, Seq: 396, RSSI: -62, SNR: 12
+Sending test packet request on 868MHz, SEQ: 397
+RESP 868MHz from 0x1, Seq: 397, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 398
+RESP 2.4GHz from 0x1, Seq: 398, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 399
+RESP 868MHz from 0x1, Seq: 399, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 400
+RESP 2.4GHz from 0x1, Seq: 400, RSSI: -57, SNR: 12
+Sending test packet request on 868MHz, SEQ: 401
+RESP 868MHz from 0x1, Seq: 401, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 402
+RESP 2.4GHz from 0x1, Seq: 402, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 403
+RESP 868MHz from 0x1, Seq: 403, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 404
+RESP 2.4GHz from 0x1, Seq: 404, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 405
+RESP 868MHz from 0x1, Seq: 405, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 406
+RESP 2.4GHz from 0x1, Seq: 406, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 407
+RESP 868MHz from 0x1, Seq: 407, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 408
+RESP 2.4GHz from 0x1, Seq: 408, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 409
+RESP 868MHz from 0x1, Seq: 409, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 410
+RESP 2.4GHz from 0x1, Seq: 410, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 411
+RESP 868MHz from 0x1, Seq: 411, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 412
+RESP 2.4GHz from 0x1, Seq: 412, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 413
+RESP 868MHz from 0x1, Seq: 413, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 414
+RESP 2.4GHz from 0x1, Seq: 414, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 415
+RESP 868MHz from 0x1, Seq: 415, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 416
+RESP 2.4GHz from 0x1, Seq: 416, RSSI: -60, SNR: 14
+Sending test packet request on 868MHz, SEQ: 417
+RESP 868MHz from 0x1, Seq: 417, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 418
+RESP 2.4GHz from 0x1, Seq: 418, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 419
+RESP 868MHz from 0x1, Seq: 419, RSSI: -59
+Sending test packet request on 2.4GHz, SEQ: 420
+RESP 2.4GHz from 0x1, Seq: 420, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 421
+RESP 868MHz from 0x1, Seq: 421, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 422
+RESP 2.4GHz from 0x1, Seq: 422, RSSI: -61, SNR: 12
+Sending test packet request on 868MHz, SEQ: 423
+RESP 868MHz from 0x1, Seq: 423, RSSI: -60
+Sending test packet request on 2.4GHz, SEQ: 424
+RESP 2.4GHz from 0x1, Seq: 424, RSSI: -60, SNR: 12
+Sending test packet request on 868MHz, SEQ: 425
+RESP 868MHz from 0x1, Seq: 425, RSSI: -60

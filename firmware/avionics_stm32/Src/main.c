@@ -1,29 +1,16 @@
 #include "main.h"
 
 
-volatile uint8_t rxstatus = 0xFF;
-volatile int8_t rssisync = 0xFF;
-volatile int8_t rssiavg = 0xFF;
-
-volatile uint16_t deverrors = 0xFF;
-
-volatile uint8_t rxlen = 0xFF;
-volatile uint8_t rxstart = 0xFF;
-
-volatile uint8_t devstatus = 0xFF;
-
-
 void ReadIncomingLAMBDA80(void *param) {
 	(void) param;
 
 	if (xSemaphoreTake(SPIRfMutex, portMAX_DELAY) == pdTRUE) {
-//		LAMBDA80_SetMode_Telemetry(&hspi3_rf, false);
+		LAMBDA80_SetMode_Telemetry(&hspi3_rf, false);
 		xSemaphoreGive(SPIRfMutex);
 	}
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-        	printf("Read L80\n");
 			if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
 				// Read the raw bytes from the radio buffer
 				uint8_t len = 0;
@@ -58,13 +45,11 @@ void ReadIncomingLAMBDA62(void *param) {
 
 	if (xSemaphoreTake(SPIRfMutex, portMAX_DELAY) == pdTRUE) {
 		LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
-		devstatus = LAMBDA62_Status(&hspi3_rf, true);
 		xSemaphoreGive(SPIRfMutex);
 	}
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-        	printf("Read L62\n");
 			if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
         		// Clear Rx interrupt
         		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
@@ -116,15 +101,6 @@ void TransactionManagerTask(void *param) {
 
 
 TMState HandleStateIdle(NetPacket* pkt) {
-//	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
-//		printf("a\n");
-//		LAMBDA62_GetPktStatusFSK(&hspi3_rf, &rxstatus, &rssisync, &rssiavg, false);
-//		LAMBDA62_GetRxBufferStatus(&hspi3_rf, &rxlen, &rxstart, false);
-//		deverrors = LAMBDA62_DevErrors(&hspi3_rf, false);
-//		devstatus = LAMBDA62_Status(&hspi3_rf, false);
-//		xSemaphoreGive(SPIRfMutex);
-//	}
-
 	// Wait for a command to arrive over radio
 	if (xQueueReceive(RadioQueue, pkt, pdMS_TO_TICKS(500)) == pdPASS) {
 		if (pkt->type == NET_MTYPE_DISCOVERY) { return TM_DISC_CMD; }
@@ -153,7 +129,9 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 		uint8_t len = ConstructNetPacket(buff, 10, &ackpkt);
 
 		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, len, 2, false, false);
+		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+		xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
 		LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
 
 		if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(200)) == pdTRUE) {
@@ -163,7 +141,7 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 			printf("[ERROR] Discovery ACK response Tx timed out\n");
 		}
 
-		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
 		LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
 		xSemaphoreGive(SPIRfMutex);
@@ -177,7 +155,6 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 
 TMState HandleStatePktTestCmd(NetPacket* resp) {
 	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
-		// Send the 868MHz response
 		NetPacket ackpkt;
 		ackpkt.recipient = NET_CONTROLLER_ADDR;
 		ackpkt.sender = NET_ADDRESS;
@@ -187,8 +164,8 @@ TMState HandleStatePktTestCmd(NetPacket* resp) {
 
 		// Echo the received sequence number on the same channel
 		ackpkt.payloadlen = 5;
-		ackpkt.payload[0] = resp->payload[0];
-		ackpkt.payload[1] = resp->payload[1];
+		ackpkt.payload[0] = resp->payload[0];   // Channel: 0 = 868MHz, 1 = 2.4GHz
+		ackpkt.payload[1] = resp->payload[1];   // Sequence number [31:0]
 		ackpkt.payload[2] = resp->payload[2];
 		ackpkt.payload[3] = resp->payload[3];
 		ackpkt.payload[4] = resp->payload[4];
@@ -196,43 +173,47 @@ TMState HandleStatePktTestCmd(NetPacket* resp) {
 		uint8_t buff[15];
 		uint8_t len = ConstructNetPacket(buff, 15, &ackpkt);
 
-		if (ackpkt.payload[0]) {
-			printf("Sending ACK to packet test call on 2.4GHz\n");
+		if (ackpkt.payload[0]) {   // Send the 868MHz response
+			printf("Sending PKTTEST ACK on 2.4GHz\n");
 
 			LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 			LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, len, 0x20, 0x40, false);
+
+			xSemaphoreTake(LAMBDA80TxSemphr, 0);   // Clear any spurious Tx notifications
 			LAMBDA80_SendPacket(&hspi3_rf, buff, len, false);
 
-			if (xSemaphoreTake(LAMBDA80TxSemphr, pdMS_TO_TICKS(50)) == pdTRUE) {
+			if (xSemaphoreTake(LAMBDA80TxSemphr, pdMS_TO_TICKS(150)) == pdTRUE) {
 				// Clear Tx interrupt
 				LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 			} else {
-				printf("[ERROR] Packet test ACK response L80 Tx timed out\n");
+				printf("[ERROR] PKTTEST ACK L80 Tx timed out\n");
 			}
 
 			LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, NET_PAYLOAD_MAXLEN, 0x20, 0x40, false);
 			LAMBDA80_SetRx(&hspi3_rf, 0, 0xFFFF, false);
-		} else {
-			printf("Sending ACK to packet test call on 868MHz\n");
+		} else {   // Send the 2.4GHz response
+			printf("Sending PKTTEST ACK on 868MHz\n");
 
 			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, len, 2, false, false);
+			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+			xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
 			LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
 
-			if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(50)) == pdTRUE) {
+			if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(150)) == pdTRUE) {
 				// Clear Tx interrupt
 				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 			} else {
-				printf("[ERROR] Packet test ACK response L62 Tx timed out\n");
+				printf("[ERROR] PKTTEST ACK L62 Tx timed out\n");
 			}
 
-			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
 			LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 		}
 
 		xSemaphoreGive(SPIRfMutex);
 	} else {
-		printf("[ERROR] Packet test ACK response timed out due to unreleased SPI mutex\n");
+		printf("[ERROR] PKTTEST ACK timed out due to unreleased SPI mutex\n");
 	}
 
 	return TM_STATE_IDLE;
@@ -246,9 +227,9 @@ int main(void) {
 
 	SystemClockConfig();
 	InitialiseGPIO();
-//	InitialiseI2C();
+	InitialiseI2C();
 	InitialiseSPI();
-//	InitialiseCRC();
+	InitialiseCRC();
 	InitialiseTimers();
 
 //	HAL_Delay(2000);   // Startup delay to avoid code executing inbetween debug sessions
@@ -257,12 +238,9 @@ int main(void) {
 
 	// Initialise RF modules
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
-	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, true);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, true);
 
-	devstatus = LAMBDA62_Status(&hspi3_rf, true);
-
-
-//	InitialiseLAMBDA80(&hspi3_rf, true);
+	InitialiseLAMBDA80(&hspi3_rf, true);
 
 
 	// Initialise FreeRTOS objects
@@ -746,7 +724,6 @@ void EXTI1_IRQHandler(void) {
 void EXTI2_IRQHandler(void) {   // LAMBDA62 Rx done
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_2);
 
-	ULED1_TOGGLE
 	if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
 		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 		vTaskNotifyGiveFromISR(LAMBDA62RxTaskNotif, &xHigherPriorityTaskWoken);
@@ -779,6 +756,8 @@ void EXTI9_5_IRQHandler(void) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_5);
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_6) != RESET) {   // LAMBDA80 Tx done
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_6);
+
+		ULED1_TOGGLE
 
 		if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
 			BaseType_t xHigherPriorityTaskWoken = pdFALSE;

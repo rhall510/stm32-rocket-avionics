@@ -180,7 +180,7 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 			uint8_t len = ConstructNetPacket(buff, 10, &discpkt);
 
 			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, len, 2, false, false);
+			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
 			LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
 
 			// Wait for Tx to finish before continuing
@@ -189,7 +189,7 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
 				// Set to Rx mode for 500ms
-				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
 				LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
 				xSemaphoreGive(SPIRfMutex);
@@ -289,7 +289,7 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 				LAMBDA80_SendPacket(&hspi3_rf, buff, len, false);
 
 				// Wait for Tx to finish before continuing
-				if (xSemaphoreTake(LAMBDA80TxSemphr, pdMS_TO_TICKS(50)) == pdTRUE) {
+				if (xSemaphoreTake(LAMBDA80TxSemphr, pdMS_TO_TICKS(150)) == pdTRUE) {
 					// Clear Tx interrupt
 					LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
@@ -308,16 +308,16 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 				}
 			} else {
 				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, len, 2, false, false);
+				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
 				LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
 
 				// Wait for Tx to finish before continuing
-				if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(50)) == pdTRUE) {
+				if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(150)) == pdTRUE) {
 					// Clear Tx interrupt
 					LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
 					// Set to Rx mode for 500ms
-					LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 7, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+					LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
 					LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
 					xSemaphoreGive(SPIRfMutex);
@@ -403,7 +403,7 @@ int main(void) {
 	InitialiseSPI();
 	InitialiseTimers();
 
-	HAL_Delay(2000);   // Startup delay to avoid code executing inbetween debug sessions
+//	HAL_Delay(2000);   // Startup delay to avoid code executing inbetween debug sessions
 
 	__enable_irq();
 
