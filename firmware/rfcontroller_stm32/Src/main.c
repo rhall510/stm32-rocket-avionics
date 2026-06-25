@@ -341,7 +341,7 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 		// Try to receive ACKs from the radio response queue
 		TickType_t recStartTime = xTaskGetTickCount();
 		bool received = false;
-		while ((xTaskGetTickCount() - recStartTime) < pdMS_TO_TICKS(1000)) {
+		while ((xTaskGetTickCount() - recStartTime) < pdMS_TO_TICKS(500)) {
 			if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(5)) == pdPASS) {
 				received = true;
 
@@ -358,6 +358,20 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 							xSemaphoreGive(SPIRfMutex);
 						}
 
+						USBPacket status;
+						status.type = USB_MTYPE_PKTTEST;
+						status.payloadlen = 8;
+						status.payload[0] = 0x01;   // Channel
+						status.payload[1] = TargetAddr;
+						status.payload[2] = resp->payload[1];
+						status.payload[3] = resp->payload[2];
+						status.payload[4] = resp->payload[3];
+						status.payload[5] = resp->payload[4];
+						status.payload[6] = rssi;
+						status.payload[7] = snr;
+
+						SendPacketUSB(&status);
+
 						printf("RESP 2.4GHz from 0x%i, Seq: %lu, RSSI: %i, SNR: %i\n", TargetAddr, recseqn, rssi, snr);
 					} else {
 						uint8_t rxstatus = 0;
@@ -369,25 +383,37 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 							xSemaphoreGive(SPIRfMutex);
 						}
 
+						USBPacket status;
+						status.type = USB_MTYPE_PKTTEST;
+						status.payloadlen = 7;
+						status.payload[0] = 0x00;   // Channel
+						status.payload[1] = TargetAddr;
+						status.payload[2] = resp->payload[1];
+						status.payload[3] = resp->payload[2];
+						status.payload[4] = resp->payload[3];
+						status.payload[5] = resp->payload[4];
+						status.payload[6] = rssiavg;
+
+						SendPacketUSB(&status);
+
 						printf("RESP 868MHz from 0x%i, Seq: %lu, RSSI: %i\n", TargetAddr, recseqn, rssiavg);
 					}
-
-//					USBPacket status;
-//					status.type = USB_MTYPE_STATUS;
-//					status.payloadlen = 2;
-//					status.payload[0] = 0xDD;
-//					status.payload[1] = resp->sender;
-//
-//					SendPacketUSB(&status);
 				}
 			}
 		}
 
-		RequestOn24 = !RequestOn24;
-
 		if (!received) {
+			USBPacket status;
+			status.type = USB_MTYPE_PKTTEST;
+			status.payloadlen = 1;
+			status.payload[0] = RequestOn24 | 0x80;   // Channel with MSB set indicates no response
+
+			SendPacketUSB(&status);
+
 			printf("No response\n");
 		}
+
+		RequestOn24 = !RequestOn24;
 	}
 }
 
