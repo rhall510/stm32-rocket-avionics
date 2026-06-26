@@ -5,6 +5,42 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### June 26th 2026
+
+Over the past 2 weeks I have been working on getting both the RF controller and avionics boards in a state where they can be used for a more robust range test of the transceivers. There were a few challenges which took a while to figure out but they are finally ready to go now I think!
+
+Both boards are now fully able to handle RF communication between each other. The firmware uses shared drivers for the low level functionality of each transceiver (SX1280 and SX1262) while the main file implements the specific handling of the data going to and from the transceivers. For each transceiver there is a FreeRTOS task driven by a task notification which reads any incoming packets, deconstructs them into a standardised packet struct, and places them in a queue ready to be received by the transcation manager task. Since the SPI bus is shared between the transceivers, all operations are protected by a mutex to prevent collisions on the bus.
+
+The transaction manager task operates a state machine that calls specific handler functions based on the current state it is in. These handler functions all take in the most recently received radio packet (and USB packet for the controller) and return the state the transaction manager should switch to when it finishes (which can just be the same state). The default state is the idle state, in which the controller will continuously check the USB command queue for new commands to execute while the avionics will check the radio queue to check for new radio commands to execute. Once a command is received it will return the new active state, causing the transaction manager to execute the handler function. This architecture allows for easy maintainability and expansion later with new commands as each state has it's own separate handler function which can lead into any other if required for complex protocols.
+
+So far I have implemented 2 basic protocols for the boards to communicate over RF:
+- The first is the discovery command, which runs every X seconds (currently 4s) on the controller and is independent of any user supplied USB command. In this state the controller first broadcasts a discovery packet to the network broadcast address (0xFF) and waits 500ms for any replies. Once received by the avionics board, it will send back an ACK packet to the controllers network address to notify it is ready to go. Currently replies received by the controller are simply sent as a status packet over USB to the host PC.
+- The second is the packet test command. This command is started by the user sending a packet test start command over USB and is intended for testing round trip packet reception with a specific network node. The user supplies the target network address and the controller then begins sending packet test packets to that address which contain a byte representing the channel the request was made on (0 = 868MHz, 1 = 2.4GHz) and 4 bytes for a sequence number. The receiver then echoes this packet back to the controller which listens for a 500ms window. Only one packet test command is active at a time and the channel it is requested on switches each loop to test both transceivers. Statistics such as RSSI and SNR of the received packets are collected and sent over USB to the host PC.
+
+
+#### Upcoming improved rangetest
+
+Way back at the start of the year I did a range test of the SX1262 transceivers using a very crude breadboard and arduino hardware implementation. Because it was just a bare breadboard the electronics had no protection and the antennas were literally swinging about held up by flimsy wires, which lead to unreliable and poor results.
+
+I now plan to repeat this range test using the new and improved hardware I have made over the past 6 months. This will improve on the previous range test in the following ways:
+- Custom PCBs ensure strong stable electrical connections between all components rather than using flimsy wires
+- Using STM32 MCUs rather than arduinos enables much better control over the hardware using things like FreeRTOS to implement concurrent task management instead of blocking waits
+- 3d printed enclosures ensure the PCBs and antennas are held rigidly in optimal positions
+- Having both transceivers active means I can test them both simultaneously instead of just the SX1262
+- The controller requesting each packet and receiving a response means communication is now tested both ways instead of one way
+- The serial terminal, now with a live plotting function for packet test data, allows live graphical viewing of the data in the field
+
+I hope these improvements will lead to more reliable and better results. I am hoping for a minimum of 300m of reliable reception from the SX1262s and 1km from the SX1280s to consider it a success. I am planning to go to a large open beach tomorrow where I will carry out the range test with the help of my family, and I will report back afterwards!
+
+
+#### Other stuff
+
+There is currently a persistent bug where the SX1262 sometimes fails to receive any packets properly upon initialisation, despite seemingly receiving and executing SPI commands properly. I would estimate this happens around 60% of the time, while the other 40% of the time it boots up and responds normally. I have tried to figure out the cause of this but to no avail so far. To get the range test done I have left this bug for now as I can just reset it until it boots up normally, but this will definitely need to be fixed for the future.
+
+I have also stripped out pretty much all of the previous sensor and storage related code from the avionics firmware for now to keep it lean. I will add this all back in gradually in a way compatable with FreeRTOS later.
+
+
+---
 ### June 12th 2026
 
 I have started writing some basic USB functions for the RF controller which use FreeRTOS for task scheduling. It can currently read incoming messages sent from a connected host PC and echo them back out. Initially there was some strange behaviour going on where if I enabled a task that sent out test packets to the host PC periodically then it could no longer read incoming packets, even though they are entirely separate from each other. However, I eventually figured out that it was due to a stack overflow in the sending task as I set the stack size too small. It was not caught immediately because stack overflow detection was turned off in the FreeRTOS config by default, but it is now for the future.
