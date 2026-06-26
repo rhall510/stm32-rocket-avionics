@@ -4,36 +4,33 @@
 void ReadIncomingLAMBDA80(void *param) {
 	(void) param;
 
-	if (xSemaphoreTake(SPIRfMutex, portMAX_DELAY) == pdTRUE) {
-		LAMBDA80_SetMode_Telemetry(&hspi3_rf, false);
-		xSemaphoreGive(SPIRfMutex);
-	}
-
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-			if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
-				// Read the raw bytes from the radio buffer
-				uint8_t len = 0;
-				uint8_t start = 0;
-				LAMBDA80_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
-
-				uint8_t buff[256];
-				LAMBDA80_ReadBuffer(&hspi3_rf, buff, start, len, false);
-
-				LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-
-				xSemaphoreGive(SPIRfMutex);
-
-				// Decode raw bytes into a net packet
-				NetPacket pkt;
-				DecodeNetPacket(&pkt, buff, len);
-
-				// Place into the radio response queue
-				if (xQueueSend(RadioQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
-					printf("[ERROR] Radio response queue full\n");
-				}
-			} else {
+			if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(50)) != pdTRUE) {
 				printf("[ERROR] LAMBDA80 read timed out due to unreleased SPI mutex\n");
+				return;
+			}
+
+			// Clear Rx interrupt
+			LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+
+			// Read the raw bytes from the radio buffer
+			uint8_t len = 0;
+			uint8_t start = 0;
+			LAMBDA80_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
+
+			uint8_t buff[256];
+			LAMBDA80_ReadBuffer(&hspi3_rf, buff, start, len, false);
+
+			xSemaphoreGive(SPIRfMutex);
+
+			// Decode raw bytes into a net packet
+			NetPacket pkt;
+			DecodeNetPacket(&pkt, buff, len);
+
+			// Place into the radio response queue
+			if (xQueueSend(RadioQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
+				printf("[ERROR] Radio response queue full\n");
 			}
         }
     }
@@ -43,37 +40,33 @@ void ReadIncomingLAMBDA80(void *param) {
 void ReadIncomingLAMBDA62(void *param) {
 	(void) param;
 
-	if (xSemaphoreTake(SPIRfMutex, portMAX_DELAY) == pdTRUE) {
-		LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
-		xSemaphoreGive(SPIRfMutex);
-	}
-
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-			if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
-        		// Clear Rx interrupt
-        		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-
-				// Read the raw bytes from the radio buffer
-				uint8_t len = 0;
-				uint8_t start = 0;
-				LAMBDA62_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
-
-				uint8_t buff[256];
-				LAMBDA62_ReadBuffer(&hspi3_rf, buff, start, len, false);
-
-				xSemaphoreGive(SPIRfMutex);
-
-				// Decode raw bytes into a net packet
-				NetPacket pkt;
-				DecodeNetPacket(&pkt, buff, len);
-
-				// Place into the radio response queue
-				if (xQueueSend(RadioQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
-					printf("[ERROR] Radio response queue full\n");
-				}
-			} else {
+			if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(50)) != pdTRUE) {
 				printf("[ERROR] LAMBDA62 read timed out due to unreleased SPI mutex\n");
+				return;
+			}
+
+			// Clear Rx interrupt
+			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+
+			// Read the raw bytes from the radio buffer
+			uint8_t len = 0;
+			uint8_t start = 0;
+			LAMBDA62_GetRxBufferStatus(&hspi3_rf, &len, &start, false);
+
+			uint8_t buff[256];
+			LAMBDA62_ReadBuffer(&hspi3_rf, buff, start, len, false);
+
+			xSemaphoreGive(SPIRfMutex);
+
+			// Decode raw bytes into a net packet
+			NetPacket pkt;
+			DecodeNetPacket(&pkt, buff, len);
+
+			// Place into the radio response queue
+			if (xQueueSend(RadioQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
+				printf("[ERROR] Radio response queue full\n");
 			}
         }
     }
@@ -102,7 +95,7 @@ void TransactionManagerTask(void *param) {
 
 TMState HandleStateIdle(NetPacket* pkt) {
 	// Wait for a command to arrive over radio
-	if (xQueueReceive(RadioQueue, pkt, pdMS_TO_TICKS(500)) == pdPASS) {
+	if (xQueueReceive(RadioQueue, pkt, portMAX_DELAY) == pdPASS) {
 		if (pkt->type == NET_MTYPE_DISCOVERY) { return TM_DISC_CMD; }
 		if (pkt->type == NET_MTYPE_PKTTEST) { return TM_PKTTEST_CMD; }
 	}
@@ -111,110 +104,124 @@ TMState HandleStateIdle(NetPacket* pkt) {
 
 
 TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
-	printf("Sending ACK response to discovery call\n");
+//	printf("Sending ACK response to discovery call\n");
 
 	// Stagger response by 50ms * address to prevent collisions
 	vTaskDelay(pdMS_TO_TICKS(NET_ADDRESS * 50));
 
-	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
-		NetPacket ackpkt;
-		ackpkt.recipient = NET_CONTROLLER_ADDR;
-		ackpkt.sender = NET_ADDRESS;
-		ackpkt.status = 0x0;
-		ackpkt.type = NET_MTYPE_ACK;
-		ackpkt.seqnum = 0;
-		ackpkt.payloadlen = 0;
-
-		uint8_t buff[10];
-		uint8_t len = ConstructNetPacket(buff, 10, &ackpkt);
-
-		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
-
-		xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
-		LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
-
-		if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(200)) == pdTRUE) {
-			// Clear Tx interrupt
-			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-		} else {
-			printf("[ERROR] Discovery ACK response Tx timed out\n");
-		}
-
-		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
-		LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
-
-		xSemaphoreGive(SPIRfMutex);
-	} else {
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(5)) != pdTRUE) {
 		printf("[ERROR] Discovery ACK response timed out due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
 	}
+
+	NetPacket ackpkt;
+	ackpkt.recipient = NET_CONTROLLER_ADDR;
+	ackpkt.sender = NET_ADDRESS;
+	ackpkt.status = 0x0;
+	ackpkt.type = NET_MTYPE_ACK;
+	ackpkt.seqnum = 0;
+	ackpkt.payloadlen = 0;
+
+	uint8_t buff[10];
+	uint8_t len = ConstructNetPacket(buff, 10, &ackpkt);
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+	xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+	LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+	xSemaphoreGive(SPIRfMutex);
+
+	if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(200)) != pdTRUE) {
+		printf("[ERROR] Discovery ACK response Tx timed out\n");
+	}
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] L62 not reset after discovery ACK due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+	xSemaphoreGive(SPIRfMutex);
 
 	return TM_STATE_IDLE;
 }
 
 
 TMState HandleStatePktTestCmd(NetPacket* resp) {
-	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
-		NetPacket ackpkt;
-		ackpkt.recipient = NET_CONTROLLER_ADDR;
-		ackpkt.sender = NET_ADDRESS;
-		ackpkt.status = 0x0;
-		ackpkt.type = NET_MTYPE_ACK;
-		ackpkt.seqnum = 0;
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] PKTTEST ACK timed out due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
 
-		// Echo the received sequence number on the same channel
-		ackpkt.payloadlen = 5;
-		ackpkt.payload[0] = resp->payload[0];   // Channel: 0 = 868MHz, 1 = 2.4GHz
-		ackpkt.payload[1] = resp->payload[1];   // Sequence number [31:0]
-		ackpkt.payload[2] = resp->payload[2];
-		ackpkt.payload[3] = resp->payload[3];
-		ackpkt.payload[4] = resp->payload[4];
+	NetPacket ackpkt;
+	ackpkt.recipient = NET_CONTROLLER_ADDR;
+	ackpkt.sender = NET_ADDRESS;
+	ackpkt.status = 0x0;
+	ackpkt.type = NET_MTYPE_ACK;
+	ackpkt.seqnum = 0;
 
-		uint8_t buff[15];
-		uint8_t len = ConstructNetPacket(buff, 15, &ackpkt);
+	// Echo the received sequence number on the same channel
+	ackpkt.payloadlen = 5;
+	ackpkt.payload[0] = resp->payload[0];   // Channel: 0 = 868MHz, 1 = 2.4GHz
+	ackpkt.payload[1] = resp->payload[1];   // Sequence number [31:0]
+	ackpkt.payload[2] = resp->payload[2];
+	ackpkt.payload[3] = resp->payload[3];
+	ackpkt.payload[4] = resp->payload[4];
 
-		if (ackpkt.payload[0]) {   // Send the 868MHz response
-			printf("Sending PKTTEST ACK on 2.4GHz\n");
+	uint8_t buff[15];
+	uint8_t len = ConstructNetPacket(buff, 15, &ackpkt);
 
-			LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-			LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, len, 0x20, 0x40, false);
+	if (ackpkt.payload[0]) {   // Send the 2.4GHz response
+//		printf("Sending PKTTEST ACK on 2.4GHz\n");
 
-			xSemaphoreTake(LAMBDA80TxSemphr, 0);   // Clear any spurious Tx notifications
-			LAMBDA80_SendPacket(&hspi3_rf, buff, len, false);
+		LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+		LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, len, 0x20, 0x40, false);
 
-			if (xSemaphoreTake(LAMBDA80TxSemphr, pdMS_TO_TICKS(150)) == pdTRUE) {
-				// Clear Tx interrupt
-				LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-			} else {
-				printf("[ERROR] PKTTEST ACK L80 Tx timed out\n");
-			}
+		xSemaphoreTake(LAMBDA80TxSemphr, 0);   // Clear any spurious Tx notifications
+		LAMBDA80_SendPacket(&hspi3_rf, buff, len, false);
+		xSemaphoreGive(SPIRfMutex);
 
-			LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, NET_PAYLOAD_MAXLEN, 0x20, 0x40, false);
-			LAMBDA80_SetRx(&hspi3_rf, 0, 0xFFFF, false);
-		} else {   // Send the 2.4GHz response
-			printf("Sending PKTTEST ACK on 868MHz\n");
-
-			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
-
-			xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
-			LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
-
-			if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(150)) == pdTRUE) {
-				// Clear Tx interrupt
-				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-			} else {
-				printf("[ERROR] PKTTEST ACK L62 Tx timed out\n");
-			}
-
-			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
-			LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+		if (xSemaphoreTake(LAMBDA80TxSemphr, pdMS_TO_TICKS(150)) != pdTRUE) {
+			printf("[ERROR] PKTTEST ACK L80 Tx timed out\n");
 		}
 
+		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+			printf("[ERROR] L80 not reset after PKTTEST ACK due to unreleased SPI mutex\n");
+			return TM_STATE_IDLE;
+		}
+
+		LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
+		LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, NET_PAYLOAD_MAXLEN, 0x20, 0x40, false);
+		LAMBDA80_SetRx(&hspi3_rf, 0, 0xFFFF, false);
+	} else {   // Send the 868MHz response
+//		printf("Sending PKTTEST ACK on 868MHz\n");
+
+		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+		xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+		LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
 		xSemaphoreGive(SPIRfMutex);
-	} else {
-		printf("[ERROR] PKTTEST ACK timed out due to unreleased SPI mutex\n");
+
+		if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(150)) != pdTRUE) {
+			printf("[ERROR] PKTTEST ACK L62 Tx timed out\n");
+		}
+
+		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+			printf("[ERROR] L62 not reset after PKTTEST ACK due to unreleased SPI mutex\n");
+			return TM_STATE_IDLE;
+		}
+
+		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
+		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+		LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 	}
+
+	xSemaphoreGive(SPIRfMutex);
 
 	return TM_STATE_IDLE;
 }
@@ -239,8 +246,10 @@ int main(void) {
 	// Initialise RF modules
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
 	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, true);
+	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, true);
 
 	InitialiseLAMBDA80(&hspi3_rf, true);
+	LAMBDA80_SetMode_Telemetry(&hspi3_rf, true);
 
 
 	// Initialise FreeRTOS objects
