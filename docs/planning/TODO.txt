@@ -1,1 +1,2 @@
 - Protect against INT skipping by using timers to periodically check status registers. Reset the timer every time the INT happens.
+

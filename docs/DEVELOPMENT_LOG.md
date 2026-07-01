@@ -5,6 +5,43 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### July 1st 2026
+
+#### Range test results
+
+On Saturday 27th I conducted the range test on Holkham beach in Norfolk. Unfortunately it didn't go as smoothly as I had hoped because both of the radiating elements on the controlling node antennas snapped off in transit. Since we were on a beach with no equipment I couldn't repair them properly, but in an effort to make sure I got *something* I attempted to temporarily attach the snapped elements back on using some bits of metal bent out of shape to grip it. This did work and the transceivers were able to talk to each other, though I imagine it would definitely have negatively affected the results as the length of the elements was no longer precise, and the grip was quite weak so they did end up moving a lot during the test. In addition, since the antenna elements were essentially holding on by a thread, I had to settle for laying it on my bag on the ground so it was stable. If I had attempted to hold it up in the air as I had originally planned they would have almost certainly fallen off again.
+
+So not ideal and I will definitely be repeating it taking more precautions to get it there in one piece, but for now I do have this data:
+
+![Range test results](./images/27-6-26_range_test_results.jpg)
+
+These graphs were obtained during the test, where the controller was on the ground and the receiver was walked away around 1.5m off the ground before coming back again in the second half. There are graphs of RSSI over time for both frequencies, SNR for 2.4GHz, RSSI vs SNR for 2.4GHz, and rolling 10-packet error/missing rate for both frequencies.
+
+The 2.4GHz signal seems to have travelled much further than 868MHz which is expected due to the fact that it uses LoRa rather than GFSK. At the stopping point (~550m away) before turning around and walking back I actually decided to risk it and hold the controller off the ground slightly (maybe only about 60-80cm) and it did regain signal again. That is the sudden jump up in 2.4GHz RSSI you can see in the second half of that graph. So maybe if I didn't have to worry about the elements falling off it could have gone further. In the end it seems like the 868MHz signal stopped entirely at only around 100m, while 2.4GHz could have potentially gone further than 550m. The lower limit of RSSI where packets were detected seems to have been -110dbm for 2.4GHz and -100dbm for 868MHz, which are both around 5dbm higher than the transceiver sensitivities would suggest. I was hoping for better results, but I think given the issues with the broken antennas I can't really complain too much.
+
+There was also an issue with the SNR jumping up to the 50-60 range when it get's too low. This is due to mistakenly interpreting the SNR value as an unsigned integer when it should be a signed integer, meaning negative values wrapped around.
+
+
+#### Next steps
+
+This range test highlighted a few key issues that need to be addressed in the next test. It will likely be a while before I have another opportunity to do a range test so I have plenty of time to prepare.
+
+Here are a few things I am thinking to improve reliability and get the most insight out of the next test:
+- Replace the antenna design with sleeve dipoles. Currently I am using ground plane monopoles which, especially for the 868MHz ones, are quite bulky due to the five elements all sticking out at angles. This is the main reason two of them were broken in transit, and it also necessitates a bit of an awkward enclosure design to hold them out away from the PCB which makes the enclosures awkward to transport too. Switching to sleeve dipoles will enable a much cleaner, compact, and robust setup as the antennas can stand straight up attached to the PCB SMA connectors and it will be easier to detach and reattach them for transit.
+- Redesign improved enclosures for the PCBs which are more portable and have attachment points on the bottom to enable them to stand on top of some sort of mast to lift them off the ground.
+- During this test distance was recorded by the person walking using their phones GPS. Eventually I want to use the 2.4GHz transceivers ranging function, so to test that I could set up the test so that between each test packet the 2.4GHz transceivers range each other and record that distance. This can then be compared to the GPS distance to see how accurate it is.
+
+
+Since it will be a while before the next testing opportunity I don't need to do all of this now, so I plan to redesign the antennas and enclosures and then work on other stuff until the next opportunity comes around. Here is what I plan to do over the next few weeks:
+
+By 5th Jul: Build and test sleeve dipole antennas. Design new enclosures for the PCBs with sleeve dipole antennas.
+By 17th Jul: Write and test robust data download routine. Reintegrate avionics sensor reading and storage writing tasks in FreeRTOS.
+By 19th Jul: Collect field test data on avionics board. Start working on calibration and data integration algorithms.
+
+I may be able to get all this done faster than the dates written here but I've just given myself more time in case I run into any issues which take a while to solve, which probably will happen! I plan to try making my own sleeve dipoles first but if it takes too long then I will just use commercially made ones as I don't want to be spending ages held up making antennas, which isn't really the main focus of this project.
+
+
+---
 ### June 26th 2026
 
 Over the past 2 weeks I have been working on getting both the RF controller and avionics boards in a state where they can be used for a more robust range test of the transceivers. There were a few challenges which took a while to figure out but they are finally ready to go now I think!
