@@ -8,15 +8,15 @@
 ---
 
 ## Overview
-This project aims to build a robust avionics unit for high power model rocketry. This system will also include a ground station that mechanically rotates high gain antennas to actively track the rocket in real time during flight and receive critical telemetry data.
+This project aims to build a robust avionics unit for high power model rocketry. This system will also include a ground station that mechanically rotates a high gain antenna to actively track the rocket in real time during flight and receive critical telemetry data.
 
-The system relies on sensor fusion for onboard state estimation and uses a hybrid RF tracking method combining position/movement telemetry and Phase Difference of Arrival (PDOA) signal analysis.
+The system relies on sensor fusion for onboard state estimation and uses a hybrid RF tracking method combining position/movement telemetry received from the rocekt and ranging with several ground nodes to accurately place the rocket.
 
 ## Key features
 * **Dual-band telemetry:**
-    * **2.4GHz (SX1280):** High bandwidth telemetry and command link.
-    * **868MHz (SX1262):** Beacon signal for precise PDOA angle tracking.
-* **Active ground tracking:** Motorized base with PID control tracks the rocket's azimuth and elevation automatically.
+    * **2.4GHz (SX1280):** High bandwidth telemetry and ranging.
+    * **868MHz (SX1262):** Command link.
+* **Active ground tracking:** Motorized base with PID control tracks the rocket's position automatically using two independent data sources (on board avionics and ground ranging).
 * **Live updating GUI:** See all relevant statistics and flight path updates in real time.
 * **Advanced firmware:** Built on STM32 using FreeRTOS for concurrent sensor data acquisition, data logging, RF transmission, and parachute deployment.
 * **Safety first:** Robust pre-flight check routine, redundant parachute deployment logic, and failsafe state management.
@@ -26,45 +26,56 @@ The system relies on sensor fusion for onboard state estimation and uses a hybri
 The project is divided into three main subsystems:
 
 1.  **Avionics (Rocket):** Onboard PCB with flight sensors, NOR flash logging, and RF transceivers controlled by a STM32G474 microcontroller.
-2.  **Ground station:** Antenna array with motorised tracking base utilizing position telemetry and PDOA data to maintain a high gain link with the rocket.
+2.  **Ground station:** Network consisting of ranging nodes and a central controlling node with a motorised tracking base utilizing position telemetry to maintain a high gain link with the rocket.
 3.  **Control center:** PC based GUI for live data visualization and controlling the ground station and avionics unit.
 
 ```mermaid
 ---
 config:
-  look: neo
   theme: neo-dark
+  layout: dagre
 ---
 flowchart TB
  subgraph Rocket["Avionics Unit"]
         MCU_R["MCU<br>STM32G474"]
         Sensors["Sensors<br>IMU, GPS, Baro"]
         NOR["NOR flash"]
-        RKT_24["SX1280<br>2.4GHz telemetry"]
-        RKT_868["SX1262<br>868MHz beacon"]
+        RKT_24["SX1280 2.4GHz"]
+        RKT_868["SX1262 868MHz"]
         Parachute["Parachute<br>deployment"]
   end
- subgraph Air["Ground station"]
-        GS_24["Ground RX<br>SX1280"]
-        GS_PDOA["PDOA array<br>AD8302"]
-        MCU_G["MCU<br>STM32G431"]
+ subgraph Air["Ground station (controller)"]
+        GS_24["SX1280 2.4GHz"]
+        GS_PDOA@{ label: "<span style=\"padding-left:\">SX1262 868MHz</span>" }
+        MCU_G@{ label: "MCU<span style=\"padding-left:\"><br>STM32G474</span>" }
         Motors["Stepper/Servo<br>tracker base"]
-  end
- subgraph PC["Control center"]
         GUI["Qt GUI<br>Data display and<br> mission control"]
   end
-    Sensors -- I2C --> MCU_R
-    MCU_R -- SPI --> RKT_868
+ subgraph s1["Ground station (ranging nodes x2)"]
+        n1["SX1280 2.4GHz<br>Ranging"]
+        n2@{ label: "<span style=\"padding-left:\">SX1262 868MHz</span>" }
+        n3@{ label: "MCU<span style=\"padding-left:\"><br>STM32G474</span>" }
+  end
+    Sensors -- SPI/I2C --> MCU_R
+    MCU_R -- SPI --> RKT_868 & NOR
     MCU_R <-- SPI --> RKT_24
     MCU_R -- GPIO --> Parachute
-    MCU_R -- SPI --> NOR
     RKT_24 -. Telemetry .-> GS_24
-    GS_24 -. Cmd .-> RKT_24
-    RKT_868 -. CW tone .-> GS_PDOA
+    RKT_868 <-. Cmd .-> GS_PDOA
     GS_24 <-- SPI --> MCU_G
-    GS_PDOA -- Analog phase --> MCU_G
+    GS_PDOA <-- SPI --> MCU_G
     MCU_G -- GPIO/PWM --> Motors
-    MCU_G <-- UART --> GUI
+    MCU_G <-. USB .-> GUI
+    GS_24 <-. Ranging .-> RKT_24
+    n1 <-- SPI --> n3
+    n2 <-- SPI --> n3
+    n2 <-. Cmd .-> GS_PDOA
+
+    GS_PDOA@{ shape: rect}
+    MCU_G@{ shape: rect}
+    n1@{ shape: rect}
+    n2@{ shape: rect}
+    n3@{ shape: rect}
 ```
 
 ## Repository structure

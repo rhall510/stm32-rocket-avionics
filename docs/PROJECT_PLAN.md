@@ -2,7 +2,7 @@
 
 
 
-Overall plan for the project and a rough order for the development timeline. Updated 24/01/26.
+Overall plan for the project and a rough order for the development timeline. Updated 01/07/26.
 
 
 
@@ -12,50 +12,61 @@ Sensors on a model rocket collect readings and a microcontroller integrates them
 
 
 
-The ground station uses the received position and velocity data to calculate the expected angle the antenna array needs to rotate to keep pointing at the rocket. The rocket also transmits periodic tones on a separate frequency which are received by two antennas arranged horizontally at either side of the main telemetry antenna and the phase difference between the two received signals is used to fine tune the azimuth angle of the rocket. These two methods allow the ground station to update the current position of the rocket and rotate the antennas to track it in real time.
+The ground station uses the received position and velocity data to calculate the expected angle the antenna array needs to rotate to keep pointing at the rocket. An array of 3 ground nodes will also periodically measure their distance to the rocket and transmit the results to the controlling node connected to a PC. These ranging results, along with known distances between each node, can be used to get a second measurement of the position of the rocket which is completely independent of the onboard sensors. These two methods allow the ground station to update the current position of the rocket and rotate the antennas to track it in real time.
 
 
 
-The ground station receives the main telemetry data via a high gain central antenna and decodes and passes this info to the connected computer (the ‘control center’) which displays the info on a live updating GUI. This control center is also connected to the launch pad to initiate the launch, along with being able to control the ground station and rocket by issuing commands (e.g. to calibrate sensors before launch).
+The ground station receives the main telemetry data via a high gain central antenna and decodes and passes this info to the connected computer (the ‘control center’) which displays the info on a live updating GUI. This control center is also connected to the launch pad to initiate the launch, along with being able to control the ground station nodes and rocket by issuing commands (e.g. to calibrate sensors before launch). Each network node and the rocket has an 868MHz and 2.4GHz transceiver integrated. The 868MHz band is used to transmit commands while the 2.4GHz band is used for ranging and transmitting larger data streams.
 
 
 
 ```mermaid
 ---
 config:
-  look: neo
   theme: neo-dark
+  layout: dagre
 ---
 flowchart TB
  subgraph Rocket["Avionics Unit"]
         MCU_R["MCU<br>STM32G474"]
         Sensors["Sensors<br>IMU, GPS, Baro"]
         NOR["NOR flash"]
-        RKT_24["SX1280<br>2.4GHz telemetry"]
-        RKT_868["SX1262<br>868MHz beacon"]
+        RKT_24["SX1280 2.4GHz"]
+        RKT_868["SX1262 868MHz"]
         Parachute["Parachute<br>deployment"]
   end
- subgraph Air["Ground station"]
-        GS_24["Ground RX<br>SX1280"]
-        GS_PDOA["PDOA array<br>AD8302"]
-        MCU_G["MCU<br>STM32G431"]
+ subgraph Air["Ground station (controller)"]
+        GS_24["SX1280 2.4GHz"]
+        GS_PDOA@{ label: "<span style=\"padding-left:\">SX1262 868MHz</span>" }
+        MCU_G@{ label: "MCU<span style=\"padding-left:\"><br>STM32G474</span>" }
         Motors["Stepper/Servo<br>tracker base"]
-  end
- subgraph PC["Control center"]
         GUI["Qt GUI<br>Data display and<br> mission control"]
   end
-    Sensors -- I2C --> MCU_R
-    MCU_R -- SPI --> RKT_868
+ subgraph s1["Ground station (ranging nodes x2)"]
+        n1["SX1280 2.4GHz<br>Ranging"]
+        n2@{ label: "<span style=\"padding-left:\">SX1262 868MHz</span>" }
+        n3@{ label: "MCU<span style=\"padding-left:\"><br>STM32G474</span>" }
+  end
+    Sensors -- SPI/I2C --> MCU_R
+    MCU_R -- SPI --> RKT_868 & NOR
     MCU_R <-- SPI --> RKT_24
     MCU_R -- GPIO --> Parachute
-    MCU_R -- SPI --> NOR
     RKT_24 -. Telemetry .-> GS_24
-    GS_24 -. Cmd .-> RKT_24
-    RKT_868 -. CW tone .-> GS_PDOA
+    RKT_868 <-. Cmd .-> GS_PDOA
     GS_24 <-- SPI --> MCU_G
-    GS_PDOA -- Analog phase --> MCU_G
+    GS_PDOA <-- SPI --> MCU_G
     MCU_G -- GPIO/PWM --> Motors
-    MCU_G <-- UART --> GUI
+    MCU_G <-. USB .-> GUI
+    GS_24 <-. Ranging .-> RKT_24
+    n1 <-- SPI --> n3
+    n2 <-- SPI --> n3
+    n2 <-. Cmd .-> GS_PDOA
+
+    GS_PDOA@{ shape: rect}
+    MCU_G@{ shape: rect}
+    n1@{ shape: rect}
+    n2@{ shape: rect}
+    n3@{ shape: rect}
 ```
 
 
@@ -85,7 +96,7 @@ The rocket will have an onboard avionics unit containing multiple sensors, trans
 
 
 
-Two transceivers will be present on the rocket with their respective antennas – the SX1262 (868MHz, LAMBDA62 module), and the SX1280 (2.4GHz, LAMBDA80 module). The 868MHz band will be used to emit a pure sine wave tone for 20ms at 10Hz which will be used by the ground station to provide accurate azimuth tracking by PDOA. The 2.4GHz band will be used to transmit telemetry data at 10Hz. Transmitted data will include the rockets calculated position, velocity, acceleration, orientation, and temperature/pressure.
+Two transceivers will be present on the rocket with their respective antennas – the SX1262 (868MHz, LAMBDA62 module), and the SX1280 (2.4GHz, LAMBDA80 module). The 868MHz band will be used to receive commands from the controlling ground station node and send back responses. The 2.4GHz band will be used to transmit telemetry data at 10Hz, as well as range with the network nodes. Transmitted data will include the rockets calculated position, velocity, acceleration, orientation, and temperature/pressure.
 
 A central MCU (STM32G474RET6) will be used to control everything in the avionics unit. It will:
 
@@ -95,7 +106,7 @@ A central MCU (STM32G474RET6) will be used to control everything in the avionics
 
 * Integrate the raw data into accurate estimates of position (IMU, GPS), angle (IMU, magnetometer) etc.
 
-* Interface with the two transceivers to send out tracking tones and telemetry data periodically.
+* Interface with the two transceivers to process commands and send out telemetry data periodically.
 
 * Activate the parachute deployment system when necessary.
 
@@ -105,17 +116,15 @@ FreeRTOS will be implemented to handle all these tasks concurrently.
 
 ### **Ground station**
 
-The ground station will consist of a central 2.4GHz high gain antenna with two 868MHz antennas flanking horizontally spaced ½ a wavelength apart. Mechanical construction of the mount will have to be precise and strong to maintain this distance accurately. The 2.4GHz antenna will likely be either a Yagi with many elements or a dish. The design for the 868MHz antennas is undecided as of yet but likely would also benefit from a high gain design to improve sensitivity of PDOA measurements.
+The ground station is made up of a network of 3 nodes, two ranging nodes and a main controlling node. The controlling node is connected to the control center PC via USB and will use a central 2.4GHz high gain directional antenna and an omnidirectional 868MHz antenna. The 2.4GHz antenna will likely be either a Yagi with many elements or a dish, while the 868MHz antenna will likely be a sleeve dipole. The 2.4GHz antenna will be mounted on a motorised base that allows it to point towards any location in the sky. Azimuth will be controlled by a stepper motor to allow 360-degree movement, while elevation will be controlled by a servo motor. The MCU will use telemetry transmissions received on 2.4GHz and ranging information received on 868MHz to track the rocket as it moves. The MCU also passes all of this information on to the control center.
 
-The antenna array will be mounted on a motorised base that allows it to point towards any location in the sky. Azimuth will be controlled by a stepper motor to allow 360-degree movement, while elevation will be controlled by a servo motor.
-
-The 2.4GHz antenna is connected directly to the ground station MCU (STM32G431KBT6U) via a LAMBDA80 transceiver. The 868MHz antennas are both connected to 868MHz SAW filters followed by 20-30dB gain LNAs, then both LNA outputs are connected to an AD8302 module with its phase angle output connected the MCU. The MCU will use telemetry transmissions received on the 2.4GHz and measure phase differences on the 868MHz band so track the rocket as it moves. Rocket position data can be used to set expected azimuth and elevation angles while phase angle readings can be used to more precisely tune the azimuth angle. The MCU also passes all of this information on to the control center.
+The ranging nodes are simpler and will use omnidirectional 2.4GHz and 868MHz antennas. They will be placed at least a few hundred meters apart and form a triangle around the launch pad with the controlling node. These are used purely to range the rocket to provide a second position measurement and are controlled by the controlling node sending commands over 868MHz.
 
 <br>
 
 ### **Control center**
 
-The ground station MCU sends all information received from the rocket to the control center computer. This info is then processed and displayed on a live updating GUI (design concept below). The GUI will show many interesting stats about the flight which are updated live. Along with this, it will also have interactable 3D renderings of the path of the rocket and it’s current orientation and movement.
+The controlling node MCU sends all information received from the rocket to the control center computer. This info is then processed and displayed on a live updating GUI (design concept below). The GUI will show many interesting stats about the flight which are updated live. Along with this, it will also have interactable 3D renderings of the path of the rocket and it’s current orientation and movement.
 
 The GUI will also have a built in CLI which can be used to control various functions of the ground station and rocket by issuing commands. For example, to calibrate sensors before launch, to initiate the launch itself, to start/stop data recording etc.
 
@@ -129,11 +138,11 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 
 * Set up ground station, launchpad, and control center.
 
-* Initiate connection between control center and ground station (wired), and ground station to rocket (radio - before launch the rocket transceivers can communicate bidirectionally with the ground station using a listen-before-talk approach to avoid collisions).
+* Initiate connection between control center and ground station controlling node (wired), and controlling node to rocket and ranging nodes (radio).
 
-* Calibrate ground station and rocket sensors by issuing commands via control center CLI. These get sent to the ground station which transmits the commands to the rocket if that is the intended destination.
+* Calibrate ground station and rocket sensors by issuing commands via control center CLI. These get sent to the controlling node which transmits the commands to the relevant node.
 
-* Send command to set off rocket launch. Rocket starts telemetry transmission and switches to exclusively TX.
+* Send command to set off rocket launch. Rocket starts telemetry transmission and periodic ranging on 2.4GHz.
 
 * Launch pad sets off motor and rocket launches.
 
@@ -141,9 +150,7 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 
 * Telemetry data is passed to the control center which processes the data and updates the GUI live to show stats and 3D renderings of the rocket.
 
-* As the rocket continues flying it may get far enough away to cause the 868MHz signal to fall out of the useable range of the AD8302 module, at which point azimuth tracking based on phase angle data is disabled and position telemetry data is used exclusively. The point at which phase angle data becomes unreliable is determined by a threshold on the AD8302s signal strength output.
-
-* If the ground station does not receive a valid telemetry packet at the expected interval it will update the expected position of the rocket by using the last correctly received position, velocity, and acceleration values. This will continue until another packet is received, at which point the new position overrides any calculated position up to that point.
+* The ground station integrates both telemetry and ranging measurements to track the rocket. If the ground station does not receive a valid telemetry packet at the expected interval it will update the expected position of the rocket by using the ranging results and the last correctly received position, velocity, and acceleration values to simulate it's path in between updates. This will continue until another packet is received, at which point the new position overrides any calculated position up to that point.
 
 * As the rocket reaches its apex and begins descending the avionics unit deploys the onboard parachute.
 
@@ -165,7 +172,7 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 ##### 1\. RF link validation and range tests
 
 * [x] Model and 3D print antenna testing enclosures.
-* [ ] Assemble SX1262 (LAMBDA62 module - 868MHz) and SX1280 (LAMBDA80 module - 2.4GHz) test rigs with 1/4 wave ground plane monopole antennas (driven by Arduinos while STM32s are on backorder) and perform range tests to validate feasibility and collect field data for RSSI and SNR at distance.
+* [ ] Assemble SX1262 (LAMBDA62 module - 868MHz) and SX1280 (LAMBDA80 module - 2.4GHz) test rigs and perform range tests to validate feasibility and collect field data for RSSI and SNR at distance.
 
 
 
@@ -195,7 +202,9 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 ##### 3\. Motorised antenna base
 
 * [ ] Build motorised portion of antenna base with stepper driving azimuth and servo driving elevation (no antenna mountings yet).
-* [ ] Add STM32G431KB (with FreeRTOS) and write drivers for it to drive the motors.
+* [ ] Design the controlling node PCB.
+* [ ] Integrate drivers for RF and USB.
+* [ ] Write drivers to drive the antenna base motors.
 * [ ] Implement and test algorithm to enable the STM32 to drive the base to point at any angle in the sky.
 * [ ] Upgrade algorithm to take a location and point at it by determining the relative angle.
 * [ ] Build, test, and mount the 2.4GHz main telemetry antenna onto the base.
@@ -205,22 +214,7 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 
 
 
-##### 4\. Adding PDOA tracking
-
-* [ ] Build and test 868MHz antennas.
-* [ ] Build small testing rig for the AD8302 module with SAW filters and LNA amplifiers.
-* [ ] Test feasibility and accuracy of signal angle measurement using AD8302 horizontally and vertically.
-* [ ] Add SX1262 (LAMBDA62) to the avionics unit and add task to transmit a beacon signal periodically.
-* [ ] Mount 868MHz antennas horizontally flanking the main telemetry antenna on the base and hook up AD8302, filters, and amplifiers to STM32.
-* [ ] Add calibration routine for PDOA signal.
-* [ ] Test signal angle measurement using the full setup.
-* [ ] Upgrade base tracking algorithm to use PDOA data in combination with the received location data.
-* [ ] Test base tracking with both telemetry and beacon signal transmissions active simultaneously.
-* [ ] Add 'failure' modes to the base tracking algorithm. Ignore PDOA signal if strength is too low and if neither signal is received fall back to following the predicted path of the rocket based on the last reliably received data.
-
-
-
-##### 5\. Control center
+##### 4\. Control center
 
 * [ ] Implement task on antenna base STM32 to periodically send relevant data to control center computer via serial connection.
 * [ ] Build basic control center GUI to display received data (simulated or real) in text.
@@ -230,6 +224,18 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 * [ ] Expand GUI to add in 3D graphics of rockets position and orientation.
 * [ ] Test all systems with fake and live data.
 
+
+##### 5\. Adding ranging nodes
+
+* [ ] Build and test the ranging node PCBs.
+* [ ] Build the 2.4GHz and 868MHz antennas and test them.
+* [ ] Implement all RF drivers.
+* [ ] Test ranging accuracy.
+* [ ] Implement a ranging network protocol and test it.
+* [ ] Implement a calibration routine to allow the controlling node to accurately determine the initial distances between all nodes on the network.
+* [ ] Implement an algorithm to use ranging results and calibrated initial distances to determine the rockets position.
+* [ ] Integrate periodic ranging into the regular telemetry transmission task.
+* [ ] Final test of ranging position tracking.
 
 
 ##### 6\. Rocket
