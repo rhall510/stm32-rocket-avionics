@@ -308,14 +308,14 @@ uint32_t W25Q_GetSafeContiguousReadAddress(uint32_t Addr) {
 	while (1) {
 		// Check if the address extends beyond the end of memory
 		if (SafeAddr > W25Q_MAX_ADDR) {
-			printf("WARNING: Address wraparound in W25Q_GetSafeContiguousReadAddress\n");
+//			printf("WARNING: Address wraparound in W25Q_GetSafeContiguousReadAddress\n");
 			SafeAddr = 0x0;
 			continue;
 		}
 
 		// Check if the address is in the metadata sector
 		if (SafeAddr <= W25Q_MetaEndAddr && SafeAddr >= W25Q_MetaStartAddr) {
-			printf("WARNING: Address moved out of metadata sector in W25Q_GetSafeContiguousReadAddress\n");
+//			printf("WARNING: Address moved out of metadata sector in W25Q_GetSafeContiguousReadAddress\n");
 			SafeAddr = W25Q_MetaEndAddr + 1;
 			continue;
 		}
@@ -327,7 +327,7 @@ uint32_t W25Q_GetSafeContiguousReadAddress(uint32_t Addr) {
 
 		if (W25Q_BadBlocks[BlockNum >> 3] & (1U << (BlockNum & 0b111))) {
 			SafeAddr = BBEndAddr + 1;
-			printf("WARNING: Address moved out of bad block in W25Q_GetSafeContiguousReadAddress\n");
+//			printf("WARNING: Address moved out of bad block in W25Q_GetSafeContiguousReadAddress\n");
 			continue;
 		}
 
