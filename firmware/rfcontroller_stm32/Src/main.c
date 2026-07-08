@@ -108,7 +108,8 @@ void TransactionManagerTask(void *param) {
 	    [TM_ECHO_CMD] = HandleStateEchoCmd,
 		[TM_STATUS_CMD] = HandleStateStatusCmd,
 		[TM_DISC_CMD] = HandleStateDiscoveryCmd,
-		[TM_PKTTEST_CMD] = HandleStatePktTestCmd
+		[TM_PKTTEST_CMD] = HandleStatePktTestCmd,
+		[TM_DATA_DOWNLOAD_CMD] = HandleStateDataDownloadCmd
 	};
 
     TMState currState = TM_STATE_IDLE;
@@ -129,6 +130,7 @@ TMState HandleStateIdle(USBPacket* pkt, NetPacket* resp) {
 		if (pkt->type == USB_MTYPE_STATUS) { return TM_STATUS_CMD; }
 		if (pkt->type == USB_MTYPE_DISCOVERY) { return TM_DISC_CMD; }
 		if (pkt->type == USB_MTYPE_PKTTEST) { return TM_PKTTEST_CMD; }
+		if (pkt->type == USB_MTYPE_DATA_DOWNLOAD) { return TM_DATA_DOWNLOAD_CMD; }
 	}
 	return TM_STATE_IDLE;
 }
@@ -218,10 +220,9 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 			if (resp->type == NET_MTYPE_ACK) {
 				// Send USB notification of response
 				USBPacket status;
-				status.type = USB_MTYPE_STATUS;
-				status.payloadlen = 2;
-				status.payload[0] = 0xDD;
-				status.payload[1] = resp->sender;
+				status.type = USB_MTYPE_DISCOVERY;
+				status.payloadlen = 1;
+				status.payload[0] = resp->sender;
 
 				SendPacketUSB(&status);
 			}
@@ -431,6 +432,187 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 }
 
 
+TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
+	// Extract requested data range
+	uint32_t NumReqBytes = ((uint32_t)pkt->payload[0] << 24) | ((uint32_t)pkt->payload[1] << 16) |
+						   ((uint32_t)pkt->payload[2] << 8) | pkt->payload[3];
+	uint32_t ReqByteOffset = ((uint32_t)pkt->payload[4] << 24) | ((uint32_t)pkt->payload[5] << 16) |
+						     ((uint32_t)pkt->payload[6] << 8) | pkt->payload[7];
+
+	// Get the number of available data bytes
+	NetPacket dwnpkt;
+	dwnpkt.recipient = NET_AVIONICS_ADDR;
+	dwnpkt.sender = NET_CONTROLLER_ADDR;
+	dwnpkt.status = 0x0;
+	dwnpkt.type = NET_MTYPE_GET_DATA_RANGE;
+	dwnpkt.seqnum = 0;
+	dwnpkt.payloadlen = 0;
+
+	uint8_t buff[NET_PACKET_MAXLEN];   // Max length to use for receiving data later
+	uint8_t len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &dwnpkt);
+
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] Data download timed out due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+	xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+	LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+	xSemaphoreGive(SPIRfMutex);
+
+	// Wait for Tx to finish before continuing
+	if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(100)) != pdTRUE) {
+		printf("[ERROR] Data request Tx timed out\n");
+		return TM_STATE_IDLE;
+	}
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] L62 not reset after discovery Tx due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	// Clear Tx interrupt
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+
+	// Set to Rx continuous mode
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+	xSemaphoreGive(SPIRfMutex);
+
+
+	// Wait for response
+	if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(100)) != pdPASS) {
+		printf("[ERROR] Data boundary request Rx timed out\n");
+		return TM_STATE_IDLE;
+	}
+
+	if (resp->type != NET_MTYPE_GET_DATA_RANGE) {
+		printf("[ERROR] Bad data request Rx\n");
+		return TM_STATE_IDLE;
+	}
+
+	// Extract available bytes and relay to host
+	uint32_t NumAvailBytes = ((uint32_t)resp->payload[0] << 24) | ((uint32_t)resp->payload[1] << 16) |
+							 ((uint32_t)resp->payload[2] << 8) | resp->payload[3];
+
+	if (NumReqBytes == 0) {   // Request all available if NumReqBytes is 0
+		NumReqBytes = NumAvailBytes;
+	}
+
+	USBPacket relaypkt;
+	relaypkt.type = USB_MTYPE_INFO;
+	relaypkt.payloadlen = 8;
+
+	for (int i = 0; i < 8; i++) {   // Copy over received data values
+		relaypkt.payload[i] = resp->payload[i];
+	}
+
+	SendPacketUSB(&relaypkt);
+
+
+	// Initialise USB packet for relaying data
+	relaypkt.type = USB_MTYPE_DATA_DOWNLOAD;
+
+	// Initialise SX1280 for high bandwidth transmission
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] Data download timed out due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	LAMBDA80_SetMode_Download(&hspi3_rf, false);
+	LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, NET_PACKET_MAXLEN, 0x20, 0x40, false);
+	LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+	LAMBDA80_SetRx(&hspi3_rf, 2, 0xFFFF, false);   // Set to Rx continuous mode
+
+	// Request the data
+	dwnpkt.type = NET_MTYPE_TRSMT_DATA;
+	dwnpkt.payloadlen = 8;
+	dwnpkt.payload[0] = (NumReqBytes >> 24) & 0xFF;
+	dwnpkt.payload[1] = (NumReqBytes >> 16) & 0xFF;
+	dwnpkt.payload[2] = (NumReqBytes >> 8) & 0xFF;
+	dwnpkt.payload[3] = NumReqBytes & 0xFF;
+	dwnpkt.payload[4] = (ReqByteOffset >> 24) & 0xFF;
+	dwnpkt.payload[5] = (ReqByteOffset >> 16) & 0xFF;
+	dwnpkt.payload[6] = (ReqByteOffset >> 8) & 0xFF;
+	dwnpkt.payload[7] = ReqByteOffset & 0xFF;
+
+	len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &dwnpkt);
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+	xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+	LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+	xSemaphoreGive(SPIRfMutex);
+
+	// Wait for Tx to finish before continuing
+	if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(100)) != pdTRUE) {
+		printf("[ERROR] Data request Tx timed out\n");
+		return TM_STATE_IDLE;
+	}
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] L62 not reset after discovery Tx due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	// Clear Tx interrupt
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+	xSemaphoreGive(SPIRfMutex);
+
+
+	// Loop to receive and relay packets. End if there is a timeout or all bytes are received
+	TickType_t rectime = xTaskGetTickCount();
+	bool done = false;
+	while ((xTaskGetTickCount() - rectime) < pdMS_TO_TICKS(500)) {
+		if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(10)) == pdPASS) {
+			if (resp->type != NET_MTYPE_TRSMT_DATA) { continue; }
+			rectime = xTaskGetTickCount();   // Reset timeout window
+
+			// Relay to host
+			relaypkt.payloadlen = resp->payloadlen;
+
+			for (int i = 0; i < resp->payloadlen; i++) {   // Copy over received data values
+				relaypkt.payload[i] = resp->payload[i];
+			}
+
+			SendPacketUSB(&relaypkt);
+
+			// Get sequence number
+			uint32_t seqnum = ((uint32_t)resp->payload[0] << 24) | ((uint32_t)resp->payload[1] << 16) |
+							  ((uint32_t)resp->payload[2] << 8) | resp->payload[3];
+
+			if (seqnum * USB_PAYLOAD_MAXLEN >= NumReqBytes) {   // Quick calculation of received bytes based on seqnum
+				done = true;
+				break;
+			}
+		}
+	}
+
+	if (done) {
+		printf("[INFO] Data request finished succesfully\n");
+	} else {
+		printf("[ERROR] Data request Rx timed out\n");
+	}
+
+	// Switch back to default telemetry modulation settings
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] L80 not returned to telemetry mode after data download due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	LAMBDA80_SetMode_Telemetry(&hspi3_rf, false);
+	xSemaphoreGive(SPIRfMutex);
+
+	return TM_STATE_IDLE;
+}
+
+
 
 
 int main(void) {
@@ -481,7 +663,7 @@ int main(void) {
     xTaskCreate(ReadIncomingLAMBDA62, "LAMBDA62-Receive", 1024, NULL, 4, &LAMBDA62RxTaskNotif);
     xTaskCreate(TransactionManagerTask, "Transaction-Manager", 4096, NULL, 1, NULL);
 
-    DiscoveryTimer = xTimerCreate("DiscTimer", pdMS_TO_TICKS(4000), pdTRUE, (void *)0, SendDiscoveryPacket);
+    DiscoveryTimer = xTimerCreate("DiscoveryTimer", pdMS_TO_TICKS(4000), pdTRUE, (void *)0, SendDiscoveryPacket);
     xTimerStart(DiscoveryTimer, 0);
 
 

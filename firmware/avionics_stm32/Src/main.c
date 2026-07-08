@@ -81,6 +81,7 @@ void TransactionManagerTask(void *param) {
 	    [TM_STATE_IDLE] = HandleStateIdle,
 		[TM_DISC_CMD] = HandleStateDiscoveryCmd,
 		[TM_PKTTEST_CMD] = HandleStatePktTestCmd,
+		[TM_DATARNG_CMD] = HandleStateDataRangeCmd,
 		[TM_TRSMT_DATA_CMD] = HandleStateTransmitDataCmd
 	};
 
@@ -99,6 +100,7 @@ TMState HandleStateIdle(NetPacket* pkt) {
 	if (xQueueReceive(RadioQueue, pkt, portMAX_DELAY) == pdPASS) {
 		if (pkt->type == NET_MTYPE_DISCOVERY) { return TM_DISC_CMD; }
 		if (pkt->type == NET_MTYPE_PKTTEST) { return TM_PKTTEST_CMD; }
+		if (pkt->type == NET_MTYPE_GET_DATA_RANGE) { return TM_DATARNG_CMD; }
 		if (pkt->type == NET_MTYPE_TRSMT_DATA) { return TM_TRSMT_DATA_CMD; }
 	}
 	return TM_STATE_IDLE;
@@ -144,7 +146,7 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 	}
 
 	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
-	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
 	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
 	xSemaphoreGive(SPIRfMutex);
@@ -197,7 +199,7 @@ TMState HandleStatePktTestCmd(NetPacket* resp) {
 		}
 
 		LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
-		LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, NET_PAYLOAD_MAXLEN, 0x20, 0x40, false);
+		LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, NET_PACKET_MAXLEN, 0x20, 0x40, false);
 		LAMBDA80_SetRx(&hspi3_rf, 0, 0xFFFF, false);
 	} else {   // Send the 868MHz response
 //		printf("Sending PKTTEST ACK on 868MHz\n");
@@ -219,7 +221,7 @@ TMState HandleStatePktTestCmd(NetPacket* resp) {
 		}
 
 		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
-		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
 		LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 	}
 
@@ -229,32 +231,96 @@ TMState HandleStatePktTestCmd(NetPacket* resp) {
 }
 
 
+TMState HandleStateDataRangeCmd(NetPacket* resp) {
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] DATARNG response timed out due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	NetPacket rngpkt;
+	rngpkt.recipient = NET_CONTROLLER_ADDR;
+	rngpkt.sender = NET_ADDRESS;
+	rngpkt.status = 0x0;
+	rngpkt.type = NET_MTYPE_GET_DATA_RANGE;
+	rngpkt.seqnum = 0;
+	rngpkt.payloadlen = 8;
+
+	rngpkt.payload[0] = (uint8_t)(W25Q_NumDataBytes >> 24);
+	rngpkt.payload[1] = (uint8_t)(W25Q_NumDataBytes >> 16);
+	rngpkt.payload[2] = (uint8_t)(W25Q_NumDataBytes >> 8);
+	rngpkt.payload[3] = (uint8_t)W25Q_NumDataBytes;
+
+	rngpkt.payload[4] = (uint8_t)(W25Q_NumDataPackets >> 24);
+	rngpkt.payload[5] = (uint8_t)(W25Q_NumDataPackets >> 16);
+	rngpkt.payload[6] = (uint8_t)(W25Q_NumDataPackets >> 8);
+	rngpkt.payload[7] = (uint8_t)W25Q_NumDataPackets;
+
+	uint8_t buff[NET_HEADER_LEN + rngpkt.payloadlen];
+	uint8_t len = ConstructNetPacket(buff, NET_HEADER_LEN + rngpkt.payloadlen, &rngpkt);
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+	xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+	LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+	xSemaphoreGive(SPIRfMutex);
+
+	if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(100)) != pdTRUE) {
+		printf("[ERROR] DATARNG response Tx timed out\n");
+	}
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] L62 not reset after DATARNG response due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
+	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+	xSemaphoreGive(SPIRfMutex);
+
+	return TM_STATE_IDLE;
+}
+
 
 TMState HandleStateTransmitDataCmd(NetPacket* resp) {
 	if (!W25Q_NumDataBytes) {
 		printf("[INFO] Transmit data called but no data to transmit");
-		return;
+		return TM_STATE_IDLE;
 	}
 
+	// Extract the range to transmit
+	uint32_t NumTransmitBytes = ((uint32_t)resp->payload[0] << 24) | ((uint32_t)resp->payload[1] << 16) |
+								((uint32_t)resp->payload[2] << 8) | resp->payload[3];
+	uint32_t TransmitByteOffset = ((uint32_t)resp->payload[4] << 24) | ((uint32_t)resp->payload[5] << 16) |
+								  ((uint32_t)resp->payload[6] << 8) | resp->payload[7];
+
+	if ((NumTransmitBytes + TransmitByteOffset) > W25Q_NumDataBytes) {
+		printf("[ERROR] Bad data range requested");
+		return TM_STATE_IDLE;
+	}
+
+	uint8_t buff[NET_PACKET_MAXLEN];   // Buffer for constructing packets
+
+	uint32_t ReadAddr = W25Q_GetSafeContiguousReadAddressWithOffset(W25Q_DataStartAddr, TransmitByteOffset);
+	uint8_t ReadLen = NET_PAYLOAD_MAXLEN - 4;   // Leave 4 bytes for sequence number
+
+	uint32_t SequenceNum = 0;
+
+	// Initialise the SX1280 transceiver
 	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 		printf("[ERROR] Data transmission timed out due to unreleased SPI mutex\n");
 		return TM_STATE_IDLE;
 	}
 
-	uint8_t buff[NET_PACKET_MAXLEN];
-
-	uint32_t ReadAddr = W25Q_DataStartAddr;
-	uint32_t ToRead = W25Q_NumDataBytes;
-	uint8_t ReadLen = NET_PAYLOAD_MAXLEN;
-
-	uint32_t SequenceNum = 0;
-
 	LAMBDA80_SetMode_Download(&hspi3_rf, false);
-	LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, ReadLen + 4, 0x20, 0x40, false);
+	LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, NET_PACKET_MAXLEN, 0x20, 0x40, false);
 	LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 	xSemaphoreGive(SPIRfMutex);
 
 
+	// Initialise the dowload packet structure
 	NetPacket dwnpkt;
 	dwnpkt.recipient = NET_CONTROLLER_ADDR;
 	dwnpkt.sender = NET_ADDRESS;
@@ -264,7 +330,12 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp) {
 	dwnpkt.payloadlen = NET_PAYLOAD_MAXLEN;
 
 
-	while (ToRead > 0) {   // Read and send packets until all data has been sent
+	while (NumTransmitBytes > 0) {   // Read and send packets until all data has been sent
+		if (NumTransmitBytes < ReadLen) {   // Ensure no reads past the data boundary
+			ReadLen = NumTransmitBytes;
+			dwnpkt.payloadlen = ReadLen + 4;
+		}
+
 		// Update sequence num
 		dwnpkt.payload[0] = (uint8_t)(SequenceNum >> 24);
 		dwnpkt.payload[1] = (uint8_t)(SequenceNum >> 16);
@@ -272,84 +343,54 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp) {
 		dwnpkt.payload[3] = (uint8_t)SequenceNum;
 
 		// Read in data and update next read address
-		ReadAddr = W25Q_ReadVolumeSafe(ReadAddr, dwnpkt.payload[4], ReadLen);
+		ReadAddr = W25Q_ReadVolumeSafe(ReadAddr, &dwnpkt.payload[4], ReadLen);
 
-		ConstructNetPacket(buff, NET_PACKET_MAXLEN, &dwnpkt);
+		uint8_t pktlen = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &dwnpkt);
 
 		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 			printf("[ERROR] Data download stopped due to unreleased SPI mutex\n");
 			return TM_STATE_IDLE;
 		}
 
-		if (ToRead < PacketLen) {   // Ensure no reads past the data boundary
-			ReadLen = ToRead;
-			LAMBDA80_SetPacketParams(&hspi3_rf, 0x0C, 0, ReadLen + 4, 0x20, 0x40, false);
+		if (ReadLen < NET_PAYLOAD_MAXLEN) {
+			LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, pktlen, 0x20, 0x40, false);
 		}
 
 		xSemaphoreTake(LAMBDA80TxSemphr, 0);   // Clear any Tx notifications
-		LAMBDA80_SendPacket(&hspi3_rf, buff, ReadLen + 4, false);
+		LAMBDA80_SendPacket(&hspi3_rf, buff, pktlen, false);
 		xSemaphoreGive(SPIRfMutex);
 
 
 		if (xSemaphoreTake(LAMBDA80TxSemphr, pdMS_TO_TICKS(100)) != pdTRUE) {
 			printf("[ERROR] Data download L80 Tx timed out\n");
+			return TM_STATE_IDLE;
 		}
 
 		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
-			printf("[ERROR] L80 not reset after data download Tx due to unreleased SPI mutex\n");
+			printf("[ERROR] L80 not reset after data download due to unreleased SPI mutex\n");
 			return TM_STATE_IDLE;
 		}
 
 		LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+		xSemaphoreGive(SPIRfMutex);
 
-		ToRead -= ReadLen;
+//		printf("Transmitted seqnum %i\n", SequenceNum);
+
+		NumTransmitBytes -= ReadLen;
 		SequenceNum++;
 	}
 
 
-	// Send termination packet
-	dwnpkt.type = NET_MTYPE_TRSMT_DATA_TERM;
-	dwnpkt.payloadlen = 4;   // Retransmit last sequence number
-
-	uint8_t pktlen = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &dwnpkt);
-
-	LAMBDA80_SetPacketParams(&hspi3_rf, 0x0C, 0, pktlen, 0x20, 0x40, false);
-
-	xSemaphoreTake(LAMBDA80TxSemphr, 0);   // Clear any Tx notifications
-	LAMBDA80_SendPacket(&hspi3_rf, buff, pktlen, false);
-	xSemaphoreGive(SPIRfMutex);
-
-
-	if (xSemaphoreTake(LAMBDA80TxSemphr, pdMS_TO_TICKS(100)) != pdTRUE) {
-		printf("[ERROR] Data download TERM L80 Tx timed out\n");
-	}
-
+	// Switch back to default telemetry modulation settings
 	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
-		printf("[ERROR] L80 not reset after data download TERM due to unreleased SPI mutex\n");
+		printf("[ERROR] L80 not returned to telemetry mode after data download due to unreleased SPI mutex\n");
 		return TM_STATE_IDLE;
 	}
 
-	LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-
-
-
-	// Handle requests for retransmission or success confirmation
-	while (1) {
-		if (xQueueReceive(RadioQueue, pkt, portMAX_DELAY) == pdPASS) {
-			if (pkt->type == NET_MTYPE_ACK) {
-				printf("[INFO] Data transmission finished sucessfully");
-				return TM_STATE_IDLE;
-			}
-			if (pkt->type == NET_MTYPE_TRSMT_DATA_RETR) {
-
-			}
-		}
-	}
-
-	W25Q_GetSafeContiguousReadAddressWithOffset(W25Q_DataStartAddr, seqn * (NET_PAYLOAD_MAXLEN - 4));
-
-	// Switch back to default telemetry modulation settings
 	LAMBDA80_SetMode_Telemetry(&hspi3_rf, false);
+	xSemaphoreGive(SPIRfMutex);
+
+	return TM_STATE_IDLE;
 }
 
 
@@ -371,7 +412,7 @@ int main(void) {
 
 	// Initialise RF modules
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
-	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, true);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, true);
 	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, true);
 
 	InitialiseLAMBDA80(&hspi3_rf, true);

@@ -12,21 +12,36 @@
 #define NET_RNODE2_ADDR 0x3U
 
 
-// Message type codes
+// Message type codes with definitions
 typedef enum {
 	NET_MTYPE_ACK,
+	/* Simple acknowledgement of the latest received command. Variable payload depending on what it is responding to.
+	 */
+	NET_MTYPE_NACK,
+	/* Simple negative acknowledgement of the latest received command. Variable payload depending on what it is responding to.
+	 */
 	NET_MTYPE_DISCOVERY,
+	/* Request to receive an ACK delayed by 50*ADDR ms. No payload.
+	 */
 	NET_MTYPE_PKTTEST,
+	NET_MTYPE_GET_DATA_RANGE,
+	/* Request to receive the quantity of flight data stored in flash.
+	 * SENDER PAYLOAD: empty
+	 * RESPONDER PAYLOAD: 8 bytes - [0:3] Total bytes, [4:7] Total data packets
+	 */
 	NET_MTYPE_TRSMT_DATA,
-	NET_MTYPE_TRSMT_DATA_TERM,
-	NET_MTYPE_TRSMT_DATA_RETR
+	/* Request to transmit flight data stored in flash. Can optionally specify a range of sequence numbers to transmit if known.
+	 * SENDER PAYLOAD: 8 bytes - [0:3] Number of bytes to transmit, [4:7] Offset in bytes from data start address to start reading
+	 * RESPONDER PAYLOAD: Variable - [0:3] Sequence number, [4:] Requested data split into multiple packets if needed
+	 */
 } NetMessageType;
 
 
+
 // Packets
-#define NET_PACKET_MAXLEN 256
+#define NET_PACKET_MAXLEN 255
 #define NET_HEADER_LEN 6
-#define NET_PAYLOAD_MAXLEN 250
+#define NET_PAYLOAD_MAXLEN 249
 
 typedef struct {
 	uint8_t recipient;
