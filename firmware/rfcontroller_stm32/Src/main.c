@@ -68,6 +68,7 @@ void ReadIncomingLAMBDA62(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+        	printf("L62\n");
         	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(50)) != pdTRUE) {
         		printf("[ERROR] LAMBDA62 read timed out due to unreleased SPI mutex\n");
         		return;
@@ -167,7 +168,7 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 
 	// Send USB packet notifying discovery packet sent
 	USBPacket status;
-	status.type = USB_MTYPE_STATUS;
+	status.type = USB_MTYPE_INFO;
 	status.payloadlen = 1;
 	status.payload[0] = 0xDD;
 
@@ -239,8 +240,6 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 		return TM_STATE_IDLE;
 	}
 
-//	printf("Executing PKTTEST command\n");
-
 	// Pause discovery packets while PKTTEST is running
 	xTimerStop(DiscoveryTimer, 0);
 
@@ -265,13 +264,6 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 			xTimerReset(DiscoveryTimer, 0);
 			return TM_STATE_IDLE;
 		}
-
-
-//		if (RequestOn24) {
-//			printf("Sending test packet request on 2.4GHz, SEQ: %lu\n", SeqNum);
-//		} else {
-//			printf("Sending test packet request on 868MHz, SEQ: %lu\n", SeqNum);
-//		}
 
 		SeqNum++;
 
@@ -387,8 +379,6 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 				status.payload[7] = snr;
 
 				SendPacketUSB(&status);
-
-//				printf("RESP 2.4GHz from 0x%i, Seq: %lu, RSSI: %i, SNR: %i\n", TargetAddr, recseqn, rssi, snr);
 			} else {
 				uint8_t rxstatus = 0;
 				int8_t rssisync = 0;
@@ -411,8 +401,6 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 				status.payload[6] = rssiavg;
 
 				SendPacketUSB(&status);
-
-//				printf("RESP 868MHz from 0x%i, Seq: %lu, RSSI: %i\n", TargetAddr, recseqn, rssiavg);
 			}
 		}
 
@@ -423,8 +411,6 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 			status.payload[0] = RequestOn24 | 0x80;   // Channel with MSB set indicates no response
 
 			SendPacketUSB(&status);
-
-//			printf("No response\n");
 		}
 
 		RequestOn24 = !RequestOn24;
@@ -433,6 +419,9 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 
 
 TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
+	// Pause discovery packets while download is running
+	xTimerStop(DiscoveryTimer, 0);
+
 	// Extract requested data range
 	uint32_t NumReqBytes = ((uint32_t)pkt->payload[0] << 24) | ((uint32_t)pkt->payload[1] << 16) |
 						   ((uint32_t)pkt->payload[2] << 8) | pkt->payload[3];
@@ -454,6 +443,7 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 
 	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 		printf("[ERROR] Data download timed out due to unreleased SPI mutex\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
 		return TM_STATE_IDLE;
 	}
 
@@ -467,11 +457,13 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 	// Wait for Tx to finish before continuing
 	if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(100)) != pdTRUE) {
 		printf("[ERROR] Data request Tx timed out\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
 		return TM_STATE_IDLE;
 	}
 
 	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 		printf("[ERROR] L62 not reset after discovery Tx due to unreleased SPI mutex\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
 		return TM_STATE_IDLE;
 	}
 
@@ -488,11 +480,13 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 	// Wait for response
 	if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(100)) != pdPASS) {
 		printf("[ERROR] Data boundary request Rx timed out\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
 		return TM_STATE_IDLE;
 	}
 
 	if (resp->type != NET_MTYPE_GET_DATA_RANGE) {
 		printf("[ERROR] Bad data request Rx\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
 		return TM_STATE_IDLE;
 	}
 
@@ -521,6 +515,7 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 	// Initialise SX1280 for high bandwidth transmission
 	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 		printf("[ERROR] Data download timed out due to unreleased SPI mutex\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
 		return TM_STATE_IDLE;
 	}
 
@@ -553,11 +548,13 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 	// Wait for Tx to finish before continuing
 	if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(100)) != pdTRUE) {
 		printf("[ERROR] Data request Tx timed out\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
 		return TM_STATE_IDLE;
 	}
 
 	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 		printf("[ERROR] L62 not reset after discovery Tx due to unreleased SPI mutex\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
 		return TM_STATE_IDLE;
 	}
 
@@ -587,7 +584,7 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 			uint32_t seqnum = ((uint32_t)resp->payload[0] << 24) | ((uint32_t)resp->payload[1] << 16) |
 							  ((uint32_t)resp->payload[2] << 8) | resp->payload[3];
 
-			if (seqnum * USB_PAYLOAD_MAXLEN >= NumReqBytes) {   // Quick calculation of received bytes based on seqnum
+			if ((seqnum + 1) * USB_PAYLOAD_MAXLEN >= NumReqBytes) {   // Quick calculation of received bytes based on seqnum
 				done = true;
 				break;
 			}
@@ -603,11 +600,14 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 	// Switch back to default telemetry modulation settings
 	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 		printf("[ERROR] L80 not returned to telemetry mode after data download due to unreleased SPI mutex\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
 		return TM_STATE_IDLE;
 	}
 
 	LAMBDA80_SetMode_Telemetry(&hspi3_rf, false);
 	xSemaphoreGive(SPIRfMutex);
+
+	xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
 
 	return TM_STATE_IDLE;
 }

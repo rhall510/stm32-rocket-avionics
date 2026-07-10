@@ -108,8 +108,6 @@ TMState HandleStateIdle(NetPacket* pkt) {
 
 
 TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
-//	printf("Sending ACK response to discovery call\n");
-
 	// Stagger response by 50ms * address to prevent collisions
 	vTaskDelay(pdMS_TO_TICKS(NET_ADDRESS * 50));
 
@@ -156,6 +154,8 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 
 
 TMState HandleStatePktTestCmd(NetPacket* resp) {
+	vTaskDelay(pdMS_TO_TICKS(4));   // Small delay to allow controller to switch to Rx mode
+
 	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 		printf("[ERROR] PKTTEST ACK timed out due to unreleased SPI mutex\n");
 		return TM_STATE_IDLE;
@@ -232,6 +232,8 @@ TMState HandleStatePktTestCmd(NetPacket* resp) {
 
 
 TMState HandleStateDataRangeCmd(NetPacket* resp) {
+	vTaskDelay(pdMS_TO_TICKS(4));   // Small delay to allow controller to switch to Rx mode
+
 	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 		printf("[ERROR] DATARNG response timed out due to unreleased SPI mutex\n");
 		return TM_STATE_IDLE;
