@@ -40,8 +40,8 @@ typedef enum {
 
 // Packets
 #define NET_PACKET_MAXLEN 255
-#define NET_HEADER_LEN 6
-#define NET_PAYLOAD_MAXLEN 249
+#define NET_HEADER_LEN 5
+#define NET_PAYLOAD_MAXLEN 250
 
 typedef struct {
 	uint8_t recipient;
@@ -51,6 +51,7 @@ typedef struct {
 	uint8_t seqnum;
 	uint8_t payloadlen;
 	uint8_t payload[NET_PAYLOAD_MAXLEN];
+	uint8_t pktstatus;   // Bitfield for various misc info: [1] = CRC error, [0] = Freq (0 for 868MHz, 1 for 2.4GHz)
 } NetPacket;
 
 

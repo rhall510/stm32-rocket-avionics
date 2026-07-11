@@ -11,6 +11,9 @@ void ReadIncomingLAMBDA80(void *param) {
 				return;
 			}
 
+			// Store interrupt status
+			uint16_t irq = LAMBDA80_GetIRQStatus(&hspi3_rf, false);
+
 			// Clear Rx interrupt
 			LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
@@ -27,6 +30,9 @@ void ReadIncomingLAMBDA80(void *param) {
 			// Decode raw bytes into a net packet
 			NetPacket pkt;
 			DecodeNetPacket(&pkt, buff, len);
+
+			pkt.pktstatus = 1;   // Set 2.4GHz freq source bit
+			pkt.pktstatus |= ((irq >> 5) & 2);   // Set CRC error bit
 
 			// Place into the radio response queue
 			if (xQueueSend(RadioQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
@@ -47,6 +53,9 @@ void ReadIncomingLAMBDA62(void *param) {
 				return;
 			}
 
+			// Store interrupt status
+			uint16_t irq = LAMBDA62_GetIRQStatus(&hspi3_rf, false);
+
 			// Clear Rx interrupt
 			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
@@ -63,6 +72,9 @@ void ReadIncomingLAMBDA62(void *param) {
 			// Decode raw bytes into a net packet
 			NetPacket pkt;
 			DecodeNetPacket(&pkt, buff, len);
+
+			pkt.pktstatus = 0;   // Set 868MHz freq source bit
+			pkt.pktstatus |= ((irq >> 5) & 2);   // Set CRC error bit
 
 			// Place into the radio response queue
 			if (xQueueSend(RadioQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
@@ -322,7 +334,7 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp) {
 	xSemaphoreGive(SPIRfMutex);
 
 
-	// Initialise the dowload packet structure
+	// Initialise the download packet structure
 	NetPacket dwnpkt;
 	dwnpkt.recipient = NET_CONTROLLER_ADDR;
 	dwnpkt.sender = NET_ADDRESS;
@@ -333,16 +345,18 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp) {
 
 
 	while (NumTransmitBytes > 0) {   // Read and send packets until all data has been sent
+		vTaskDelay(pdMS_TO_TICKS(15));   // Throttle speed to not overload controller USB
+
 		if (NumTransmitBytes < ReadLen) {   // Ensure no reads past the data boundary
 			ReadLen = NumTransmitBytes;
 			dwnpkt.payloadlen = ReadLen + 4;
 		}
 
 		// Update sequence num
-		dwnpkt.payload[0] = (uint8_t)(SequenceNum >> 24);
-		dwnpkt.payload[1] = (uint8_t)(SequenceNum >> 16);
-		dwnpkt.payload[2] = (uint8_t)(SequenceNum >> 8);
-		dwnpkt.payload[3] = (uint8_t)SequenceNum;
+		dwnpkt.payload[0] = (SequenceNum >> 24) & 0xFF;
+		dwnpkt.payload[1] = (SequenceNum >> 16)  & 0xFF;
+		dwnpkt.payload[2] = (SequenceNum >> 8) & 0xFF;
+		dwnpkt.payload[3] = SequenceNum & 0xFF;
 
 		// Read in data and update next read address
 		ReadAddr = W25Q_ReadVolumeSafe(ReadAddr, &dwnpkt.payload[4], ReadLen);
@@ -375,8 +389,6 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp) {
 
 		LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 		xSemaphoreGive(SPIRfMutex);
-
-//		printf("Transmitted seqnum %i\n", SequenceNum);
 
 		NumTransmitBytes -= ReadLen;
 		SequenceNum++;
@@ -876,6 +888,8 @@ void EXTI1_IRQHandler(void) {
 void EXTI2_IRQHandler(void) {   // LAMBDA62 Rx done
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_2);
 
+	ULED1_TOGGLE
+
 	if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
 		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 		vTaskNotifyGiveFromISR(LAMBDA62RxTaskNotif, &xHigherPriorityTaskWoken);
@@ -908,9 +922,6 @@ void EXTI9_5_IRQHandler(void) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_5);
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_6) != RESET) {   // LAMBDA80 Tx done
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_6);
-
-		ULED1_TOGGLE
-
 		if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
 			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 			xSemaphoreGiveFromISR(LAMBDA80TxSemphr, &xHigherPriorityTaskWoken);

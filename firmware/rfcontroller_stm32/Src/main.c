@@ -16,7 +16,6 @@ void ReadIncomingUSB(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-//        	printf("Reading USB command\n");
         	while (tud_cdc_available() > 0) {
 				uint8_t buff[512];
 				uint32_t count = tud_cdc_read(buff, sizeof(buff));
@@ -37,6 +36,9 @@ void ReadIncomingLAMBDA80(void *param) {
 				return;
 			}
 
+			// Store interrupt status
+			uint16_t irq = LAMBDA80_GetIRQStatus(&hspi3_rf, false);
+
 			// Clear Rx interrupt
 			LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
@@ -54,6 +56,9 @@ void ReadIncomingLAMBDA80(void *param) {
 			NetPacket pkt;
 			DecodeNetPacket(&pkt, buff, len);
 
+			pkt.pktstatus = 1;   // Set 2.4GHz freq source bit
+			pkt.pktstatus |= ((irq >> 5) & 2);   // Set CRC error bit
+
 			// Place into the radio response queue
 			if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
 				printf("[ERROR] Radio response queue full\n");
@@ -68,11 +73,13 @@ void ReadIncomingLAMBDA62(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-        	printf("L62\n");
         	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(50)) != pdTRUE) {
         		printf("[ERROR] LAMBDA62 read timed out due to unreleased SPI mutex\n");
         		return;
         	}
+
+			// Store interrupt status
+			uint16_t irq = LAMBDA62_GetIRQStatus(&hspi3_rf, false);
 
 			// Clear Rx interrupt
 			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
@@ -90,6 +97,9 @@ void ReadIncomingLAMBDA62(void *param) {
 			// Decode raw bytes into a net packet
 			NetPacket pkt;
 			DecodeNetPacket(&pkt, buff, len);
+
+			pkt.pktstatus = 0;   // Set 868MHz freq source bit
+			pkt.pktstatus |= ((irq >> 5) & 2);   // Set CRC error bit
 
 			// Place into the radio response queue
 			if (xQueueSend(RadioResponseQueue, &pkt, pdMS_TO_TICKS(10)) != pdPASS) {
@@ -208,7 +218,7 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
 	// Set to Rx continuous mode
-	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
 	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
 	xSemaphoreGive(SPIRfMutex);
@@ -311,7 +321,7 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 			LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
 			// Set to Rx continuous mode
-			LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, NET_PAYLOAD_MAXLEN, 0x20, 0x40, false);
+			LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, NET_PACKET_MAXLEN, 0x20, 0x40, false);
 			LAMBDA80_SetRx(&hspi3_rf, 0, 0xFFFF, false);
 
 			xSemaphoreGive(SPIRfMutex);
@@ -341,7 +351,7 @@ TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp) {
 			LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
 			// Set to Rx mode for 500ms
-			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+			LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
 			LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
 			xSemaphoreGive(SPIRfMutex);
@@ -471,7 +481,7 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 
 	// Set to Rx continuous mode
-	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PAYLOAD_MAXLEN, 2, false, false);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
 	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
 	xSemaphoreGive(SPIRfMutex);
@@ -502,7 +512,12 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 	relaypkt.type = USB_MTYPE_INFO;
 	relaypkt.payloadlen = 8;
 
-	for (int i = 0; i < 8; i++) {   // Copy over received data values
+	relaypkt.payload[0] = (int8_t)(NumReqBytes >> 24);
+	relaypkt.payload[1] = (int8_t)(NumReqBytes >> 16);
+	relaypkt.payload[2] = (int8_t)(NumReqBytes >> 8);
+	relaypkt.payload[3] = (int8_t)NumReqBytes;
+
+	for (int i = 4; i < 8; i++) {   // Copy over received packet amount
 		relaypkt.payload[i] = resp->payload[i];
 	}
 
@@ -568,6 +583,10 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 	bool done = false;
 	while ((xTaskGetTickCount() - rectime) < pdMS_TO_TICKS(500)) {
 		if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(10)) == pdPASS) {
+			if (resp->pktstatus & 2) {
+				printf("CRC error\n");
+				continue;
+			}
 			if (resp->type != NET_MTYPE_TRSMT_DATA) { continue; }
 			rectime = xTaskGetTickCount();   // Reset timeout window
 
@@ -584,7 +603,7 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 			uint32_t seqnum = ((uint32_t)resp->payload[0] << 24) | ((uint32_t)resp->payload[1] << 16) |
 							  ((uint32_t)resp->payload[2] << 8) | resp->payload[3];
 
-			if ((seqnum + 1) * USB_PAYLOAD_MAXLEN >= NumReqBytes) {   // Quick calculation of received bytes based on seqnum
+			if ((seqnum + 1) * (NET_PAYLOAD_MAXLEN - 4) >= NumReqBytes) {   // Quick calculation of received bytes based on seqnum
 				done = true;
 				break;
 			}

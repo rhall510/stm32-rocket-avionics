@@ -145,7 +145,7 @@ void LAMBDA80_SetMode_Telemetry(SPI_HandleTypeDef *hspi, bool Blocking){
 	LAMBDA80_WriteReg(hspi, 0x925, 0x32, Blocking);   // From datasheet for SF10
 
 	// Set default packet parameters
-	LAMBDA80_SetPacketParams(hspi, 0x23, 0, 128, 0x20, 0x40, Blocking);   // 12 bit preamble, explicit header, 128 byte payload, CRC on, normal IQ
+	LAMBDA80_SetPacketParams(hspi, 0x23, 0, NET_PACKET_MAXLEN, 0x20, 0x40, Blocking);   // 12 bit preamble, explicit header, 128 byte payload, CRC on, normal IQ
 
 	LAMBDA80_SetRx(hspi, 2, 0xFFFF, Blocking);   // Set to Rx continuous mode
 }
@@ -180,7 +180,7 @@ void LAMBDA80_SetMode_Download(SPI_HandleTypeDef *hspi, bool Blocking) {
 	LAMBDA80_WriteReg(hspi, 0x925, 0x1E, Blocking);   // From datasheet for SF5
 
 	// Set default packet parameters
-	LAMBDA80_SetPacketParams(hspi, 0x23, 0, 112, 0x20, 0x40, Blocking);   // 12 bit preamble, explicit header, 112 byte payload, CRC on, normal IQ
+	LAMBDA80_SetPacketParams(hspi, 0x23, 0, NET_PACKET_MAXLEN, 0x20, 0x40, Blocking);   // 12 bit preamble, explicit header, 112 byte payload, CRC on, normal IQ
 
 	LAMBDA80_WaitBusy(Blocking);
 }
