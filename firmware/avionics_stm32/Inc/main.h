@@ -47,6 +47,8 @@ SemaphoreHandle_t LAMBDA62TxSemphr = NULL;
 
 // Mutexes
 SemaphoreHandle_t SPIRfMutex = NULL;
+SemaphoreHandle_t SPIAccMutex = NULL;
+SemaphoreHandle_t I2CMutex = NULL;
 
 // Queue handles
 QueueHandle_t RadioQueue;
@@ -84,6 +86,12 @@ TMState HandleStatePktTestCmd(NetPacket* resp);
 TMState HandleStateDataRangeCmd(NetPacket* resp);
 TMState HandleStateTransmitDataCmd(NetPacket* resp);
 
+
+
+// Sensor config
+#define LSM6_FIFO_READNUM 4
+#define ADXL_FIFO_READNUM 4
+#define BMP_FIFO_READNUM 1
 
 
 // System initialisation

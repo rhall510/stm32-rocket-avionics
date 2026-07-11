@@ -1,52 +1,56 @@
 #include "mmc5983.h"
 #include "stm32g4xx.h"
 
-extern I2C_HandleTypeDef hi2c;
 
-
-bool InitialiseMMC5983MA() {
-	MMC5983MA_Reset();
+bool InitialiseMMC5983MA(I2C_HandleTypeDef *hi2c, bool Blocking) {
+	MMC5983MA_Reset(hi2c, Blocking);
 
 	// Check device ID is correct
-	uint8_t buff[1] = {0};
-	HAL_I2C_Mem_Read(&hi2c, MMC_I2C_ADDR, MMC_ID, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
+	uint8_t buff = 0;
+	HAL_I2C_Mem_Read(hi2c, MMC_I2C_ADDR, MMC_ID, I2C_MEMADD_SIZE_8BIT, &buff, 1, HAL_MAX_DELAY);
 
-	if (buff[0] != 0b00110000) {
+	if (buff != 0b00110000) {
 		printf("MMC5983MA not responsive");
 		return false;
 	}
 
 	// Enable data ready interrupt
-	buff[0] = 0b00000100;
-	HAL_I2C_Mem_Write(&hi2c, MMC_I2C_ADDR, MMC_CTRL0, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
-
-	// Enable continuous measurement at 10Hz
-	buff[0] = 0b00001010;
-	HAL_I2C_Mem_Write(&hi2c, MMC_I2C_ADDR, MMC_CTRL2, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
+	buff = 0b00000100;
+	HAL_I2C_Mem_Write(hi2c, MMC_I2C_ADDR, MMC_CTRL0, I2C_MEMADD_SIZE_8BIT, &buff, 1, HAL_MAX_DELAY);
 
 	return true;
 }
 
 
-void MMC5983MA_Reset() {
-	uint8_t buff[1] = {0b10000000};
-	HAL_I2C_Mem_Write(&hi2c, MMC_I2C_ADDR, MMC_CTRL1, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
+void MMC5983MA_Reset(I2C_HandleTypeDef *hi2c, bool Blocking) {
+	uint8_t buff = 0b10000000;
+	HAL_I2C_Mem_Write(hi2c, MMC_I2C_ADDR, MMC_CTRL1, I2C_MEMADD_SIZE_8BIT, &buff, 1, HAL_MAX_DELAY);
 
-	HAL_Delay(15);
+	if (Blocking) {
+		HAL_Delay(15);
+	} else {
+		vTaskDelay(pdMS_TO_TICKS(15));
+	}
 }
 
 
-uint8_t MMC5983MA_GetStatus() {
-	uint8_t buff[1] = {0};
-	HAL_I2C_Mem_Read(&hi2c, MMC_I2C_ADDR, MMC_STATUS, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
-
-	return buff[0];
+void MMC5983MA_SetMeasurement(I2C_HandleTypeDef *hi2c, uint8_t datarate) {
+	uint8_t buff = datarate | ((datarate > 0) << 3);   // Set the continuous measurement bit if the data rate is not 0
+	HAL_I2C_Mem_Write(hi2c, MMC_I2C_ADDR, MMC_CTRL2, I2C_MEMADD_SIZE_8BIT, &buff, 1, HAL_MAX_DELAY);
 }
 
 
-void MMC5983MA_ReadData(volatile TS_Vec3 *mout, float readytime) {
+uint8_t MMC5983MA_GetStatus(I2C_HandleTypeDef *hi2c) {
+	uint8_t buff = 0;
+	HAL_I2C_Mem_Read(hi2c, MMC_I2C_ADDR, MMC_STATUS, I2C_MEMADD_SIZE_8BIT, &buff, 1, HAL_MAX_DELAY);
+
+	return buff;
+}
+
+
+void MMC5983MA_ReadData(I2C_HandleTypeDef *hi2c, TS_Vec3 *mout, float readytime) {
 	uint8_t buff[7] = {0};
-	HAL_I2C_Mem_Read(&hi2c, MMC_I2C_ADDR, MMC_DATA, I2C_MEMADD_SIZE_8BIT, buff, 7, HAL_MAX_DELAY);
+	HAL_I2C_Mem_Read(hi2c, MMC_I2C_ADDR, MMC_DATA, I2C_MEMADD_SIZE_8BIT, buff, 7, HAL_MAX_DELAY);
 
 	mout->Timestamp = readytime;
 
@@ -61,11 +65,11 @@ void MMC5983MA_ReadData(volatile TS_Vec3 *mout, float readytime) {
 
 	// Clear interrupt
 	buff[0] = 0b00000011;
-	HAL_I2C_Mem_Write(&hi2c, MMC_I2C_ADDR, MMC_STATUS, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
+	HAL_I2C_Mem_Write(hi2c, MMC_I2C_ADDR, MMC_STATUS, I2C_MEMADD_SIZE_8BIT, buff, 1, HAL_MAX_DELAY);
 }
 
 
-bool MMC5983MA_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_Vec3 *databuff, uint8_t Readings) {
+bool MMC5983MA_AppendLogPacket(I2C_HandleTypeDef *hi2c, uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *databuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * MMC_PKT_DATA_LEN;
 

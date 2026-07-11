@@ -8,6 +8,9 @@
 #include "datatypes.h"
 #include "minmea.h"
 #include "pinconfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "stm32g4xx.h"
 
 
 // Registers
@@ -22,28 +25,29 @@
 
 
 // Functions
-bool InitialiseMAXM10S();
+// Initialises the MAXM10S and immediately sets it to sleep mode so no measurements are taken
+bool InitialiseMAXM10S(I2C_HandleTypeDef *hi2c, bool Blocking);
 
-// Set module into software backup mode (no measurements taken) and clear fifo buffer
-void MAX10S_SetSleep();
+// Clear fifo buffer and set module into software backup mode (no measurements taken)
+void MAX10S_SetSleep(I2C_HandleTypeDef *hi2c);
 
-// Wake module from software backup mode and clear fifo buffer
-void MAX10S_Wake();
+// Wake module from software backup mode
+void MAX10S_Wake(I2C_HandleTypeDef *hi2c);
 
 // Hardware reset
-void MAX10S_Reset();
+void MAX10S_Reset(I2C_HandleTypeDef *hi2c, bool Blocking);
 
 // Flush all available bytes out of the I2C buffer
-void MAXM10S_FlushBuffer();
+void MAXM10S_FlushBuffer(I2C_HandleTypeDef *hi2c);
 
 // Send a raw byte array over I2C
-bool MAXM10S_SendCommand(uint8_t *cmd, uint16_t length);
+bool MAXM10S_SendCommand(I2C_HandleTypeDef *hi2c, uint8_t *cmd, uint16_t length);
 
 // Construct and send a UBX command
-bool MAXM10S_SendUBX(uint8_t class, uint8_t id, uint8_t *payload, uint16_t len);
+bool MAXM10S_SendUBX(I2C_HandleTypeDef *hi2c, uint8_t class, uint8_t id, uint8_t *payload, uint16_t len);
 
-uint16_t MAXM10S_GetAvailableBytes();
-bool MAXM10S_ReadStream(uint8_t *buffer, uint16_t length);
+uint16_t MAXM10S_GetAvailableBytes(I2C_HandleTypeDef *hi2c);
+bool MAXM10S_ReadStream(I2C_HandleTypeDef *hi2c, uint8_t *buffer, uint16_t length);
 
 // Process NMEA sentences in the buffer and update the data struct
 void MAXM10S_ProcessNMEASentence(const char *sentence, TS_GPS *data);
@@ -52,6 +56,6 @@ void MAXM10S_ProcessNMEASentence(const char *sentence, TS_GPS *data);
 bool MAXM10S_ParseStream(uint8_t *i2c_data, uint16_t length, TS_GPS *data);
 
 // Constructs a flash logging packet from the given data and appends it to the buffer
-bool MAXM10S_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_GPS *databuff, uint8_t Readings);
+bool MAXM10S_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_GPS *databuff, uint8_t Readings);
 
 #endif /* M10S_H_ */

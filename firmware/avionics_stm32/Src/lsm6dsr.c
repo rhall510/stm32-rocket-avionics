@@ -1,25 +1,21 @@
 #include "lsm6dsr.h"
-#include "stm32g4xx.h"
 
 
-extern SPI_HandleTypeDef hspi1_acc;
-
-
-bool InitialiseLSM6DSR(uint16_t WatermarkReads) {
+bool InitialiseLSM6DSR(SPI_HandleTypeDef *hspi, uint16_t WatermarkReads, bool Blocking) {
 	uint16_t WatermarkWords = WatermarkReads * LSM6_FIFO_DATA_BLOCK_SIZE;
 
-	LSM6DSR_Reset();
+	LSM6DSR_Reset(hspi, Blocking);
 
 	// Check for correct response
 	uint8_t tx[2] = {LSM6_WHO_AM_I | (1U << 7), 0};
 	uint8_t rx[2] = {0};
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_TransmitReceive(&hspi1_acc, tx, rx, 2, HAL_MAX_DELAY);
+	HAL_SPI_TransmitReceive(hspi, tx, rx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 	if (rx[1] != 0x6B) {
-		printf("LSM6DSR not responsive");
+		printf("LSM6DSR not responsive\n");
 		return false;
 	}
 
@@ -28,7 +24,7 @@ bool InitialiseLSM6DSR(uint16_t WatermarkReads) {
 	tx[1] = 0b11100010U;
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 	// Disable I2C
@@ -36,23 +32,7 @@ bool InitialiseLSM6DSR(uint16_t WatermarkReads) {
 	tx[1] = 0b00000100U;
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
-
-	// Wake up accelerometer
-	tx[0] = LSM6_CTRL1_XL;
-	tx[1] = 0b01000100U;   // 104Hz, +/-16g, first stage filtering
-
-	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
-
-	// Wake up gyroscope
-	tx[0] = LSM6_CTRL2_G;
-	tx[1] = 0b01001100U;   // 104Hz, +/-2000dps
-
-	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 	// Set up FIFO
@@ -60,15 +40,7 @@ bool InitialiseLSM6DSR(uint16_t WatermarkReads) {
 	tx[1] = 0b01000110U;   // FIFO continuous mode with full timestamp writing
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
-
-	// Set Acc/Gyr write rates
-	tx[0] = LSM6_FIFO_CTRL3;
-	tx[1] = 0b01000100U;   // 104Hz
-
-	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 	// Enable timestamp
@@ -76,14 +48,14 @@ bool InitialiseLSM6DSR(uint16_t WatermarkReads) {
 	tx[1] = 0b00100000U;
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 	// Configure watermark
 	uint8_t tx2[3] = {LSM6_FIFO_CTRL1, (uint8_t)WatermarkWords, (uint8_t)((WatermarkWords >> 8) & 1U)};
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx2, 3, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx2, 3, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 	// Configure INT1 watermark trigger
@@ -91,31 +63,64 @@ bool InitialiseLSM6DSR(uint16_t WatermarkReads) {
 	tx[1] = 0b00001000U;
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 	return true;
 }
 
 
-void LSM6DSR_Reset() {
+void LSM6DSR_Reset(SPI_HandleTypeDef *hspi, bool Blocking) {
 	uint8_t tx[2] = {LSM6_CTRL3_C, 0b00000001U};
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
-	HAL_Delay(5);
+	if (Blocking) {
+		HAL_Delay(5);
+	} else {
+		vTaskDelay(pdMS_TO_TICKS(5));
+	}
 }
 
 
-Vec3 LSM6DSR_ReadInstAccelData() {
+void LSM6DSR_SetMeasurementMode(SPI_HandleTypeDef *hspi, uint8_t accrate, uint8_t accrange, uint8_t accfilt, uint8_t gyrorate, uint8_t gyrorange) {
+	uint8_t tx[2];
+
+	// Set accelerometer data rate, measurement range, and filtering
+	tx[0] = LSM6_CTRL1_XL;
+	tx[1] = (accrate << 4) | (accrange << 2) | (accfilt << 1);
+
+	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
+
+	// Set gyroscope data rate and measurement range
+	tx[0] = LSM6_CTRL2_G;
+	tx[1] = (gyrorate << 4) | (gyrorange << 2);
+
+	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
+
+	// Set FIFO batch rate to match data rates
+	tx[0] = LSM6_FIFO_CTRL3;
+	tx[1] = (gyrorate << 4) | accrate;
+
+	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
+}
+
+
+Vec3 LSM6DSR_ReadInstAccelData(SPI_HandleTypeDef *hspi) {
 	// Request data from the 6 contiguous accelerometer registers
 	uint8_t tx[7] = {LSM6_OUT_A | (1U << 7), 0, 0, 0, 0, 0 ,0};
 	uint8_t rx[7] = {0};
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_TransmitReceive(&hspi1_acc, tx, rx, 7, HAL_MAX_DELAY);
+	HAL_SPI_TransmitReceive(hspi, tx, rx, 7, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 	// Combine into raw 16-bit readings
@@ -134,13 +139,13 @@ Vec3 LSM6DSR_ReadInstAccelData() {
 }
 
 
-Vec3 LSM6DSR_ReadInstGyroData() {
+Vec3 LSM6DSR_ReadInstGyroData(SPI_HandleTypeDef *hspi) {
 	// Request data from the 6 contiguous accelerometer registers
 	uint8_t tx[7] = {LSM6_OUT_G | (1U << 7), 0, 0, 0, 0, 0 ,0};
 	uint8_t rx[7] = {0};
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_TransmitReceive(&hspi1_acc, tx, rx, 7, HAL_MAX_DELAY);
+	HAL_SPI_TransmitReceive(hspi, tx, rx, 7, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 	// Combine into raw 16-bit readings
@@ -159,7 +164,7 @@ Vec3 LSM6DSR_ReadInstGyroData() {
 }
 
 
-void LSM6DSR_ReadFIFOData(volatile TS_Vec3 *accbuff, volatile TS_Vec3 *gyrbuff, uint16_t readnum, float readytime) {
+void LSM6DSR_ReadFIFOData(SPI_HandleTypeDef *hspi, TS_Vec3 *accbuff, TS_Vec3 *gyrbuff, uint16_t readnum, float readytime) {
 	uint16_t words = readnum * LSM6_FIFO_DATA_BLOCK_SIZE;
 	float starttime = 0.0f;
 
@@ -169,7 +174,7 @@ void LSM6DSR_ReadFIFOData(volatile TS_Vec3 *accbuff, volatile TS_Vec3 *gyrbuff, 
 		uint8_t rx[8] = {0};
 
 		HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-		HAL_SPI_TransmitReceive(&hspi1_acc, tx, rx, 8, HAL_MAX_DELAY);
+		HAL_SPI_TransmitReceive(hspi, tx, rx, 8, HAL_MAX_DELAY);
 		HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 		// Decode tag byte
@@ -211,25 +216,25 @@ void LSM6DSR_ReadFIFOData(volatile TS_Vec3 *accbuff, volatile TS_Vec3 *gyrbuff, 
 
 
 
-uint16_t LSM6DSR_GetFIFOStatus() {
+uint16_t LSM6DSR_GetFIFOStatus(SPI_HandleTypeDef *hspi) {
 	// Request data from the 2 contiguous FIFO status registers
 	uint8_t tx[3] = {LSM6_FIFO_STATUS | (1U << 7), 0, 0};
 	uint8_t rx[3] = {0};
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_TransmitReceive(&hspi1_acc, tx, rx, 3, HAL_MAX_DELAY);
+	HAL_SPI_TransmitReceive(hspi, tx, rx, 3, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
 	return (uint16_t)((rx[2] << 8) | rx[1]);
 }
 
 
-bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_Vec3 *accbuff, volatile TS_Vec3 *gyrbuff, uint8_t Readings) {
+bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *accbuff, TS_Vec3 *gyrbuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * 2 * LSM6_PKT_DATA_LEN;
 
 	if (BuffMaxLen - *BuffPos < ByteLen) {
-		printf("WARNING: Could not write LSM6DSR data to write buffer due to lack of space");
+		printf("WARNING: Could not write LSM6DSR data to write buffer due to lack of space\n");
 		return false;
 	}
 

@@ -437,12 +437,26 @@ int main(void) {
 	if (!InitialiseW25Q()) { Error_Handler(); }
 
 
+	// Initialise sensors
+	if (!InitialiseLSM6DSR(&hspi1_acc, LSM6_FIFO_READNUM, true)) { Error_Handler(); }
+	if (!InitialiseADXL375(&hspi1_acc, ADXL_FIFO_READNUM, true)) { Error_Handler(); }
+	if (!InitialiseBMP581(&hi2c, BMP_FIFO_READNUM, true)) { Error_Handler(); }
+	if (!InitialiseMMC5983MA(&hi2c, true)) { Error_Handler(); }
+	if (!InitialiseMAXM10S(&hi2c, true)) { Error_Handler(); }
+
+
 	// Initialise FreeRTOS objects
 	RadioQueue = xQueueCreate(5, sizeof(NetPacket));
 	if (RadioQueue == NULL) { Error_Handler(); }
 
 	SPIRfMutex = xSemaphoreCreateMutex();
 	if (SPIRfMutex == NULL) { Error_Handler(); }
+
+	SPIAccMutex = xSemaphoreCreateMutex();
+	if (SPIAccMutex == NULL) { Error_Handler(); }
+
+	I2CMutex = xSemaphoreCreateMutex();
+	if (I2CMutex == NULL) { Error_Handler(); }
 
 	LAMBDA80TxSemphr = xSemaphoreCreateBinary();
 	if (LAMBDA80TxSemphr == NULL) { Error_Handler(); }

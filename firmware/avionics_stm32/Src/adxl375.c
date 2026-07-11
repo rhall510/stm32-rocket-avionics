@@ -1,41 +1,30 @@
 #include "adxl375.h"
-#include "stm32g4xx.h"
 
 
-extern SPI_HandleTypeDef hspi1_acc;
-
-
-bool InitialiseADXL375(uint8_t WatermarkWords) {
+bool InitialiseADXL375(SPI_HandleTypeDef *hspi, uint8_t WatermarkWords, bool Blocking) {
 	// Check for correct response
 	uint8_t tx[2] = {ADXL_DEVID | (1U << 7), 0};
 	uint8_t rx[2] = {0};
 
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_TransmitReceive(&hspi1_acc, tx, rx, 2, HAL_MAX_DELAY);
+	HAL_SPI_TransmitReceive(hspi, tx, rx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
 
 	if (rx[1] != 0xE5) {
-		printf("ADXL375 not responsive");
+		printf("ADXL375 not responsive\n");
 		return false;
 	}
 
-	ADXL375_SetStandby();
+	ADXL375_SetStandby(hspi);
 
-	// Clear FIFO by putting it in bypass mode
-	tx[0] = ADXL_FIFO_CTL;
-	tx[1] = 0b00000000U;
-
-	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
-
+	ADXL375_InitialiseFIFO(hspi, WatermarkWords, Blocking);
 
 	// Set output data rate
 	tx[0] = ADXL_BW_RATE;
-	tx[1] = 0b00001010U;   // 100Hz
+	tx[1] = ADXL_DR_100HZ;
 
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
 
 
@@ -44,64 +33,77 @@ bool InitialiseADXL375(uint8_t WatermarkWords) {
 	tx[1] = 0b00000000U;   // Disable all interrupts
 
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
 
 	tx[0] = ADXL_INT_MAP;
 	tx[1] = 0b00000000U;   // Map all interrupts to INT1
 
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
 
 	tx[0] = ADXL_INT_ENABLE;
 	tx[1] = 0b00000010U;   // Enable watermark interrupt only
 
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
-
-
-	// Re-enable FIFO
-	tx[0] = ADXL_FIFO_CTL;
-	tx[1] = 0b10000000U | WatermarkWords;   // Streaming mode, link unused trigger to INT1, set watermark level
-
-	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
-
-
-	// Set to measurement mode
-	tx[0] = ADXL_POWER_CTL;
-	tx[1] = 0b00001000U;
-
-	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
 
 	return true;
 }
 
 
-void ADXL375_SetStandby() {
+void ADXL375_SetStandby(SPI_HandleTypeDef *hspi) {
 	uint8_t tx[2] = {ADXL_POWER_CTL, 0};
 
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1_acc, tx, 2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
+}
+
+
+void ADXL375_SetMeasure(SPI_HandleTypeDef *hspi) {
+	uint8_t tx[2] = {ADXL_POWER_CTL, 0b00001000U};
+
+	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
+}
+
+
+void ADXL375_InitialiseFIFO(SPI_HandleTypeDef *hspi, uint8_t WatermarkWords, bool Blocking) {
+	// Clear FIFO by putting it in bypass mode
+	uint8_t tx[2] = {ADXL_FIFO_CTL, 0b00000000U};
+
+	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
 
-	HAL_Delay(5);
+	if (Blocking) {
+		HAL_Delay(2);
+	} else {
+		vTaskDelay(pdMS_TO_TICKS(2));
+	}
+
+	// Re-enable FIFO
+	tx[0] = ADXL_FIFO_CTL;
+	tx[1] = 0b10000000U | WatermarkWords;   // Streaming mode, link unused trigger to INT1, set watermark level
+
+	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
 }
 
 
 
-Vec3 ADXL375_ReadSingleAccelData() {
+Vec3 ADXL375_ReadSingleAccelData(SPI_HandleTypeDef *hspi) {
 	// Request data from the 6 contiguous accelerometer registers
 	uint8_t tx[7] = {ADXL_DATA | (3U << 6), 0, 0, 0, 0, 0 ,0};   // Set first bit for read, second bit for sequential addresses
 	uint8_t rx[7] = {0};
 
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_TransmitReceive(&hspi1_acc, tx, rx, 7, HAL_MAX_DELAY);
+	HAL_SPI_TransmitReceive(hspi, tx, rx, 7, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
 
 	// Combine into raw 16-bit readings
@@ -120,9 +122,9 @@ Vec3 ADXL375_ReadSingleAccelData() {
 }
 
 
-void ADXL375_ReadFIFOData(volatile TS_Vec3 *accbuff, uint8_t readnum, float readytime) {
+void ADXL375_ReadFIFOData(SPI_HandleTypeDef *hspi, TS_Vec3 *accbuff, uint8_t readnum, float readytime) {
 	for (int word = 0; word < readnum; word++) {
-		Vec3 acc = ADXL375_ReadSingleAccelData();
+		Vec3 acc = ADXL375_ReadSingleAccelData(hspi);
 		TS_Vec3 out;
 		out.X = acc.X;
 		out.Y = acc.Y;
@@ -131,19 +133,19 @@ void ADXL375_ReadFIFOData(volatile TS_Vec3 *accbuff, uint8_t readnum, float read
 
 		accbuff[word] = out;
 
-		for(volatile int i = 0; i < 1500; i++) {
-			__NOP();
-		}
+//		for(volatile int i = 0; i < 1500; i++) {
+//			__NOP();
+//		}
 	}
 }
 
 
-uint8_t ADXL375_GetFIFOStatus() {
+uint8_t ADXL375_GetFIFOStatus(SPI_HandleTypeDef *hspi) {
 	uint8_t tx[2] = {ADXL_FIFO_STATUS | (1U << 7), 0};
 	uint8_t rx[2] = {0};
 
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_TransmitReceive(&hspi1_acc, tx, rx, 2, HAL_MAX_DELAY);
+	HAL_SPI_TransmitReceive(hspi, tx, rx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(ADXL_CS_PORT, ADXL_CS_PIN, GPIO_PIN_SET);
 
 	return rx[1];
@@ -151,12 +153,12 @@ uint8_t ADXL375_GetFIFOStatus() {
 
 
 
-bool ADXL375_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_Vec3 *databuff, uint8_t Readings) {
+bool ADXL375_AppendLogPacket(SPI_HandleTypeDef *hspi, uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *databuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * ADXL_PKT_DATA_LEN;
 
 	if (BuffMaxLen - *BuffPos < ByteLen) {
-		printf("WARNING: Could not write ADXL375 data to write buffer due to lack of space");
+		printf("WARNING: Could not write ADXL375 data to write buffer due to lack of space\n");
 		return false;
 	}
 

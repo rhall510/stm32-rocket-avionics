@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include "datatypes.h"
 #include "pinconfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "stm32g4xx.h"
 
 
 // Registers
@@ -23,22 +26,40 @@
 #define ADXL_DEVID 0x00U
 
 
+// Config options
+#define ADXL_DR_100HZ 0b1010U
+#define ADXL_DR_12_5HZ 0b0111U
+
+
 // Other
 #define ADXL_DR_FREQ 100   // Used for calculating timestamp
 #define ADXL_PKT_DATA_LEN (2 + 4 * sizeof(float))
 
 
 // Functions
-bool InitialiseADXL375(uint8_t WatermarkWords);
-void ADXL375_SetStandby();
+// Initialise the ADXL but does NOT actually start taking measurements
+bool InitialiseADXL375(SPI_HandleTypeDef *hspi, uint8_t WatermarkWords, bool Blocking);
 
-Vec3 ADXL375_ReadSingleAccelData();
+// Set to standby mode where no measurements are taken
+void ADXL375_SetStandby(SPI_HandleTypeDef *hspi);
 
-void ADXL375_ReadFIFOData(volatile TS_Vec3 *accbuff, uint8_t readnum, float readytime);
-uint8_t ADXL375_GetFIFOStatus();
+// Set to measurement mode where measurements are taken at the configured data rate
+void ADXL375_SetMeasure(SPI_HandleTypeDef *hspi);
+
+// Sets FIFO to bypass mode for a short time to clear it and then resets it to streaming mode
+void ADXL375_InitialiseFIFO(SPI_HandleTypeDef *hspi, uint8_t WatermarkWords, bool Blocking);
+
+// Read the latest measurement
+Vec3 ADXL375_ReadSingleAccelData(SPI_HandleTypeDef *hspi);
+
+// Read batched data from the FIFO buffer
+void ADXL375_ReadFIFOData(SPI_HandleTypeDef *hspi, TS_Vec3 *accbuff, uint8_t readnum, float readytime);
+
+// Get the status of the FIFO buffer
+uint8_t ADXL375_GetFIFOStatus(SPI_HandleTypeDef *hspi);
 
 // Constructs a flash logging packet from the given data and appends it to the buffer
-bool ADXL375_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_Vec3 *databuff, uint8_t Readings);
+bool ADXL375_AppendLogPacket(SPI_HandleTypeDef *hspi, uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *databuff, uint8_t Readings);
 
 
 #endif /* ADXL375_H_ */

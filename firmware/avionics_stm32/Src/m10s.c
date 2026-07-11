@@ -1,44 +1,42 @@
 #include "stm32g4xx.h"
 #include "m10s.h"
 
-extern I2C_HandleTypeDef hi2c;
 
 char line_buffer[M10S_LINE_BUFFER_SIZE];
 uint8_t line_len = 0;
 
 
-uint16_t MAXM10S_GetAvailableBytes() {
+uint16_t MAXM10S_GetAvailableBytes(I2C_HandleTypeDef *hi2c) {
     uint8_t buff[2] = {0};
 
-    if (HAL_I2C_Mem_Read(&hi2c, M10S_I2C_ADDR, M10S_AVAIL, I2C_MEMADD_SIZE_8BIT, buff, 2, HAL_MAX_DELAY) == HAL_OK) {
+    if (HAL_I2C_Mem_Read(hi2c, M10S_I2C_ADDR, M10S_AVAIL, I2C_MEMADD_SIZE_8BIT, buff, 2, HAL_MAX_DELAY) == HAL_OK) {
         return (uint16_t)((buff[0] << 8) | buff[1]);
     }
     return 0;
 }
 
 
-bool MAXM10S_ReadStream(uint8_t *buffer, uint16_t length) {
+bool MAXM10S_ReadStream(I2C_HandleTypeDef *hi2c, uint8_t *buffer, uint16_t length) {
     if (length == 0) return false;
 
-    if (HAL_I2C_Mem_Read(&hi2c, M10S_I2C_ADDR, M10S_DATA, I2C_MEMADD_SIZE_8BIT, buffer, length, HAL_MAX_DELAY) == HAL_OK) {
+    if (HAL_I2C_Mem_Read(hi2c, M10S_I2C_ADDR, M10S_DATA, I2C_MEMADD_SIZE_8BIT, buffer, length, HAL_MAX_DELAY) == HAL_OK) {
         return true;
     }
     return false;
 }
 
 
-
-bool MAXM10S_SendCommand(uint8_t *cmd, uint16_t length) {
+bool MAXM10S_SendCommand(I2C_HandleTypeDef *hi2c, uint8_t *cmd, uint16_t length) {
     if (length < 2) return false;   // Requires >= 2 bytes for a command write
 
-    if (HAL_I2C_Master_Transmit(&hi2c, M10S_I2C_ADDR, cmd, length, HAL_MAX_DELAY) == HAL_OK) {
+    if (HAL_I2C_Master_Transmit(hi2c, M10S_I2C_ADDR, cmd, length, HAL_MAX_DELAY) == HAL_OK) {
         return true;
     }
     return false;
 }
 
 
-bool MAXM10S_SendUBX(uint8_t class, uint8_t id, uint8_t *payload, uint16_t len) {
+bool MAXM10S_SendUBX(I2C_HandleTypeDef *hi2c, uint8_t class, uint8_t id, uint8_t *payload, uint16_t len) {
     uint8_t packet[len + 8];
 
     // Header
@@ -64,14 +62,14 @@ bool MAXM10S_SendUBX(uint8_t class, uint8_t id, uint8_t *payload, uint16_t len) 
     packet[6 + len] = ck_a;
     packet[7 + len] = ck_b;
 
-    return MAXM10S_SendCommand(packet, len + 8);
+    return MAXM10S_SendCommand(hi2c, packet, len + 8);
 }
 
 
+bool InitialiseMAXM10S(I2C_HandleTypeDef *hi2c, bool Blocking) {
+	MAX10S_Reset(hi2c, Blocking);
 
-
-bool InitialiseMAXM10S() {
-	if (HAL_I2C_IsDeviceReady(&hi2c, M10S_I2C_ADDR, 3, 100) != HAL_OK) {
+	if (HAL_I2C_IsDeviceReady(hi2c, M10S_I2C_ADDR, 3, 100) != HAL_OK) {
 		return false;
 	}
 
@@ -85,48 +83,58 @@ bool InitialiseMAXM10S() {
 		0x00, 0x01, 0x00, 0xD0, 0x20, 0x00, 0x7A, 0x97
 	};
 
-	MAXM10S_SendCommand(confcmd, sizeof(confcmd));
+	MAXM10S_SendCommand(hi2c, confcmd, sizeof(confcmd));
+
+	MAX10S_SetSleep(hi2c);
 
 	return true;
 }
 
 
-void MAX10S_SetSleep() {
-	MAXM10S_FlushBuffer();
+void MAX10S_SetSleep(I2C_HandleTypeDef *hi2c) {
+	MAXM10S_FlushBuffer(hi2c);
 
 	// Set to software backup mode with infinite duration and default wakeup sources
 	uint8_t payload[16] = {0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0};
-	MAXM10S_SendUBX(0x02, 0x41, payload, 16);
+	MAXM10S_SendUBX(hi2c, 0x02, 0x41, payload, 16);
 }
 
 
-void MAX10S_Wake() {
+void MAX10S_Wake(I2C_HandleTypeDef *hi2c) {
 	// Execute any I2C command to recover from software backup mode
-	MAXM10S_GetAvailableBytes();
-
-	HAL_Delay(100);
-
-	MAXM10S_FlushBuffer();
+	MAXM10S_GetAvailableBytes(hi2c);
 }
 
 
-void MAX10S_Reset() {
+void MAX10S_Reset(I2C_HandleTypeDef *hi2c, bool Blocking) {
 	HAL_GPIO_WritePin(M10S_RST_PORT, M10S_RST_PIN, GPIO_PIN_RESET);
-	HAL_Delay(2);
+
+	if (Blocking) {
+		HAL_Delay(2);
+	} else {
+		vTaskDelay(pdMS_TO_TICKS(2));
+	}
+
 	HAL_GPIO_WritePin(M10S_RST_PORT, M10S_RST_PIN, GPIO_PIN_SET);
+
+	if (Blocking) {
+		HAL_Delay(50);
+	} else {
+		vTaskDelay(pdMS_TO_TICKS(50));
+	}
 }
 
 
-void MAXM10S_FlushBuffer() {
-    uint16_t avail = MAXM10S_GetAvailableBytes();
+void MAXM10S_FlushBuffer(I2C_HandleTypeDef *hi2c) {
+    uint16_t avail = MAXM10S_GetAvailableBytes(hi2c);
     uint8_t buff[100];
 
     // Keep reading until the buffer is empty
     while (avail > 0) {
         uint16_t readnum = (avail > sizeof(buff)) ? sizeof(buff) : avail;
 
-        MAXM10S_ReadStream(buff, readnum);
-        avail = MAXM10S_GetAvailableBytes();
+        MAXM10S_ReadStream(hi2c, buff, readnum);
+        avail = MAXM10S_GetAvailableBytes(hi2c);
     }
 }
 
@@ -185,7 +193,7 @@ bool MAXM10S_ParseStream(uint8_t *i2c_data, uint16_t length, TS_GPS *data) {
 
 
 
-bool MAXM10S_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_GPS *databuff, uint8_t Readings) {
+bool MAXM10S_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_GPS *databuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * M10S_PKT_DATA_LEN;
 

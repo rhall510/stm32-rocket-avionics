@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include "datatypes.h"
 #include "pinconfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "stm32g4xx.h"
 
 
 // Registers
@@ -36,17 +39,48 @@
 #define LSM6_PKT_DATA_LEN (2 + 4 * sizeof(float))
 
 
+// Config options
+#define LSM6_DR_NONE 0b0000U
+#define LSM6_DR_104HZ 0b0100U
+#define LSM6_DR_12_5HZ 0b0001U
+
+#define LSM6_ACCRNG_16G 0b01U
+#define LSM6_ACCRNG_8G 0b11U
+#define LSM6_ACCRNG_4G 0b10U
+#define LSM6_ACCRNG_2G 0b00U
+
+#define LSM6_ACCFILT_FS 0b0U
+#define LSM6_ACCFILT_SS 0b0U
+
+#define LSM6_GYRRNG_2000DPS 0b11U
+#define LSM6_GYRRNG_1000DPS 0b10U
+#define LSM6_GYRRNG_500DPS 0b01U
+#define LSM6_GYRRNG_250DPS 0b00U
+
+
+
+
 // Functions
-bool InitialiseLSM6DSR(uint16_t WatermarkReads);
-void LSM6DSR_Reset();
+// Initialises the LSM6DSR but does NOT actually start taking measurements
+bool InitialiseLSM6DSR(SPI_HandleTypeDef *hspi, uint16_t WatermarkReads, bool Blocking);
 
-Vec3 LSM6DSR_ReadInstAccelData();
-Vec3 LSM6DSR_ReadInstGyroData();
+// Perform software reset with a 5ms wakeup delay
+void LSM6DSR_Reset(SPI_HandleTypeDef *hspi, bool Blocking);
 
-void LSM6DSR_ReadFIFOData(volatile TS_Vec3 *accbuff, volatile TS_Vec3 *gyrbuff, uint16_t readnum, float readytime);
-uint16_t LSM6DSR_GetFIFOStatus();
+// Set the data rate, range, and filtering for the accelerometer and gyroscope
+void LSM6DSR_SetMeasurementMode(SPI_HandleTypeDef *hspi, uint8_t accrate, uint8_t accrange, uint8_t accfilt, uint8_t gyrorate, uint8_t gyrorange);
+
+// Read the latest measurements of the IMU
+Vec3 LSM6DSR_ReadInstAccelData(SPI_HandleTypeDef *hspi);
+Vec3 LSM6DSR_ReadInstGyroData(SPI_HandleTypeDef *hspi);
+
+// Read batched data from the FIFO buffer
+void LSM6DSR_ReadFIFOData(SPI_HandleTypeDef *hspi, TS_Vec3 *accbuff, TS_Vec3 *gyrbuff, uint16_t readnum, float readytime);
+
+// Get the status of the FIFO buffer
+uint16_t LSM6DSR_GetFIFOStatus(SPI_HandleTypeDef *hspi);
 
 // Constructs a flash logging packet from the given data and appends it to the buffer
-bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, volatile TS_Vec3 *accbuff, volatile TS_Vec3 *gyrbuff, uint8_t Readings);
+bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *accbuff, TS_Vec3 *gyrbuff, uint8_t Readings);
 
 #endif /* LSM6DSR_H_ */
