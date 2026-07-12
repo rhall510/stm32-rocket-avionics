@@ -40,6 +40,12 @@ SPI_HandleTypeDef hspi3_rf;
 // Task notifications
 TaskHandle_t LAMBDA80RxTaskNotif = NULL;
 TaskHandle_t LAMBDA62RxTaskNotif = NULL;
+TaskHandle_t LSM6DSRReadTaskNotif = NULL;
+TaskHandle_t ADXL375ReadTaskNotif = NULL;
+TaskHandle_t BMP581ReadTaskNotif = NULL;
+TaskHandle_t MMC5983ReadTaskNotif = NULL;
+TaskHandle_t M10SReadTaskNotif = NULL;
+TaskHandle_t LogDataTaskNotif = NULL;
 
 // Semaphores
 SemaphoreHandle_t LAMBDA80TxSemphr = NULL;
@@ -64,6 +70,17 @@ void ReadIncomingLAMBDA62(void *param);
 
 // Executes a state machine to handle all transaction types
 void TransactionManagerTask(void *param);
+
+/// Read from sensors when data is ready
+void ReadLSM6DSRTask(void *param);
+void ReadADXL375Task(void *param);
+void ReadBMP581Task(void *param);
+void ReadMMC5983Task(void *param);
+void ReadM10STask(void *param);   // Must be polled as it doesn't have a ready interrupt
+
+// Log data to flash storage
+void LogDataTask(void *param);
+
 
 // States for the transaction manager state machine
 typedef enum {

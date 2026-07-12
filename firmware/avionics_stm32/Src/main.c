@@ -1,6 +1,123 @@
 #include "main.h"
 
 
+TS_Vec3 lsm_accbuff[LSM6_FIFO_READNUM];
+TS_Vec3 lsm_gyrbuff[LSM6_FIFO_READNUM];
+float lsm_data_time = 0.0f;
+
+TS_Vec3 adxl_accbuff[ADXL_FIFO_READNUM];
+float adxl_data_time = 0.0f;
+
+TS_PressTemp bmp_buff[BMP_FIFO_READNUM];
+float bmp_data_time = 0.0f;
+
+TS_Vec3 mmc_buff;
+float mmc_data_time = 0.0f;
+
+TS_GPS m10s_data = {0};
+
+
+void ReadLSM6DSRTask(void *param) {
+	(void) param;
+
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+			if (xSemaphoreTake(SPIAccMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+				printf("[ERROR] LSM6DSR read timed out due to unreleased SPI mutex\n");
+				return;
+			}
+
+			LSM6DSR_ReadFIFOData(&hspi1_acc, lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM, lsm_data_time);
+
+			xSemaphoreGive(SPIAccMutex);
+        }
+    }
+}
+
+
+void ReadADXL375Task(void *param) {
+	(void) param;
+
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+			if (xSemaphoreTake(SPIAccMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+				printf("[ERROR] ADXL375 read timed out due to unreleased SPI mutex\n");
+				return;
+			}
+
+			ADXL375_ReadFIFOData(&hspi1_acc, adxl_accbuff, ADXL_FIFO_READNUM, adxl_data_time);
+
+			xSemaphoreGive(SPIAccMutex);
+        }
+    }
+}
+
+
+void ReadBMP581Task(void *param) {
+	(void) param;
+
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+			if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+				printf("[ERROR] BMP581 read timed out due to unreleased I2C mutex\n");
+				return;
+			}
+
+			BMP581_ReadFIFOData(hi2c, bmp_buff, BMP_FIFO_READNUM, bmp_data_time);
+
+			xSemaphoreGive(I2CMutex);
+        }
+    }
+}
+
+
+void ReadMMC5983Task(void *param) {
+	(void) param;
+
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+			if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+				printf("[ERROR] MMC5983 read timed out due to unreleased I2C mutex\n");
+				return;
+			}
+
+			MMC5983MA_ReadData(&hi2c, &mmc_buff, mmc_data_time);
+
+			xSemaphoreGive(I2CMutex);
+        }
+    }
+}
+
+
+void ReadM10STask(void *param) {
+	(void) param;
+
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+			if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+				printf("[ERROR] M10S read timed out due to unreleased I2C mutex\n");
+				return;
+			}
+
+			uint16_t bytes_available = MAXM10S_GetAvailableBytes(&hi2c);
+
+			if (bytes_available > 0) {
+				uint8_t i2c_data[bytes_available];
+
+				if (MAXM10S_ReadStream(&hi2c, i2c_data, bytes_available)) {
+					bool SentenceFound = MAXM10S_ParseStream(i2c_data, bytes_available, &m10s_data);
+				}
+			}
+
+			xSemaphoreGive(I2CMutex);
+        }
+    }
+}
+
+
+void LogDataTask(void *param);
+
+
 void ReadIncomingLAMBDA80(void *param) {
 	(void) param;
 
@@ -469,6 +586,14 @@ int main(void) {
     xTaskCreate(ReadIncomingLAMBDA80, "LAMBDA80-Receive", 1024, NULL, 4, &LAMBDA80RxTaskNotif);
     xTaskCreate(ReadIncomingLAMBDA62, "LAMBDA62-Receive", 1024, NULL, 4, &LAMBDA62RxTaskNotif);
     xTaskCreate(TransactionManagerTask, "Transaction-Manager", 4096, NULL, 1, NULL);
+
+    xTaskCreate(ReadLSM6DSRTask, "Read-LSM6DSR", 512, NULL, 1, &LSM6DSRReadTaskNotif);
+    xTaskCreate(ReadADXL375Task, "Read-ADXL375", 512, NULL, 1, &ADXL375ReadTaskNotif);
+    xTaskCreate(ReadBMP581Task, "Read-BMP581", 512, NULL, 1, &BMP581ReadTaskNotif);
+    xTaskCreate(ReadMMC5983Task, "Read-MMC5983", 512, NULL, 1, &MMC5983ReadTaskNotif);
+    xTaskCreate(ReadM10STask, "Read-M10S", 512, NULL, 1, &M10SReadTaskNotif);
+
+    xTaskCreate(LogDataTask, "Log-Data", 1024, NULL, 1, &LogDataTaskNotif);
 
 
     printf("INIT\n");
