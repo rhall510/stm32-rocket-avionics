@@ -24,6 +24,7 @@
 #define LSM6_FIFO_CTRL3 0x09U
 #define LSM6_FIFO_CTRL4 0x0AU
 #define LSM6_INT1_CTRL 0x0DU
+#define LSM6_INT2_CTRL 0x0EU
 
 
 #define LSM6_OUT_G 0x22U   // 3 contiguous two byte registers for each axis

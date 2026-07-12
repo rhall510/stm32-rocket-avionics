@@ -78,6 +78,9 @@ void InitialiseLAMBDA62LoRa(SPI_HandleTypeDef *hspi, bool Blocking);
 // Initialise the LAMBDA62 to send or receive GFSK packets
 void InitialiseLAMBDA62FSK(SPI_HandleTypeDef *hspi, bool Blocking);
 
+// Set IRQ sources
+void LAMBDA62_SetIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask, uint16_t DIO1Mask, uint16_t DIO2Mask, uint16_t DIO3Mask,  bool Blocking);
+
 // Clear all interrupt flags
 void LAMBDA62_ClearIRQ(SPI_HandleTypeDef *hspi, uint16_t IRQMask, bool Blocking);
 

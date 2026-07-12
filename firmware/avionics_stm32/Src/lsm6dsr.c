@@ -58,8 +58,8 @@ bool InitialiseLSM6DSR(SPI_HandleTypeDef *hspi, uint16_t WatermarkReads, bool Bl
 	HAL_SPI_Transmit(hspi, tx2, 3, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_SET);
 
-	// Configure INT1 watermark trigger
-	tx[0] = LSM6_INT1_CTRL;
+	// Configure INT2 watermark trigger
+	tx[0] = LSM6_INT2_CTRL;
 	tx[1] = 0b00001000U;
 
 	HAL_GPIO_WritePin(LSM6_CS_PORT, LSM6_CS_PIN, GPIO_PIN_RESET);
