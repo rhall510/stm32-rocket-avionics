@@ -28,6 +28,7 @@
 #define MMC_DR_100HZ 0b101U
 #define MMC_DR_10HZ 0b010U
 #define MMC_DR_1HZ 0b001U
+#define MMC_DR_NONE 0U
 
 
 // Other

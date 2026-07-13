@@ -24,7 +24,7 @@ void ReadLSM6DSRTask(void *param) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
 			if (xSemaphoreTake(SPIAccMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 				printf("[ERROR] LSM6DSR read timed out due to unreleased SPI mutex\n");
-				return;
+				continue;
 			}
 
 			LSM6DSR_ReadFIFOData(&hspi1_acc, lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM, lsm_data_time);
@@ -42,7 +42,7 @@ void ReadADXL375Task(void *param) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
 			if (xSemaphoreTake(SPIAccMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 				printf("[ERROR] ADXL375 read timed out due to unreleased SPI mutex\n");
-				return;
+				continue;
 			}
 
 			ADXL375_ReadFIFOData(&hspi1_acc, adxl_accbuff, ADXL_FIFO_READNUM, adxl_data_time);
@@ -60,10 +60,10 @@ void ReadBMP581Task(void *param) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
 			if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 				printf("[ERROR] BMP581 read timed out due to unreleased I2C mutex\n");
-				return;
+				continue;
 			}
 
-			BMP581_ReadFIFOData(hi2c, bmp_buff, BMP_FIFO_READNUM, bmp_data_time);
+			BMP581_ReadFIFOData(&hi2c, bmp_buff, BMP_FIFO_READNUM, bmp_data_time);
 
 			xSemaphoreGive(I2CMutex);
         }
@@ -78,7 +78,7 @@ void ReadMMC5983Task(void *param) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
 			if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 				printf("[ERROR] MMC5983 read timed out due to unreleased I2C mutex\n");
-				return;
+				continue;
 			}
 
 			MMC5983MA_ReadData(&hi2c, &mmc_buff, mmc_data_time);
@@ -96,7 +96,7 @@ void ReadM10STask(void *param) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
 			if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 				printf("[ERROR] M10S read timed out due to unreleased I2C mutex\n");
-				return;
+				continue;
 			}
 
 			uint16_t bytes_available = MAXM10S_GetAvailableBytes(&hi2c);
@@ -115,7 +115,26 @@ void ReadM10STask(void *param) {
 }
 
 
-void LogDataTask(void *param);
+void TriggerDataCollectionTask(void *param) {
+	(void) param;
+
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+        	SetDataCollectionEnabled(DataCollectionEnabled);
+        }
+    }
+}
+
+
+void LogDataTask(void *param) {
+	(void) param;
+
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+			printf("LOG\n");
+        }
+    }
+}
 
 
 void ReadIncomingLAMBDA80(void *param) {
@@ -587,14 +606,24 @@ int main(void) {
     xTaskCreate(ReadIncomingLAMBDA62, "LAMBDA62-Receive", 1024, NULL, 4, &LAMBDA62RxTaskNotif);
     xTaskCreate(TransactionManagerTask, "Transaction-Manager", 4096, NULL, 1, NULL);
 
-    xTaskCreate(ReadLSM6DSRTask, "Read-LSM6DSR", 512, NULL, 1, &LSM6DSRReadTaskNotif);
-    xTaskCreate(ReadADXL375Task, "Read-ADXL375", 512, NULL, 1, &ADXL375ReadTaskNotif);
-    xTaskCreate(ReadBMP581Task, "Read-BMP581", 512, NULL, 1, &BMP581ReadTaskNotif);
-    xTaskCreate(ReadMMC5983Task, "Read-MMC5983", 512, NULL, 1, &MMC5983ReadTaskNotif);
-    xTaskCreate(ReadM10STask, "Read-M10S", 512, NULL, 1, &M10SReadTaskNotif);
+    xTaskCreate(ReadLSM6DSRTask, "Read-LSM6DSR", 512, NULL, 6, &LSM6DSRReadTaskNotif);
+    xTaskCreate(ReadADXL375Task, "Read-ADXL375", 512, NULL, 6, &ADXL375ReadTaskNotif);
+    xTaskCreate(ReadBMP581Task, "Read-BMP581", 512, NULL, 5, &BMP581ReadTaskNotif);
+    xTaskCreate(ReadMMC5983Task, "Read-MMC5983", 512, NULL, 5, &MMC5983ReadTaskNotif);
+    xTaskCreate(ReadM10STask, "Read-M10S", 512, NULL, 5, &M10SReadTaskNotif);
 
-    xTaskCreate(LogDataTask, "Log-Data", 1024, NULL, 1, &LogDataTaskNotif);
+    xTaskCreate(TriggerDataCollectionTask, "Trigger-Data-Collection", 512, NULL, 1, &DataCollectionTaskNotif);
 
+    xTaskCreate(LogDataTask, "Log-Data", 1024, NULL, 3, &LogDataTaskNotif);
+
+
+    // Set up periodic polling of MAX-M10S module (twice expected data rate)
+    M10SPollTimer = xTimerCreate("M10SPollTimer", pdMS_TO_TICKS(250), pdTRUE, (void *)0, PrimeMS10Poll);
+    xTimerStart(M10SPollTimer, 0);
+
+    // Set up periodic data logging to flash
+    LogDataTimer = xTimerCreate("LogDataTimer", pdMS_TO_TICKS(100), pdTRUE, (void *)0, PrimeLogData);
+    xTimerStart(LogDataTimer, 0);
 
     printf("INIT\n");
 
@@ -613,6 +642,65 @@ void TIM2_IRQHandler() {
 	}
 }
 
+
+void PrimeMS10Poll(TimerHandle_t Timer) {
+	xTaskNotifyGive(M10SReadTaskNotif);
+}
+
+
+void PrimeLogData(TimerHandle_t Timer) {
+	xTaskNotifyGive(LogDataTaskNotif);
+}
+
+
+
+void SetDataCollectionEnabled(bool Collect) {
+	if (Collect) {
+		if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+			// Wake the slow sensors first
+			MAX10S_Wake(&hi2c);
+			MMC5983MA_SetMeasurement(&hi2c, MMC_DR_10HZ);
+			BMP581_SetMeasure(&hi2c, BMP_DR_10HZ);
+
+			xSemaphoreGive(I2CMutex);
+		} else {
+			printf("[ERROR] Slow sensor startup timed out due to unreleased I2C mutex\n");
+		}
+
+		if (xSemaphoreTake(SPIAccMutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+			printf("[ERROR] Fast sensor startup timed out due to unreleased SPI mutex\n");
+			return;
+		}
+
+		// Then the fast sensors
+		ADXL375_SetMeasure(&hspi1_acc);
+		LSM6DSR_SetMeasurementMode(&hspi1_acc, LSM6_DR_104HZ, LSM6_ACCRNG_8G, LSM6_ACCFILT_FS, LSM6_DR_104HZ, LSM6_GYRRNG_2000DPS);
+
+		xSemaphoreGive(SPIAccMutex);
+	} else {
+		if (xSemaphoreTake(SPIAccMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+			// Stop the fast sensors first
+			LSM6DSR_SetMeasurementMode(&hspi1_acc, LSM6_DR_NONE, LSM6_ACCRNG_8G, LSM6_ACCFILT_FS, LSM6_DR_NONE, LSM6_GYRRNG_2000DPS);
+			ADXL375_SetStandby(&hspi1_acc);
+
+			xSemaphoreGive(SPIAccMutex);
+		} else {
+			printf("[ERROR] Fast sensor sleep timed out due to unreleased SPI mutex\n");
+		}
+
+		if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+			printf("[ERROR] Slow sensor sleep timed out due to unreleased I2C mutex\n");
+			return;
+		}
+
+		// Then the slow sensors
+		BMP581_SetStandby(&hi2c);
+		MMC5983MA_SetMeasurement(&hi2c, MMC_DR_NONE);
+		MAX10S_SetSleep(&hi2c);
+
+		xSemaphoreGive(I2CMutex);
+	}
+}
 
 
 
@@ -800,7 +888,7 @@ void InitialiseGPIO() {
 
 	// UBUTTON
 	GPIO_InitStruct.Pin = UBTN1_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(UBTN1_PORT, &GPIO_InitStruct);
 
@@ -815,7 +903,7 @@ void InitialiseGPIO() {
 
 
 	GPIO_InitStruct.Pin = LSM6_INT1_PIN;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;   // Temporarily set to input mode for LAMBDA module priority
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;   // Set to input mode for LAMBDA62 module priority, use INT2 instead
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(LSM6_INT1_PORT, &GPIO_InitStruct);
 
@@ -1016,8 +1104,16 @@ void InitialiseTimers() {
 
 
 // External interrupt handlers
-void EXTI0_IRQHandler(void) {
+void EXTI0_IRQHandler(void) {   // ADXL375 data ready
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_0);
+
+	if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+		adxl_data_time = (float)uwTick / 1000.0f;
+
+		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+		vTaskNotifyGiveFromISR(ADXL375ReadTaskNotif, &xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+	}
 }
 
 void EXTI1_IRQHandler(void) {
@@ -1026,8 +1122,6 @@ void EXTI1_IRQHandler(void) {
 
 void EXTI2_IRQHandler(void) {   // LAMBDA62 Rx done
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_2);
-
-	ULED1_TOGGLE
 
 	if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
 		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -1057,8 +1151,16 @@ void EXTI4_IRQHandler(void) {   // LAMBDA62 Tx done
 }
 
 void EXTI9_5_IRQHandler(void) {
-	if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_5) != RESET) {
+	if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_5) != RESET) {   // LSM6DSR data ready
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_5);
+
+		if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+			lsm_data_time = (float)uwTick / 1000.0f;
+
+			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+			vTaskNotifyGiveFromISR(LSM6DSRReadTaskNotif, &xHigherPriorityTaskWoken);
+			portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+		}
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_6) != RESET) {   // LAMBDA80 Tx done
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_6);
 		if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
@@ -1068,18 +1170,42 @@ void EXTI9_5_IRQHandler(void) {
 		}
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_7) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_7);
-	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_8) != RESET) {
+	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_8) != RESET) {   // UBTN1 pressed
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_8);
+
+		if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+			DataCollectionEnabled = !DataCollectionEnabled;
+
+			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+			vTaskNotifyGiveFromISR(DataCollectionTaskNotif, &xHigherPriorityTaskWoken);
+			portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+		}
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_9) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_9);
 	}
 }
 
 void EXTI15_10_IRQHandler(void) {
-	if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_10) != RESET) {
+	if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_10) != RESET) {   // MMC5983 data ready
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_10);
-	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_11) != RESET) {
+
+		if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+			mmc_data_time = (float)uwTick / 1000.0f;
+
+			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+			vTaskNotifyGiveFromISR(MMC5983ReadTaskNotif, &xHigherPriorityTaskWoken);
+			portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+		}
+	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_11) != RESET) {   // BMP581 data ready
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_11);
+
+		if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+			bmp_data_time = (float)uwTick / 1000.0f;
+
+			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+			vTaskNotifyGiveFromISR(BMP581ReadTaskNotif, &xHigherPriorityTaskWoken);
+			portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+		}
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_12) != RESET) {
 		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_12);
 	} if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_13) != RESET) {

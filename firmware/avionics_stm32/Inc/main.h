@@ -6,6 +6,7 @@
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+#include "timers.h"
 
 #include "pinconfig.h"
 #include "adxl375.h"
@@ -45,6 +46,7 @@ TaskHandle_t ADXL375ReadTaskNotif = NULL;
 TaskHandle_t BMP581ReadTaskNotif = NULL;
 TaskHandle_t MMC5983ReadTaskNotif = NULL;
 TaskHandle_t M10SReadTaskNotif = NULL;
+TaskHandle_t DataCollectionTaskNotif = NULL;
 TaskHandle_t LogDataTaskNotif = NULL;
 
 // Semaphores
@@ -58,6 +60,13 @@ SemaphoreHandle_t I2CMutex = NULL;
 
 // Queue handles
 QueueHandle_t RadioQueue;
+
+// Timers and callback functions
+TimerHandle_t M10SPollTimer;
+void PrimeMS10Poll(TimerHandle_t Timer);
+
+TimerHandle_t LogDataTimer;
+void PrimeLogData(TimerHandle_t Timer);
 
 
 // Tasks
@@ -77,6 +86,9 @@ void ReadADXL375Task(void *param);
 void ReadBMP581Task(void *param);
 void ReadMMC5983Task(void *param);
 void ReadM10STask(void *param);   // Must be polled as it doesn't have a ready interrupt
+
+bool DataCollectionEnabled = false;
+void TriggerDataCollectionTask(void *param);   // Enable or disable data collection
 
 // Log data to flash storage
 void LogDataTask(void *param);
@@ -109,6 +121,9 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp);
 #define LSM6_FIFO_READNUM 4
 #define ADXL_FIFO_READNUM 4
 #define BMP_FIFO_READNUM 1
+
+
+void SetDataCollectionEnabled(bool Collect);
 
 
 // System initialisation
