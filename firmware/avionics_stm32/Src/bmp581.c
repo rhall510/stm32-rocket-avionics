@@ -124,7 +124,7 @@ void BMP581_ReadFIFOData(I2C_HandleTypeDef *hi2c, TS_PressTemp *ptbuff, uint8_t 
 
 
 
-bool BMP581_AppendLogPacket(I2C_HandleTypeDef *hi2c, uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_PressTemp *databuff, uint8_t Readings) {
+bool BMP581_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_PressTemp *databuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * BMP_PKT_DATA_LEN;
 

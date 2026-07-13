@@ -53,6 +53,6 @@ uint8_t MMC5983MA_GetStatus(I2C_HandleTypeDef *hi2c);
 void MMC5983MA_ReadData(I2C_HandleTypeDef *hi2c, TS_Vec3 *mout, float readytime);
 
 // Constructs a flash logging packet from the given data and appends it to the buffer
-bool MMC5983MA_AppendLogPacket(I2C_HandleTypeDef *hi2c, uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *databuff, uint8_t Readings);
+bool MMC5983MA_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *databuff, uint8_t Readings);
 
 #endif /* MMC5983_H_ */

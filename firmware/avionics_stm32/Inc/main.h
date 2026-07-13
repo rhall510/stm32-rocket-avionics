@@ -56,10 +56,12 @@ SemaphoreHandle_t LAMBDA62TxSemphr = NULL;
 // Mutexes
 SemaphoreHandle_t SPIRfMutex = NULL;
 SemaphoreHandle_t SPIAccMutex = NULL;
+SemaphoreHandle_t SPIFlashMutex = NULL;
 SemaphoreHandle_t I2CMutex = NULL;
 
 // Queue handles
 QueueHandle_t RadioQueue;
+QueueHandle_t DataLogQueue;
 
 // Timers and callback functions
 TimerHandle_t M10SPollTimer;
@@ -122,6 +124,7 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp);
 #define ADXL_FIFO_READNUM 4
 #define BMP_FIFO_READNUM 1
 
+#define FLASH_BUFFER_LEN 1024
 
 void SetDataCollectionEnabled(bool Collect);
 

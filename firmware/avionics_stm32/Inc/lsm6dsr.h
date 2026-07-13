@@ -82,6 +82,7 @@ void LSM6DSR_ReadFIFOData(SPI_HandleTypeDef *hspi, TS_Vec3 *accbuff, TS_Vec3 *gy
 uint16_t LSM6DSR_GetFIFOStatus(SPI_HandleTypeDef *hspi);
 
 // Constructs a flash logging packet from the given data and appends it to the buffer
-bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *accbuff, TS_Vec3 *gyrbuff, uint8_t Readings);
+bool LSM6DSR_AppendLogPacketAcc(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *accbuff, uint8_t Readings);
+bool LSM6DSR_AppendLogPacketGyr(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *gyrbuff, uint8_t Readings);
 
 #endif /* LSM6DSR_H_ */

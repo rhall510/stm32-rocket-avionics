@@ -59,7 +59,7 @@ void ADXL375_ReadFIFOData(SPI_HandleTypeDef *hspi, TS_Vec3 *accbuff, uint8_t rea
 uint8_t ADXL375_GetFIFOStatus(SPI_HandleTypeDef *hspi);
 
 // Constructs a flash logging packet from the given data and appends it to the buffer
-bool ADXL375_AppendLogPacket(SPI_HandleTypeDef *hspi, uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *databuff, uint8_t Readings);
+bool ADXL375_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *databuff, uint8_t Readings);
 
 
 #endif /* ADXL375_H_ */

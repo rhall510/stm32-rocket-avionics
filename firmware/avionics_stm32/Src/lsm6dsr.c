@@ -199,9 +199,9 @@ void LSM6DSR_ReadFIFOData(SPI_HandleTypeDef *hspi, TS_Vec3 *accbuff, TS_Vec3 *gy
 			int16_t az_raw = (int16_t)((rx[7] << 8) | rx[6]);
 
 			// Convert to gs
-			accbuff[block].X = (ax_raw * 0.488f) / 1000.0f;
-			accbuff[block].Y = (ay_raw * 0.488f) / 1000.0f;
-			accbuff[block].Z = (az_raw * 0.488f) / 1000.0f;
+			accbuff[block].X = (ax_raw * 0.244f) / 1000.0f;
+			accbuff[block].Y = (ay_raw * 0.244f) / 1000.0f;
+			accbuff[block].Z = (az_raw * 0.244f) / 1000.0f;
 		} else if (type == 0x4U) {   // Timestamp word
 			uint32_t ts_raw = (uint32_t)((rx[5] << 24) | (rx[4] << 16) | (rx[3] << 8) | rx[2]);
 			float ts = ts_raw * 0.000025f;   // 25us per LSB
@@ -229,9 +229,9 @@ uint16_t LSM6DSR_GetFIFOStatus(SPI_HandleTypeDef *hspi) {
 }
 
 
-bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *accbuff, TS_Vec3 *gyrbuff, uint8_t Readings) {
+bool LSM6DSR_AppendLogPacketAcc(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *accbuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
-	uint16_t ByteLen = Readings * 2 * LSM6_PKT_DATA_LEN;
+	uint16_t ByteLen = Readings * LSM6_PKT_DATA_LEN;
 
 	if (BuffMaxLen - *BuffPos < ByteLen) {
 		printf("WARNING: Could not write LSM6DSR data to write buffer due to lack of space\n");
@@ -253,7 +253,23 @@ bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxL
 		*BuffPos += sizeof(float);
 		memcpy(buff + *BuffPos, &accbuff[i].Z, sizeof(float));
 		*BuffPos += sizeof(float);
+	}
 
+	return true;
+}
+
+
+bool LSM6DSR_AppendLogPacketGyr(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *gyrbuff, uint8_t Readings) {
+	// Check the data can fit in the buffer
+	uint16_t ByteLen = Readings * LSM6_PKT_DATA_LEN;
+
+	if (BuffMaxLen - *BuffPos < ByteLen) {
+		printf("WARNING: Could not write LSM6DSR data to write buffer due to lack of space\n");
+		return false;
+	}
+
+	// Copy data into the buffer
+	for (int i = 0; i < Readings; i++) {
 		buff[*BuffPos] = 0b00010000;   // Type 1 packet (gyroscope)
 		*BuffPos += 1;
 		buff[*BuffPos] = 4 * sizeof(float);
@@ -271,7 +287,5 @@ bool LSM6DSR_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxL
 
 	return true;
 }
-
-
 
 

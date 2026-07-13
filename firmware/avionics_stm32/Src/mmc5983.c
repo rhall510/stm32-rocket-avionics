@@ -69,7 +69,7 @@ void MMC5983MA_ReadData(I2C_HandleTypeDef *hi2c, TS_Vec3 *mout, float readytime)
 }
 
 
-bool MMC5983MA_AppendLogPacket(I2C_HandleTypeDef *hi2c, uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *databuff, uint8_t Readings) {
+bool MMC5983MA_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *databuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * MMC_PKT_DATA_LEN;
 

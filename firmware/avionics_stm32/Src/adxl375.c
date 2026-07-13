@@ -153,7 +153,7 @@ uint8_t ADXL375_GetFIFOStatus(SPI_HandleTypeDef *hspi) {
 
 
 
-bool ADXL375_AppendLogPacket(SPI_HandleTypeDef *hspi, uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *databuff, uint8_t Readings) {
+bool ADXL375_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_Vec3 *databuff, uint8_t Readings) {
 	// Check the data can fit in the buffer
 	uint16_t ByteLen = Readings * ADXL_PKT_DATA_LEN;
 

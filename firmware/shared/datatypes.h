@@ -34,4 +34,27 @@ typedef struct {
 } TS_GPS;
 
 
+typedef enum {
+	SENSOR_DATA_LRACC,
+	SENSOR_DATA_GYR,
+	SENSOR_DATA_HRACC,
+	SENSOR_DATA_MAG,
+	SENSOR_DATA_PRSTMP,
+	SENSOR_DATA_GPS
+} SensorDataType;
+
+
+typedef struct {
+	SensorDataType type;
+	union {
+		TS_Vec3 tsvec3;
+		TS_PressTemp tsprstmp;
+		TS_GPS tsgps;
+	} data;
+} SensorData;
+
+
 #endif /* DATATYPES_H_ */
+
+
+

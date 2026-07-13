@@ -30,6 +30,26 @@ void ReadLSM6DSRTask(void *param) {
 			LSM6DSR_ReadFIFOData(&hspi1_acc, lsm_accbuff, lsm_gyrbuff, LSM6_FIFO_READNUM, lsm_data_time);
 
 			xSemaphoreGive(SPIAccMutex);
+
+			SensorData data;
+
+			for (int i = 0; i < LSM6_FIFO_READNUM; i++) {
+				data.type = SENSOR_DATA_LRACC;
+				data.data.tsvec3 = lsm_accbuff[i];
+
+				if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+					printf("[ERROR] Data log queue full\n");
+					break;
+				}
+
+				data.type = SENSOR_DATA_GYR;
+				data.data.tsvec3 = lsm_gyrbuff[i];
+
+				if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+					printf("[ERROR] Data log queue full\n");
+					break;
+				}
+			}
         }
     }
 }
@@ -48,6 +68,18 @@ void ReadADXL375Task(void *param) {
 			ADXL375_ReadFIFOData(&hspi1_acc, adxl_accbuff, ADXL_FIFO_READNUM, adxl_data_time);
 
 			xSemaphoreGive(SPIAccMutex);
+
+			SensorData data;
+
+			for (int i = 0; i < ADXL_FIFO_READNUM; i++) {
+				data.type = SENSOR_DATA_HRACC;
+				data.data.tsvec3 = adxl_accbuff[i];
+
+				if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+					printf("[ERROR] Data log queue full\n");
+					break;
+				}
+			}
         }
     }
 }
@@ -66,6 +98,18 @@ void ReadBMP581Task(void *param) {
 			BMP581_ReadFIFOData(&hi2c, bmp_buff, BMP_FIFO_READNUM, bmp_data_time);
 
 			xSemaphoreGive(I2CMutex);
+
+			SensorData data;
+
+			for (int i = 0; i < BMP_FIFO_READNUM; i++) {
+				data.type = SENSOR_DATA_PRSTMP;
+				data.data.tsprstmp = bmp_buff[i];
+
+				if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+					printf("[ERROR] Data log queue full\n");
+					break;
+				}
+			}
         }
     }
 }
@@ -84,6 +128,14 @@ void ReadMMC5983Task(void *param) {
 			MMC5983MA_ReadData(&hi2c, &mmc_buff, mmc_data_time);
 
 			xSemaphoreGive(I2CMutex);
+
+			SensorData data;
+			data.type = SENSOR_DATA_MAG;
+			data.data.tsvec3 = mmc_buff;
+
+			if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+				printf("[ERROR] Data log queue full\n");
+			}
         }
     }
 }
@@ -106,6 +158,16 @@ void ReadM10STask(void *param) {
 
 				if (MAXM10S_ReadStream(&hi2c, i2c_data, bytes_available)) {
 					bool SentenceFound = MAXM10S_ParseStream(i2c_data, bytes_available, &m10s_data);
+
+					if (SentenceFound) {
+						SensorData data;
+						data.type = SENSOR_DATA_GPS;
+						data.data.tsgps = m10s_data;
+
+						if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+							printf("[ERROR] Data log queue full\n");
+						}
+					}
 				}
 			}
 
@@ -120,6 +182,26 @@ void TriggerDataCollectionTask(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+        	if (DataCollectionEnabled) {   // When starting data collection, first wipe stored flight data and start the logging timer
+        		printf("[INFO] Starting data logging\n");
+
+    			if (xSemaphoreTake(SPIFlashMutex, pdMS_TO_TICKS(20)) == pdTRUE) {
+    				printf("[INFO] Wiping previous flight data\n");
+
+    				W25Q_EraseFlightData();
+    				xSemaphoreGive(SPIFlashMutex);
+    			} else {
+    				printf("[ERROR] Could not wipe previous flight data due to unreleased SPI mutex\n");
+    			}
+
+    			xTimerStart(LogDataTimer, 0);
+        	} else {   // When stopping data collection, stop the logging timer and trigger a final write
+        		printf("[INFO] Stopping data logging\n");
+
+        		xTimerStop(LogDataTimer, 0);
+        		xTaskNotifyGive(LogDataTaskNotif);
+        	}
+
         	SetDataCollectionEnabled(DataCollectionEnabled);
         }
     }
@@ -129,9 +211,74 @@ void TriggerDataCollectionTask(void *param) {
 void LogDataTask(void *param) {
 	(void) param;
 
+	SensorData datapkt;
+	uint8_t WriteBuff[FLASH_BUFFER_LEN];
+	uint16_t WriteBuffPos = 8;   // First 8 bytes reserved for sync word and header
+	uint8_t WriteBuffReadings = 0;
+
+	// Preload sync word
+	for (int i = 3; i >= 0; i--) {
+		WriteBuff[3 - i] = (uint8_t)((W25Q_DATA_SYNC_WORD >> (i * 8)) & 0xFF);
+	}
+
     while (1) {
-        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-			printf("LOG\n");
+    	if (xQueueReceive(DataLogQueue, &datapkt, pdMS_TO_TICKS(5)) == pdPASS) {   // Try to receive any queued sensor data packets
+    		// If a packet is received, serialise it and append it to the write buffer
+    		switch (datapkt.type) {
+    			case SENSOR_DATA_LRACC:
+    				LSM6DSR_AppendLogPacketAcc(WriteBuff, &WriteBuffPos, FLASH_BUFFER_LEN, &datapkt.data.tsvec3, 1);
+    				break;
+    			case SENSOR_DATA_GYR:
+    				LSM6DSR_AppendLogPacketGyr(WriteBuff, &WriteBuffPos, FLASH_BUFFER_LEN, &datapkt.data.tsvec3, 1);
+    				break;
+    			case SENSOR_DATA_HRACC:
+    				ADXL375_AppendLogPacket(WriteBuff, &WriteBuffPos, FLASH_BUFFER_LEN, &datapkt.data.tsvec3, 1);
+    				break;
+    			case SENSOR_DATA_MAG:
+    				MMC5983MA_AppendLogPacket(WriteBuff, &WriteBuffPos, FLASH_BUFFER_LEN, &datapkt.data.tsvec3, 1);
+    				break;
+    			case SENSOR_DATA_PRSTMP:
+    				BMP581_AppendLogPacket(WriteBuff, &WriteBuffPos, FLASH_BUFFER_LEN, &datapkt.data.tsprstmp, 1);
+    				break;
+    			case SENSOR_DATA_GPS:
+    				MAXM10S_AppendLogPacket(WriteBuff, &WriteBuffPos, FLASH_BUFFER_LEN, &datapkt.data.tsgps, 1);
+    				break;
+    		}
+    		WriteBuffReadings++;
+    	}
+
+        if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(0))) {   // Log the data once triggered
+        	// Ready CRC unit
+        	CRC->CR |= CRC_CR_RESET;
+        	volatile uint8_t *CRC_DR8 = (volatile uint8_t *)&CRC->DR;
+
+    		// Calculate CRC for all bytes after header
+    		for (uint16_t i = 8; i < WriteBuffPos; i++) {
+    			*CRC_DR8 = WriteBuff[i];
+    		}
+
+    		// Load header into byte positions 4-7
+    		WriteBuff[4] = WriteBuffReadings;
+    		WriteBuff[5] = (uint8_t)((WriteBuffPos - 8) >> 8);
+    		WriteBuff[6] = (uint8_t)(WriteBuffPos - 8);
+    		WriteBuff[7] = (uint8_t)(CRC->DR);
+
+
+			if (xSemaphoreTake(SPIFlashMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+				printf("[ERROR] Data logging timed out due to unreleased SPI mutex\n");
+				continue;
+			}
+
+    		// Write full buffer to flash
+    		W25Q_WriteAppendData(WriteBuff, WriteBuffPos);
+
+    		xSemaphoreGive(SPIFlashMutex);
+
+    		printf("[INFO] Logged %i readings\n", WriteBuffReadings);
+
+    		// Reset end point but leave space for header
+    		WriteBuffPos = 8;
+    		WriteBuffReadings = 0;
         }
     }
 }
@@ -494,13 +641,20 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp) {
 		dwnpkt.payload[2] = (SequenceNum >> 8) & 0xFF;
 		dwnpkt.payload[3] = SequenceNum & 0xFF;
 
+		if (xSemaphoreTake(SPIFlashMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+			printf("[ERROR] Data download stopped due to unreleased flash SPI mutex\n");
+			return TM_STATE_IDLE;
+		}
+
 		// Read in data and update next read address
 		ReadAddr = W25Q_ReadVolumeSafe(ReadAddr, &dwnpkt.payload[4], ReadLen);
+
+		xSemaphoreGive(SPIFlashMutex);
 
 		uint8_t pktlen = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &dwnpkt);
 
 		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
-			printf("[ERROR] Data download stopped due to unreleased SPI mutex\n");
+			printf("[ERROR] Data download stopped due to unreleased RF SPI mutex\n");
 			return TM_STATE_IDLE;
 		}
 
@@ -585,11 +739,17 @@ int main(void) {
 	RadioQueue = xQueueCreate(5, sizeof(NetPacket));
 	if (RadioQueue == NULL) { Error_Handler(); }
 
+	DataLogQueue = xQueueCreate(100, sizeof(SensorData));
+	if (DataLogQueue == NULL) { Error_Handler(); }
+
 	SPIRfMutex = xSemaphoreCreateMutex();
 	if (SPIRfMutex == NULL) { Error_Handler(); }
 
 	SPIAccMutex = xSemaphoreCreateMutex();
 	if (SPIAccMutex == NULL) { Error_Handler(); }
+
+	SPIFlashMutex = xSemaphoreCreateMutex();
+	if (SPIFlashMutex == NULL) { Error_Handler(); }
 
 	I2CMutex = xSemaphoreCreateMutex();
 	if (I2CMutex == NULL) { Error_Handler(); }
@@ -623,14 +783,13 @@ int main(void) {
 
     // Set up periodic data logging to flash
     LogDataTimer = xTimerCreate("LogDataTimer", pdMS_TO_TICKS(100), pdTRUE, (void *)0, PrimeLogData);
-    xTimerStart(LogDataTimer, 0);
 
     printf("INIT\n");
 
     vTaskStartScheduler();
 
 
-	while (1){}
+	while (1) {}
 }
 
 
