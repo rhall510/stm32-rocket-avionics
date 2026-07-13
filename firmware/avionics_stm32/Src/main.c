@@ -188,8 +188,12 @@ void TriggerDataCollectionTask(void *param) {
     			if (xSemaphoreTake(SPIFlashMutex, pdMS_TO_TICKS(20)) == pdTRUE) {
     				printf("[INFO] Wiping previous flight data\n");
 
+    				ULED1_ON
+
     				W25Q_EraseFlightData();
     				xSemaphoreGive(SPIFlashMutex);
+
+    				ULED1_OFF
     			} else {
     				printf("[ERROR] Could not wipe previous flight data due to unreleased SPI mutex\n");
     			}
@@ -248,6 +252,8 @@ void LogDataTask(void *param) {
     	}
 
         if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(0))) {   // Log the data once triggered
+        	ULED1_TOGGLE
+
         	// Ready CRC unit
         	CRC->CR |= CRC_CR_RESET;
         	volatile uint8_t *CRC_DR8 = (volatile uint8_t *)&CRC->DR;
@@ -1254,7 +1260,7 @@ void InitialiseTimers() {
 	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;   // Enable clock
     __DSB();   // Ensure the clock is active before continuing
 
-	TIM2->PSC = 143;   // Set prescaler to count once per microsecond (1MHz)
+	TIM2->PSC = 169;   // Set prescaler to count once per microsecond (1MHz)
 	TIM2->ARR |= 0xFFFFFFFF;   // Max auto reload for use as a microsecond timer
 
 	TIM2->CR1 |= TIM_CR1_CEN;   // Enable TIM2
