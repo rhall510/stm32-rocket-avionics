@@ -95,10 +95,11 @@ for idx, chunk in enumerate(chunks):
             long = struct.unpack('<f', chunk[pos + 10 : pos + 14])[0]
             alt = struct.unpack('<f', chunk[pos + 14 : pos + 18])[0]
             spd = struct.unpack('<f', chunk[pos + 18 : pos + 22])[0]
-            sats = chunk[22]
-            fix = chunk[23]
+            sats = chunk[pos + 22]
+            fix = chunk[pos + 23]
 
             gps.append([t, lat, long, alt, spd, sats, fix])
+            # print(gps[-1])
 
         pos += dlen + 2
 

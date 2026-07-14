@@ -67,32 +67,32 @@ bool MAXM10S_SendUBX(I2C_HandleTypeDef *hi2c, uint8_t class, uint8_t id, uint8_t
 
 
 bool InitialiseMAXM10S(I2C_HandleTypeDef *hi2c, bool Blocking) {
-	MAX10S_Reset(hi2c, Blocking);
+	MAXM10S_Reset(hi2c, Blocking);
 
 	if (HAL_I2C_IsDeviceReady(hi2c, M10S_I2C_ADDR, 3, 100) != HAL_OK) {
 		return false;
 	}
 
 	// Command string generated with u-center
-	// 2Hz DR, AIR4 model, no GLL, GSA, GSV, VTG messages
+	// 2Hz DR, AIR4 model, no GLL, GSA, GSV, VTG, GGA, RMC messages (start with no data output)
 	uint8_t confcmd[] = {
-		0xB5, 0x62, 0x06, 0x8A, 0x28, 0x00, 0x00, 0x01,
-		0x00, 0x00, 0x21, 0x00, 0x11, 0x20, 0x08, 0x01,
-		0x00, 0x21, 0x30, 0xF4, 0x01, 0xC9, 0x00, 0x91,
-		0x20, 0x00, 0xBF, 0x00, 0x91, 0x20, 0x00, 0xC4,
-		0x00, 0x91, 0x20, 0x00, 0xB0, 0x00, 0x91, 0x20,
-		0x00, 0x01, 0x00, 0xD0, 0x20, 0x00, 0x0B, 0xE1
+	    0xB5, 0x62, 0x06, 0x8A, 0x32, 0x00, 0x00, 0x01,
+	    0x00, 0x00, 0x21, 0x00, 0x11, 0x20, 0x08, 0x01,
+	    0x00, 0x21, 0x30, 0xF4, 0x01, 0xC9, 0x00, 0x91,
+	    0x20, 0x00, 0xBF, 0x00, 0x91, 0x20, 0x00, 0xC4,
+	    0x00, 0x91, 0x20, 0x00, 0xB0, 0x00, 0x91, 0x20,
+	    0x00, 0x01, 0x00, 0xD0, 0x20, 0x00, 0xAB, 0x00,
+	    0x91, 0x20, 0x00, 0xBA, 0x00, 0x91, 0x20, 0x00,
+	    0xDC, 0x02
 	};
 
 	MAXM10S_SendCommand(hi2c, confcmd, sizeof(confcmd));
-
-	MAX10S_SetSleep(hi2c);
 
 	return true;
 }
 
 
-void MAX10S_SetSleep(I2C_HandleTypeDef *hi2c) {
+void MAXM10S_SetSleep(I2C_HandleTypeDef *hi2c) {
 	MAXM10S_FlushBuffer(hi2c);
 
 	// Set to software backup mode with infinite duration and default wakeup sources
@@ -101,13 +101,45 @@ void MAX10S_SetSleep(I2C_HandleTypeDef *hi2c) {
 }
 
 
-void MAX10S_Wake(I2C_HandleTypeDef *hi2c) {
+void MAXM10S_Wake(I2C_HandleTypeDef *hi2c) {
 	// Execute any I2C command to recover from software backup mode
 	MAXM10S_GetAvailableBytes(hi2c);
 }
 
 
-void MAX10S_Reset(I2C_HandleTypeDef *hi2c, bool Blocking) {
+void MAXM10S_SetDataOutput(I2C_HandleTypeDef *hi2c, bool enable, bool Blocking) {
+    if (enable) {
+        // Enable GGA and RMC messages
+        uint8_t cmd[] = {
+            0xB5, 0x62, 0x06, 0x8A, 0x0E, 0x00, 0x00, 0x01,
+            0x00, 0x00, 0xBA, 0x00, 0x91, 0x20, 0x01, 0xAB,
+            0x00, 0x91, 0x20, 0x01, 0x68, 0x80
+        };
+
+        MAXM10S_SendCommand(hi2c, cmd, sizeof(cmd));
+
+		if (Blocking) {   // Delay to allow command processing
+			HAL_Delay(5);
+		} else {
+			vTaskDelay(pdMS_TO_TICKS(5));
+		}
+
+		// Flush the buffer to ensure it starts clean
+        MAXM10S_FlushBuffer(hi2c);
+    } else {
+        // Disable GGA and RMC messages
+        uint8_t cmd[] = {
+            0xB5, 0x62, 0x06, 0x8A, 0x0E, 0x00, 0x00, 0x01,
+            0x00, 0x00, 0xBA, 0x00, 0x91, 0x20, 0x00, 0xAB,
+            0x00, 0x91, 0x20, 0x00, 0x66, 0x79
+        };
+
+        MAXM10S_SendCommand(hi2c, cmd, sizeof(cmd));
+    }
+}
+
+
+void MAXM10S_Reset(I2C_HandleTypeDef *hi2c, bool Blocking) {
 	HAL_GPIO_WritePin(M10S_RST_PORT, M10S_RST_PIN, GPIO_PIN_RESET);
 
 	if (Blocking) {
@@ -119,9 +151,9 @@ void MAX10S_Reset(I2C_HandleTypeDef *hi2c, bool Blocking) {
 	HAL_GPIO_WritePin(M10S_RST_PORT, M10S_RST_PIN, GPIO_PIN_SET);
 
 	if (Blocking) {
-		HAL_Delay(50);
+		HAL_Delay(200);
 	} else {
-		vTaskDelay(pdMS_TO_TICKS(50));
+		vTaskDelay(pdMS_TO_TICKS(200));
 	}
 }
 

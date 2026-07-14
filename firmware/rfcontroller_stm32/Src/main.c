@@ -643,9 +643,7 @@ int main(void) {
 	InitialiseSPI();
 	InitialiseTimers();
 
-//	HAL_Delay(2000);   // Startup delay to avoid code executing inbetween debug sessions
-
-	__enable_irq();
+	HAL_Delay(100);
 
 	// Initialise RF modules
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
@@ -654,6 +652,7 @@ int main(void) {
 
 	tusb_init();
 
+	__enable_irq();
 
 	// Initialise FreeRTOS objects
 	RadioResponseQueue = xQueueCreate(5, sizeof(NetPacket));

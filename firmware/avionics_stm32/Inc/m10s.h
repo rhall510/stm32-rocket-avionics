@@ -29,13 +29,16 @@
 bool InitialiseMAXM10S(I2C_HandleTypeDef *hi2c, bool Blocking);
 
 // Clear fifo buffer and set module into software backup mode (no measurements taken)
-void MAX10S_SetSleep(I2C_HandleTypeDef *hi2c);
+void MAXM10S_SetSleep(I2C_HandleTypeDef *hi2c);
 
 // Wake module from software backup mode
-void MAX10S_Wake(I2C_HandleTypeDef *hi2c);
+void MAXM10S_Wake(I2C_HandleTypeDef *hi2c);
+
+// Enable/disable output of GGA and RMC NMEA sentences over I2C
+void MAXM10S_SetDataOutput(I2C_HandleTypeDef *hi2c, bool enable, bool Blocking);
 
 // Hardware reset
-void MAX10S_Reset(I2C_HandleTypeDef *hi2c, bool Blocking);
+void MAXM10S_Reset(I2C_HandleTypeDef *hi2c, bool Blocking);
 
 // Flush all available bytes out of the I2C buffer
 void MAXM10S_FlushBuffer(I2C_HandleTypeDef *hi2c);

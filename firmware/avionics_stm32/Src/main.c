@@ -716,9 +716,7 @@ int main(void) {
 	InitialiseCRC();
 	InitialiseTimers();
 
-//	HAL_Delay(2000);   // Startup delay to avoid code executing inbetween debug sessions
-
-	__enable_irq();
+	HAL_Delay(100);
 
 	// Initialise RF modules
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
@@ -739,6 +737,9 @@ int main(void) {
 	if (!InitialiseBMP581(&hi2c, BMP_FIFO_READNUM, true)) { Error_Handler(); }
 	if (!InitialiseMMC5983MA(&hi2c, true)) { Error_Handler(); }
 	if (!InitialiseMAXM10S(&hi2c, true)) { Error_Handler(); }
+
+
+	__enable_irq();
 
 
 	// Initialise FreeRTOS objects
@@ -823,7 +824,7 @@ void SetDataCollectionEnabled(bool Collect) {
 	if (Collect) {
 		if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
 			// Wake the slow sensors first
-			MAX10S_Wake(&hi2c);
+			MAXM10S_SetDataOutput(&hi2c, true, false);
 			MMC5983MA_SetMeasurement(&hi2c, MMC_DR_10HZ);
 			BMP581_SetMeasure(&hi2c, BMP_DR_10HZ);
 
@@ -842,7 +843,11 @@ void SetDataCollectionEnabled(bool Collect) {
 		LSM6DSR_SetMeasurementMode(&hspi1_acc, LSM6_DR_104HZ, LSM6_ACCRNG_8G, LSM6_ACCFILT_FS, LSM6_DR_104HZ, LSM6_GYRRNG_2000DPS);
 
 		xSemaphoreGive(SPIAccMutex);
+
+		xTimerStart(M10SPollTimer, 0);
 	} else {
+		xTimerStop(M10SPollTimer, 0);
+
 		if (xSemaphoreTake(SPIAccMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
 			// Stop the fast sensors first
 			LSM6DSR_SetMeasurementMode(&hspi1_acc, LSM6_DR_NONE, LSM6_ACCRNG_8G, LSM6_ACCFILT_FS, LSM6_DR_NONE, LSM6_GYRRNG_2000DPS);
@@ -861,7 +866,7 @@ void SetDataCollectionEnabled(bool Collect) {
 		// Then the slow sensors
 		BMP581_SetStandby(&hi2c);
 		MMC5983MA_SetMeasurement(&hi2c, MMC_DR_NONE);
-		MAX10S_SetSleep(&hi2c);
+		MAXM10S_SetDataOutput(&hi2c, false, false);
 
 		xSemaphoreGive(I2CMutex);
 	}
@@ -1127,6 +1132,15 @@ void InitialiseGPIO() {
 
 	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+
+	// MAX-M10S pins
+	HAL_GPIO_WritePin(M10S_RST_PORT, M10S_RST_PIN, GPIO_PIN_SET);
+	GPIO_InitStruct.Pin = M10S_RST_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(M10S_RST_PORT, &GPIO_InitStruct);
 
 
 	// W25Q pins
