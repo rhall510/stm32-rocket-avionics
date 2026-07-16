@@ -184,14 +184,15 @@ Once fully built the ideal flow of a launch from start to finish is as follows:
 * [x] Write NOR flash chip driver.
 * [x] Test storage of sensor data on NOR flash.
 * [x] Write SX1280 and SX1262 drivers.
-* [ ] Write and test routine for downloading data from flash storage.
+* [x] Implement FreeRTOS on the MCU.
+* [x] Implement tasks to collect all sensor data when ready.
+* [x] Implement task to write all collected sensor data to NOR flash chip without interrupting critical sensor reading tasks.
+* [x] Write and test routine for downloading data from flash storage.
+* [x] Test sensor data acquisition and accuracy.
+* [x] Gather field test data.
 * [ ] Write and test calibration routines for sensors (magnetometer and accelerometers).
-* [ ] Test sensor data acquisition and accuracy.
-* [ ] Gather field test data and write a sensor fusion and data integration algorithm to accurately track position over time (on PC).
-* [ ] Implement FreeRTOS on the MCU.
-* [ ] Implement tasks to collect all sensor data when ready.
+* [ ] Write a sensor fusion and data integration algorithm to accurately track position over time (on PC).
 * [ ] Implement task to do the sensor fusion and data integration algorithm on the avionics unit.
-* [ ] Implement task to write all collected sensor data to NOR flash chip without interrupting critical sensor reading tasks.
 * [ ] Implement task to do periodic transmission of calculated data through the SX1280.
 * [ ] Implement a flight stage state machine which controls which sensors to use for position tracking over time.
 * [ ] Implement and test parachute deployment logic.

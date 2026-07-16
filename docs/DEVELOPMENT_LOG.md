@@ -5,6 +5,65 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### July 16th 2026
+
+Over the past ~2 weeks I have been working on the goals I set in the last update, and I'm happy to say all of them have now been completed!
+
+#### Improved antenna design
+
+After a few attempts I managed to successfully make and tune a pair of 868MHz sleeve dipole antennas. I made them by stripping a piece of RG316 coax cable to remove all but the inner conductor for around 80mm to make the top half of the dipole. Then I used a piece of 6mm diameter 0.5mm thickness copper tubing cut to around the same length for the second half of the dipole, soldered to the outer braid at the base of the exposed inner conductor portion. To keep the coax centered in the tubing I applied a few layers of heat shrink at 2 points along the length of the coax to be covered by the tubing, ensuring they were as thin as possible to not affect the velocity factor of the gap too much (this was learned the hard way with one failed attempt that used far too much heat shrink!). I also covered the exposed inner conductor in heat shrink for added stability and protection. I left a bit of length under the tubing to clip on a ferrite bead and then soldered an SMA male connector before tuning using a nanoVNA. After tuning, the inner conductor has a final length of 82mm and the tubing has a final length of 73mm.
+
+I then 3d printed some enclosures to protect and stabilise the antennas further. These enclosures do slightly detune the antennas, making their resonant frequency decrease slightly, but the SWR at 868MHz is still <2.0 so I plan to leave them as they are currently until I know the exact final design of their environment so I can perfectly tune them at that point.
+
+
+#### Sleeve dipole design (top: uncovered, bottom: in enclosure)
+
+![Sleeve dipoles](./images/sleeve_dipoles.jpeg)
+
+
+#### Sleeve dipole final tuned nanoVNA reading (no enclosure)
+
+![Sleeve dipole nanoVNA](./images/868MHz_sleevedipole_nanoVNA.png)
+
+
+I have only made the 868MHz versions of these for now as my nanoVNA is the H4 variant which can only measure up to 1.5GHz. I have ordered a liteVNA which I will use to make the 2.4GHz variants once they arrive. It will also be more accurate for the 868MHz version too as it doesn't use harmonics to measure above 300MHz.
+
+
+
+#### Data download routine
+
+After making the sleeve dipoles I worked on making a robust data download routine to get stored data off the avionics unit and onto the host PC connected to the controller. The way this works is as follows:
+- The controller first requests information on how many bytes of data are stored on the avionics unit over 868MHz and relays the information to the host PC.
+- Once received, the controller can send a request over 868MHz to download a specific chunk of data by sending the number of bytes to download and the number of bytes offset to start reading from (or just 0s for all available data). The avionics unit will then continuously read chunks of data in the requested block and send them over 2.4GHz to the controller. The controller relays the received data to the host PC over USB.
+- The host PC tracks missing blocks of packets based on the sequence number in the first 4 bytes of each packet, and if there are no additional packets received after 500ms it is assumed the transaction has ended.
+- Based on the sequence numbers received, the length of data in the first received packet, and the number of requested bytes, the host PC determines which contiguous chunks of data are missing and sends another download command for each chunk, setting the number of bytes and offset values to get the correct chunk.
+- This repeats until all data has been received correctly, as which point the data from all packets are concatenated into a binary file and written to disk.
+
+This download routine seems to work well except in rare circumstances where some chunks of data seem to never be received correctly, no matter how many times they are requested. This is usually fixed by simply rerunning the routine, and it happens rare enough that I have decided not to spend too much time on it currently and work on more important stuff. Over time I'm sure I can make this routine more reliable, but for now it works well enough that I am not going to worry about it.
+
+
+#### Sensor reading and data logging
+
+I have reintegrated all the sensors into the avionics firmware in a FreeRTOS friendly way. All sensors except the GPS use interrupts to release tasks to read their data. tue to the lack of an interrupt signal the GPS must be polled which is done using a timer to trigger the polling task at 4Hz (twice the expected data rate). Additionally, previously the initialisation functions of each sensor immediately started measurements with no way to stop it. Now I have updated all the sensor drivers so they start in a 'dormant' state, primed to start measurements but not actually taking them yet. Then when ready, the main firmware can call wake up functions to start/stop measurement output for each sensor. This prevents a bunch of stale measurements building up and blocking interrupts when not needed.
+
+To log data, each sensor reading converts the gathered data into a standardised struct containing a union of all datatypes and an identifier enum for each type of sensor data, which is then pushed onto a queue. The data logging task constantly pulls from this queue and serialises the data into a byte array which can be appended to the local write buffer. Every 100ms, driven by a timer, a task notification is released allowing the task to write the contents of the buffer to the NOR flash chip at the end of the data section. The end pointer for the write buffer is then reset and the task continues accumulating data for the next write interval. Since this is a large write operation I want to eventually use DMA for the SPI transaction but for now it is blocking.
+
+
+#### Field test of data collection
+
+With that all set up I attempted the first real field tests to ensure all sensors work correctly and gather data for analysis. To do this I 3D printed some new enclosures for the PCBs and took the avionics unit to an open field to ensure the GPS antenna had clear line of sight and there are no surrounding structures to interfere with the magnetometer. In the first test run all sensors appeared to work except the GPS, which output no measurements. This was caused by the original method of stopping/starting measurements which was to use software backup mode. This mode wipes the stored configuration in RAM which cleared the initialisation config once it was woken again. I implemented a better method which is to enable/disable the output of RMC and GGA NMEA sentences over I2C. This has the effect of stopping data output but keeps the device in full operation so the RAM contents is not cleared. After this change measurements were being output and the second field test at the same location showed all sensors including the GPS working. The GPS was also very accurate even when using the air +-4g dynamic platform model. Apart from a few discrepancies, all lat/long measurements were within 1-2m of my actual location at the time. The altitude measurements were more off (typically ~5m away from the actual altitude) but still fairly close. The GPS also did not lose it's lock when the PCB was fully enclosed in 3D printed PETG and the antenna was pointed at the ground or perpendicular to the sky which is promising.
+
+
+#### Example field test data from one run
+
+![Field test data](./images/avionics_field_data_plots.png)
+
+
+Overall, the sensor data seems very good! I gathered a bunch of data in the field which I now plan to use to get into the meat of the project, the sensor fusion and data integration algorithm. I have no idea how long this will take, but my goal is to first write algorithms to calibrate the accelerometers, gyroscope, and magnetometer, and then write an algorithm that can fuse all sensor data to output one robust estimate of position and movement. I will prototype this on PC first, and then attempt to translate it into efficient C code that can be run on the avionics unit once it is working well.
+
+
+
+---
 ### July 1st 2026
 
 #### Range test results
