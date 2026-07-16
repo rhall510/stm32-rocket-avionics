@@ -10,7 +10,7 @@
 ## Overview
 This project aims to build a robust avionics unit for high power model rocketry. This system will also include a ground station that mechanically rotates a high gain antenna to actively track the rocket in real time during flight and receive critical telemetry data.
 
-The system relies on sensor fusion for onboard state estimation and uses a hybrid RF tracking method combining position/movement telemetry received from the rocekt and ranging with several ground nodes to accurately place the rocket.
+The system relies on sensor fusion for onboard state estimation and uses a hybrid RF tracking method combining position/movement telemetry received from the rocket and ranging with several ground nodes to accurately place the rocket.
 
 ## Key features
 * **Dual-band telemetry:**
@@ -89,6 +89,7 @@ flowchart TB
 Goals from the [project plan](docs/PROJECT_PLAN.md) that are currently being worked on:
 
 ##### 2\. Avionics unit
-* [ ] Write and test routine for downloading data from flash storage.
+* [ ] Write and test calibration routines for sensors (magnetometer and accelerometers).
+* [ ] Write a sensor fusion and data integration algorithm to accurately track position over time (on PC).
 
 *For an up to date breakdown of progress, check the [development log](docs/DEVELOPMENT_LOG.md).*

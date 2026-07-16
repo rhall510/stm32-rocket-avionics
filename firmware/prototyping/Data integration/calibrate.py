@@ -1,8 +1,10 @@
+import matplotlib.pyplot as plt
+import numpy as np
 from crc import Calculator, Configuration
 import struct
-import matplotlib.pyplot as plt
 
-OUTPUT_FILE = 'flight_datalong.bin'
+
+OUTPUT_FILE = 'flight_dataroll.bin'
 
 # Read raw data
 raw = b''
@@ -41,8 +43,6 @@ for idx, chunk in enumerate(chunks):
     if crc != checksum:
         print(f"Chunk number {idx} had incorrect checksum")
         continue
-
-    # print(f"{readings} :: {nbytes} {len(chunk)} :: {crc} {checksum}")
 
     pos = 0
     dtype = 0
@@ -101,105 +101,102 @@ for idx, chunk in enumerate(chunks):
             if t != 0:
                 gps.append([t, lat, long, alt, spd, sats, fix])
 
-                with open("latlong.txt", "a") as file:
-                    file.write(f"{long}, {lat}\n")
-                print(gps[-1])
-
         pos += dlen + 2
 
 
-print("Parsing done. Generating plots...")
-
-fig, axs = plt.subplots(4, 2, figsize=(12, 12), sharex=True)
-fig.suptitle("Avionics Telemetry Data Over Time", fontsize=16)
-
-# Low-G Accelerometer
-if lowAcc:
-    t, x, y, z = zip(*lowAcc)
-    axs[0, 0].plot(t[100:], x[100:], label='X')
-    axs[0, 0].plot(t[100:], y[100:], label='Y')
-    axs[0, 0].plot(t[100:], z[100:], label='Z')
-    axs[0, 0].set_title("Low-G Accelerometer")
-    axs[0, 0].set_ylabel("Accel")
-    axs[0, 0].legend(loc='upper right')
-
-# High-G Accelerometer
-if highAcc:
-    t, x, y, z = zip(*highAcc)
-    axs[1, 0].plot(t, x, label='X')
-    axs[1, 0].plot(t, y, label='Y')
-    axs[1, 0].plot(t, z, label='Z')
-    axs[1, 0].set_title("High-G Accelerometer")
-    axs[1, 0].set_ylabel("Accel")
-    axs[1, 0].legend(loc='upper right')
-
-# Gyroscope
-if gyr:
-    t, x, y, z = zip(*gyr)
-    axs[0, 1].plot(t[100:], x[100:], label='X')
-    axs[0, 1].plot(t[100:], y[100:], label='Y')
-    axs[0, 1].plot(t[100:], z[100:], label='Z')
-    axs[0, 1].set_title("Gyroscope")
-    axs[0, 1].set_ylabel("Rate (deg/s)")
-    axs[0, 1].legend(loc='upper right')
-
-# Magnetometer
-if mag:
-    t, x, y, z = zip(*mag)
-    axs[1, 1].plot(t, x, label='X')
-    axs[1, 1].plot(t, y, label='Y')
-    axs[1, 1].plot(t, z, label='Z')
-    axs[1, 1].set_title("Magnetometer")
-    axs[1, 1].set_ylabel("Mag Field")
-    axs[1, 1].legend(loc='upper right')
-
-# Pressure
-if press:
-    t, prs = zip(*press)
-    axs[2, 0].plot(t, prs, color='orange')
-    axs[2, 0].set_title("Barometric Pressure")
-    axs[2, 0].set_ylabel("Pressure")
-
-# Temperature
-if temp:
-    t, tmp = zip(*temp)
-    axs[2, 1].plot(t, tmp, color='red')
-    axs[2, 1].set_title("Temperature")
-    axs[2, 1].set_ylabel("Temp (C)")
-
-# GPS
-if gps:
-    t, lat, long, alt, spd, sats, fix = zip(*gps)
-
-    axs[3, 0].plot(t, lat, label='Latitude', color='blue')
-    axs[3, 0].set_ylabel("Latitude", color='blue')
-    axs[3, 0].tick_params(axis='y', labelcolor='blue')
-
-    ax_spd = axs[3, 0].twinx()
-    ax_spd.plot(t, long, label='Longitude', color='green')
-    ax_spd.set_ylabel("Longitude", color='green')
-    ax_spd.tick_params(axis='y', labelcolor='green')
-
-    axs[3, 0].set_title("GPS LatLong")
-
-    axs[3, 1].plot(t, alt, label='Altitude', color='blue')
-    axs[3, 1].set_ylabel("Altitude", color='blue')
-    axs[3, 1].tick_params(axis='y', labelcolor='blue')
-
-    # Twin axis for Speed
-    ax_spd = axs[3, 1].twinx()
-    ax_spd.plot(t, spd, label='Speed', color='green')
-    ax_spd.set_ylabel("Speed", color='green')
-    ax_spd.tick_params(axis='y', labelcolor='green')
-
-    axs[3, 1].set_title("GPS Altitude & Speed")
+t, x, y, z = zip(*mag)
 
 
-axs[-1, 0].set_xlabel("Time (Seconds)")
-axs[-1, 1].set_xlabel("Time (Seconds)")
-plt.tight_layout()
+## Calibrate magnetometer
+x = np.array(x)
+y = np.array(y)
+z = np.array(z)
+
+nmag = len(t)
+
+# Build reading matrix: M * p + e = 1
+M = np.zeros((nmag, 9))
+
+M[:, 0] = x**2
+M[:, 1] = y**2
+M[:, 2] = z**2
+M[:, 3] = 2 * x * y
+M[:, 4] = 2 * x * z
+M[:, 5] = 2 * y * z
+M[:, 6] = 2 * x
+M[:, 7] = 2 * y
+M[:, 8] = 2 * z
+
+ones = np.ones((nmag, 1))
+
+# Solve by multiplying by M transpose: p = (M^T * M)^-1 * M^T * 1
+M_T = M.T
+p = np.linalg.inv(M_T @ M) @ M_T @ ones
+
+# Extract the 9 ellipsoid coefficients
+A, B, C, D, E, F, G, H, I = p.flatten()
+
+# Construct the shape matrix Q and position vector U
+Q = np.array([[A, D, E],
+              [D, B, F],
+              [E, F, C]])
+
+U = np.array([[G], [H], [I]])
+
+V = -np.linalg.inv(Q) @ U
+
+print("Hard iron offset (V):")
+print(V)
+
+
+# Normalize Q so it represents a perfect sphere
+k = 1.0 - (U.T @ V)[0][0]
+Q = Q / k
+
+# Eigenvalue decomposition on Q
+evals, evecs = np.linalg.eigh(Q)
+
+# Create a diagonal matrix of the square root of the eigenvalues
+sqrt_evals = np.diag(np.sqrt(evals))
+
+# Calculate soft iron correction matrix W^-1
+W_inv = evecs @ sqrt_evals @ evecs.T
+
+print("\nSoft iron matrix (W_inv):")
+print(W_inv)
+
+
+
+
+
+# Correct raw values
+x_cent = x - V[0][0]
+y_cent = y - V[1][0]
+z_cent = z - V[2][0]
+
+x_corr = x_cent * W_inv[0][0] + y_cent * W_inv[0][1] + z_cent * W_inv[0][2]
+y_corr = x_cent * W_inv[1][0] + y_cent * W_inv[1][1] + z_cent * W_inv[1][2]
+z_corr = x_cent * W_inv[2][0] + y_cent * W_inv[2][1] + z_cent * W_inv[2][2]
+
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+
+ax.scatter(x, y, z, c="blue")
+ax.scatter(x_corr, y_corr, z_corr, c="green")
+
+ax.scatter(0, 0, 0, c="red", s=100)
+
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+
+ax.set_box_aspect([1, 1, 1])
+
+fig.tight_layout()
+
 plt.show()
 
 
-print(len(lowAcc), len(highAcc), len(gyr), len(mag), len(temp), len(press), len(gps))
+
 

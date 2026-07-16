@@ -101,10 +101,6 @@ for idx, chunk in enumerate(chunks):
             if t != 0:
                 gps.append([t, lat, long, alt, spd, sats, fix])
 
-                with open("latlong.txt", "a") as file:
-                    file.write(f"{long}, {lat}\n")
-                print(gps[-1])
-
         pos += dlen + 2
 
 
