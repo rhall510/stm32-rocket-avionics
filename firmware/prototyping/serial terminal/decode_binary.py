@@ -2,7 +2,7 @@ from crc import Calculator, Configuration
 import struct
 import matplotlib.pyplot as plt
 
-OUTPUT_FILE = 'flight_datalong.bin'
+OUTPUT_FILE = 'flight_data.bin'
 
 # Read raw data
 raw = b''
