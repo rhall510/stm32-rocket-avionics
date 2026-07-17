@@ -5,6 +5,41 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### July 17th 2026
+
+The data calibration stage has been completed successfully! I have written 3 python scripts which take in the raw binary data downloaded from the avionics unit and use it to calibrate the magnetometer, both accelerometers, and the gyroscope.
+
+The gyroscope is the easiest to calibrate. Although scale factor and cross axis alignment issues can exist for gyroscopes, they are generally quite well calibrated from the factory, and it isn't really practical for me to make the precise setup required to calibrate these things without launching an entirely new project. Therefore, I decided to only focus on the other easy thing to calibrate which is the zero-rate offset. For this I recorded some data for around a minute while the unit was sitting perfectly still. The first and last 2 seconds of the data is filtered out to remove spikes caused by the pressing of the start/stop button from affecting the calibration. Then the average value for each axis was simply averaged and negated to get the offset that needs to be added to each reading. Below is the results of calibrating the gyroscope data:
+
+
+#### Gyroscope calibration
+
+![Gyroscope calibration](./images/gyroscope_calibration.png)
+
+
+Next is the magnetometer. For this I used an ellipsoid fitting algorithm to correct both hard and soft iron interference. This algorithm uses least squares to fit an ellipsoid to the uncalibrated data, and then find the transforms needed to turn the ellipsoid back into a unit sphere centered at the origin. Data was collected by taking measurements continuously while I spun the unit around in my hands at all angles. Below is the results of calibrating the magnetometer data:
+
+#### Magnetometer calibration (red wireframe is the ideal unit sphere with a red cross at it's center)
+
+![Magnetometer calibration](./images/magnetometer_calibration.png)
+
+
+Finally, the accelerometers. For this I use the same ellipsoid fitting algorithm as used for the magnetometer, but with some differences in data collection and processing before calibration. While the magnetometer measures Earths magnetic field and is not affected by the movement of my hand when rotating it, the accelerometers measure gravity PLUS any additional movement when rotating it around. This will obviously throw off the calibration as it expects the magnitude of the measured force to be exactly 1, so I adapted my strategy to get more stable readings. Instead of rotating the unit in my hands, I 3d printed a roll cage which holds the avionics unit in it's enclosure rigidly in the center. This can then be placed in a bowl and rotated to any angle, and there is enough friction to hold it perfectly still.
+
+#### Accelerometer calibration roll cage in a plastic bowl with the avionics unit held in the center
+
+![Accelerometer calibration roll cage](./images/accelerometer_calibration_cage.jpg)
+
+
+Data was recorded continuously as I rotated the unit to various angles in the bowl, stopping for a few seconds at each angle to allow all vibrations to settle and get a stable reading. Of course, the raw data now contains both the stable periods and the movement when I'm rotating it in the bowl, so before calibration I added logic to first filter out all the unstable periods. To do this I calculated the variance with a rolling window of 50 measurements (half a second), and selected only data where the variance is below a threshold. I also added an additional filter to remove data recorded within 100ms of the threshold being crossed (either at the beginning or end of a settled period) as an additional buffer against including bad data. This gave nice clean measurements at various angles from only periods where the unit was completely settled.
+
+The high-G accelerometer presented an additional problem because it has a very high baseline of noise in this low acceleration environment, meaning settled periods could not be picked out due to the noise completely swamping out the additional variance caused by movements. Therefore, I utilised the timestamps of the settled periods determined from the low-G data to filter the high-G data to only include measurements done within these same periods. This was not enough however, as the extremely high baseline noise meant an ellipsoid could not be fit well to the data, even after filtering. Therefore, an additional averaging step was introduced. For each settled period, all measurements were averaged to produce a single more stable measurement. This was done for both the high and low G data for consistency. Using this averaging method, I was able to get a good ellipsoid fit from 38 data points (one for each settled orientation) and nicely correct the high-G accelerometer data despite the extreme noise level. Below is the results of calibrating the accelerometer data:
+
+#### Accelerometer calibration (red wireframe is the ideal unit sphere with a red cross at it's center)
+
+![Accelerometer calibration](./images/accelerometer_calibration.png)
+
+---
 ### July 16th 2026
 
 Over the past ~2 weeks I have been working on the goals I set in the last update, and I'm happy to say all of them have now been completed!
