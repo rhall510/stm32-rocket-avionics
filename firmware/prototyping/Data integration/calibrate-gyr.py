@@ -32,7 +32,7 @@ xcorr = x - xoff
 ycorr = y - yoff
 zcorr = z - zoff
 
-print(f"Gyroscope offsets:\n X = {-xoff}\n Y = {-yoff}\n Z = {-zoff}")
+print(f"Gyroscope offsets:\n X = {xoff}\n Y = {yoff}\n Z = {zoff}")
 
 fig, axs = plt.subplots(1, 2, figsize=(10, 6))
 fig.suptitle("Gyroscope data", fontsize=16)

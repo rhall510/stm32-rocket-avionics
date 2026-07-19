@@ -259,6 +259,24 @@ def UnitSphereCalibrate(x, y, z):
 
 
 
+def CalDataCent(x, y, z, cent):
+    x_cent = x - cent[0]
+    y_cent = y - cent[1]
+    z_cent = z - cent[2]
+
+    return x_cent, y_cent, z_cent
+
+
+def CalDataCentDist(x, y, z, cent, dist):
+    x_cent = x - cent[0]
+    y_cent = y - cent[1]
+    z_cent = z - cent[2]
+
+    x_corr = x_cent * dist[0][0] + y_cent * dist[0][1] + z_cent * dist[0][2]
+    y_corr = x_cent * dist[1][0] + y_cent * dist[1][1] + z_cent * dist[1][2]
+    z_corr = x_cent * dist[2][0] + y_cent * dist[2][1] + z_cent * dist[2][2]
+
+    return x_corr, y_corr, z_corr
 
 
 
