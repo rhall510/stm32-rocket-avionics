@@ -4,7 +4,7 @@ import tools
 import math
 
 
-DATA_FILE = 'flight_datasr1.bin'
+DATA_FILE = 'flight_datasr3.bin'
 
 # Calibration values
 gyr_cal = np.array([0.068633, -0.866754, 0.150951])
@@ -51,9 +51,8 @@ tp, prs = np.array(tp), np.array(prs)
 # tt, tmp = zip(*temp)
 # tt, tmp = np.array(tt), np.array(tmp)
 
-tgps, lat, long, alt, spd, sats, fix = zip(*gps)
-tgps, lat, long, alt, spd, sats, fix = np.array(tgps), np.array(lat), np.array(long), np.array(alt), np.array(spd), np.array(sats), np.array(fix)
-
+tgps, lat, long, alt, velNorth, velEast, velDown, groundSpd, heading, horzAcc, vertAcc, spdAcc, sats, fix = zip(*gps)
+tgps, lat, long, alt, groundSpd, sats, fix = np.array(tgps), np.array(lat), np.array(long), np.array(alt), np.array(groundSpd), np.array(sats), np.array(fix)
 
 
 # --- 3D Orientation MEKF variables ---
@@ -66,9 +65,7 @@ P_ori = np.eye(3) * 1.0
 # Gyroscope noise
 Q_ori = np.eye(3) * 0.01
 
-
 # Accelerometer noise
-# Set high initially to ignore starting vibrations
 R_acc = np.eye(3) * 0.1
 
 # Magnetometer noise
@@ -82,9 +79,6 @@ X_alt = np.array([0.0, 0.0])
 # Uncertainty matrix
 P_alt = np.eye(2) * 1.0
 
-# Accelerometer noise
-Q_alt = np.eye(2) * 0.05
-
 # Barometer noise
 R_baro = np.array([[2.0]]) # 2 meters squared variance
 
@@ -96,9 +90,6 @@ X_horiz = np.array([0.0, 0.0, 0.0, 0.0])
 
 # Uncertainty matrix
 P_horiz = np.eye(4) * 1.0
-
-# Accelerometer noise
-Q_horiz = np.eye(4) * 0.05
 
 # GPS Noise
 R_gps = np.eye(2) * 4.0
@@ -432,8 +423,19 @@ while tcurr < tend:
                 # Predict new state
                 X_alt = F @ X_alt + (B * a_z_up)
 
+                # Dynamically calculate vertical kinematic process noise
+                sigma_alt = 2.0  # Vertical acceleration variance
+                qa_p = sigma_alt * (dt_accel**3) / 3.0
+                qa_c = sigma_alt * (dt_accel**2) / 2.0
+                qa_v = sigma_alt * dt_accel
+
+                Q_alt_dyn = np.array([
+                    [qa_p, qa_c],
+                    [qa_c, qa_v]
+                ])
+
                 # Grow uncertainty
-                P_alt = F @ P_alt @ F.T + Q_alt
+                P_alt = F @ P_alt @ F.T + Q_alt_dyn
 
 
                 # Horizontal prediction
@@ -458,8 +460,22 @@ while tcurr < tend:
 
                 # Predict new state and grow uncertainty
                 X_horiz = F_h @ X_horiz + (B_h @ a_horiz)
-                P_horiz = F_h @ P_horiz @ F_h.T + Q_horiz
 
+                # Dynamically calculate horizontal kinematic process noise
+                sigma_horiz = 5.0  # High variance to absorb IMU errors
+                qh_p = sigma_horiz * (dt_accel**3) / 3.0
+                qh_c = sigma_horiz * (dt_accel**2) / 2.0
+                qh_v = sigma_horiz * dt_accel
+
+                Q_horiz_dyn = np.array([
+                    [qh_p, 0.0,  qh_c, 0.0],
+                    [0.0,  qh_p, 0.0,  qh_c],
+                    [qh_c, 0.0,  qh_v, 0.0],
+                    [0.0,  qh_c, 0.0,  qh_v]
+                ])
+
+                # Grow uncertainty
+                P_horiz = F_h @ P_horiz @ F_h.T + Q_horiz_dyn
 
                 t_horz_est.append(tcurr)
                 horz_nv_est.append(X_horiz[2])

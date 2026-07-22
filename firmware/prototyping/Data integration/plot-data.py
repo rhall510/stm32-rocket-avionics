@@ -75,7 +75,7 @@ if temp:
 
 # GPS
 if gps:
-    t, lat, long, alt, spd, sats, fix = zip(*gps)
+    t, lat, long, alt, velNorth, velEast, velDown, groundSpd, heading, horzAcc, vertAcc, spdAcc, sats, fix = zip(*gps)
 
     axs[3, 0].plot(t, lat, label='Latitude', color='blue')
     axs[3, 0].set_ylabel("Latitude", color='blue')
@@ -94,7 +94,7 @@ if gps:
 
     # Twin axis for Speed
     ax_spd = axs[3, 1].twinx()
-    ax_spd.plot(t, spd, label='Speed', color='green')
+    ax_spd.plot(t, groundSpd, label='Speed', color='green')
     ax_spd.set_ylabel("Speed", color='green')
     ax_spd.tick_params(axis='y', labelcolor='green')
 

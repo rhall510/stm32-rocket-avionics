@@ -109,11 +109,10 @@ void MAXM10S_Wake(I2C_HandleTypeDef *hi2c) {
 
 void MAXM10S_SetDataOutput(I2C_HandleTypeDef *hi2c, bool enable, bool Blocking) {
     if (enable) {
-        // Enable GGA and RMC messages
+        // Enable PVT messages
         uint8_t cmd[] = {
-            0xB5, 0x62, 0x06, 0x8A, 0x0E, 0x00, 0x00, 0x01,
-            0x00, 0x00, 0xBA, 0x00, 0x91, 0x20, 0x01, 0xAB,
-            0x00, 0x91, 0x20, 0x01, 0x68, 0x80
+        	0xB5, 0x62, 0x06, 0x8A, 0x09, 0x00, 0x00, 0x01,
+			0x00, 0x00, 0x06, 0x00, 0x91, 0x20, 0x01, 0x52, 0x43
         };
 
         MAXM10S_SendCommand(hi2c, cmd, sizeof(cmd));
@@ -127,11 +126,10 @@ void MAXM10S_SetDataOutput(I2C_HandleTypeDef *hi2c, bool enable, bool Blocking) 
 		// Flush the buffer to ensure it starts clean
         MAXM10S_FlushBuffer(hi2c);
     } else {
-        // Disable GGA and RMC messages
+        // Disable PVT messages
         uint8_t cmd[] = {
-            0xB5, 0x62, 0x06, 0x8A, 0x0E, 0x00, 0x00, 0x01,
-            0x00, 0x00, 0xBA, 0x00, 0x91, 0x20, 0x00, 0xAB,
-            0x00, 0x91, 0x20, 0x00, 0x66, 0x79
+        	0xB5, 0x62, 0x06, 0x8A, 0x09, 0x00, 0x00, 0x01,
+            0x00, 0x00, 0x06, 0x00, 0x91, 0x20, 0x00, 0x51, 0x42
         };
 
         MAXM10S_SendCommand(hi2c, cmd, sizeof(cmd));
@@ -172,58 +170,135 @@ void MAXM10S_FlushBuffer(I2C_HandleTypeDef *hi2c) {
 }
 
 
-void MAXM10S_ProcessNMEASentence(const char *sentence, TS_GPS *data) {
-	int type = minmea_sentence_id(sentence, false);
+bool MAXM10S_ParseUBXStream(uint8_t *i2c_data, uint16_t length, uint16_t *readoffset, UBXPacket *pkt) {
+	static UBXParserState state = UBXPARSER_WAIT_SYNC1;
+	static uint16_t payloadidx = 0;
 
-	if (type == MINMEA_SENTENCE_RMC) {
-		struct minmea_sentence_rmc frame;
-		if (minmea_parse_rmc(&frame, sentence)) {
-			data->HasFix = frame.valid;
+	static uint8_t chka;
+	static uint8_t chkb;
 
-			if (frame.valid) {
-				// Convert to standard floats
-				data->Latitude = minmea_tocoord(&frame.latitude);
-				data->Longitude = minmea_tocoord(&frame.longitude);
-				data->Speed = minmea_tofloat(&frame.speed);
+	for (uint16_t i = *readoffset; i < length; i++) {
+		*readoffset = i + 1;   // Update readoffset to point to the first unparsed byte
 
-				data->Timestamp = (float)HAL_GetTick() / 1000.0f;
-			}
-		}
-	} else if (type == MINMEA_SENTENCE_GGA) {
-		struct minmea_sentence_gga frame;
-		if (minmea_parse_gga(&frame, sentence)) {
-			if (frame.fix_quality > 0) {
-				data->Altitude = minmea_tofloat(&frame.altitude);
-				data->Satellites = frame.satellites_tracked;
-			}
+		uint8_t byte = i2c_data[i];
+
+		switch (state) {
+			case UBXPARSER_WAIT_SYNC1:
+				if (byte == (UBX_SYNC_WORD >> 8)) {
+					state = UBXPARSER_WAIT_SYNC2;
+				}
+				break;
+
+			case UBXPARSER_WAIT_SYNC2:
+				if (byte == (UBX_SYNC_WORD & 0xFF)) {
+					state = UBXPARSER_CLASS;
+				} else if (byte != (UBX_SYNC_WORD >> 8)) {
+					state = UBXPARSER_WAIT_SYNC1;
+				}
+				break;
+
+			case UBXPARSER_CLASS:
+				pkt->class = byte;
+				state = UBXPARSER_ID;
+				break;
+
+			case UBXPARSER_ID:
+				pkt->id = byte;
+				state = UBXPARSER_LEN1;
+				break;
+
+			case UBXPARSER_LEN1:   // LSB first
+				pkt->payloadlen = byte;
+				state = UBXPARSER_LEN2;
+				break;
+
+			case UBXPARSER_LEN2:
+				pkt->payloadlen |= ((uint16_t)byte << 8);
+				payloadidx = 0;
+
+				if (pkt->payloadlen == 0) {
+					state = UBXPARSER_CHKSUM1;
+				} else {
+					state = UBXPARSER_PAYLOAD;
+				}
+
+				break;
+
+			case UBXPARSER_PAYLOAD:
+				pkt->payload[payloadidx++] = byte;
+
+				if (payloadidx >= pkt->payloadlen) {
+					state = UBXPARSER_CHKSUM1;
+				} else if (payloadidx >= UBX_PAYLOAD_MAXLEN) {
+					printf("[ERROR] UBX parser found longer than allowed payload\n");
+					state = UBXPARSER_WAIT_SYNC1;
+				}
+
+				break;
+
+			case UBXPARSER_CHKSUM1:
+				chka = byte;
+				state = UBXPARSER_CHKSUM2;
+				break;
+
+			case UBXPARSER_CHKSUM2:
+				chkb = byte;
+
+				// Verify checksum
+				uint8_t ck_a = 0, ck_b = 0;
+
+			    ck_a += pkt->class;
+			    ck_b += ck_a;
+			    ck_a += pkt->id;
+			    ck_b += ck_a;
+			    ck_a += (pkt->payloadlen & 0xFF);
+			    ck_b += ck_a;
+			    ck_a += (pkt->payloadlen >> 8);
+			    ck_b += ck_a;
+
+				for (int i = 0; i < pkt->payloadlen; i++) {
+				    ck_a += pkt->payload[i];
+				    ck_b += ck_a;
+				}
+
+				if (ck_a == chka && ck_b == chkb) {
+					state = UBXPARSER_WAIT_SYNC1;
+					return true;
+				} else {
+					state = UBXPARSER_WAIT_SYNC1;
+				}
+
+				break;
 		}
 	}
+
+	return false;
 }
 
 
-bool MAXM10S_ParseStream(uint8_t *i2c_data, uint16_t length, TS_GPS *data) {
-	bool SentenceFound = false;
+void MAXM10S_ExtractPVTData(UBXPacket *pkt, TS_GPS *data) {
+	UBX_NAV_PVT *pvt = (UBX_NAV_PVT *)pkt->payload;
 
-	for (uint16_t i = 0; i < length; i++) {
-		char c = (char)i2c_data[i];
+	data->Timestamp = (float)HAL_GetTick() / 1000.0f;
 
-		// Fill buffer
-		if (line_len < M10S_LINE_BUFFER_SIZE - 1) {
-			line_buffer[line_len++] = c;
-		}
+	data->Latitude = pvt->lat * 1e-7;
+	data->Longitude = pvt->lon * 1e-7;
+	data->Altitude = pvt->hMSL * 1e-3;
 
-		// Wait for end of a sentence (\n)
-		if (c == '\n') {
-			line_buffer[line_len] = '\0';   // Add null terminator
-			MAXM10S_ProcessNMEASentence(line_buffer, data);
-			SentenceFound = true;
-			line_len = 0;
-		}
-	}
+	data->VelNorth = pvt->velN * 1e-3;
+	data->VelEast = pvt->velE * 1e-3;
+	data->VelDown = pvt->velD * 1e-3;
+	data->GroundSpeed = pvt->gSpeed * 1e-3;
 
-	return SentenceFound;
+	data->Heading = pvt->headMot * 1e-5;
+
+	data->HorzAccuracy = pvt->hAcc * 1e-3;
+	data->VertAccuracy = pvt->vAcc * 1e-3;
+	data->SpeedAccuracy = pvt->sAcc * 1e-3;
+
+	data->Satellites = pvt->numSV;
+	data->FixType = pvt->fixType;
 }
-
 
 
 bool MAXM10S_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxLen, TS_GPS *databuff, uint8_t Readings) {
@@ -239,23 +314,11 @@ bool MAXM10S_AppendLogPacket(uint8_t *buff, uint16_t *BuffPos, uint16_t BuffMaxL
 	for (int i = 0; i < Readings; i++) {
 		buff[*BuffPos] = 0b01010000;   // Type 5 packet (GPS)
 		*BuffPos += 1;
-		buff[*BuffPos] = 5 * sizeof(float) + 2;
+		buff[*BuffPos] = M10S_PKT_DATA_LEN - 2;
 		*BuffPos += 1;
 
-		memcpy(buff + *BuffPos, &databuff[i].Timestamp, sizeof(float));
-		*BuffPos += sizeof(float);
-		memcpy(buff + *BuffPos, &databuff[i].Latitude, sizeof(float));
-		*BuffPos += sizeof(float);
-		memcpy(buff + *BuffPos, &databuff[i].Longitude, sizeof(float));
-		*BuffPos += sizeof(float);
-		memcpy(buff + *BuffPos, &databuff[i].Altitude, sizeof(float));
-		*BuffPos += sizeof(float);
-		memcpy(buff + *BuffPos, &databuff[i].Speed, sizeof(float));
-		*BuffPos += sizeof(float);
-		buff[*BuffPos] = databuff[i].Satellites;
-		*BuffPos += 1;
-		buff[*BuffPos] = databuff[i].HasFix;
-		*BuffPos += 1;
+		memcpy(buff + *BuffPos, &databuff[i], M10S_PKT_DATA_LEN - 2);
+		*BuffPos += M10S_PKT_DATA_LEN - 2;
 	}
 
 	return true;

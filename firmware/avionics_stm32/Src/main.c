@@ -144,6 +144,8 @@ void ReadMMC5983Task(void *param) {
 void ReadM10STask(void *param) {
 	(void) param;
 
+	UBXPacket pkt;
+
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
 			if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
@@ -152,14 +154,27 @@ void ReadM10STask(void *param) {
 			}
 
 			uint16_t bytes_available = MAXM10S_GetAvailableBytes(&hi2c);
+			if (bytes_available == 0) {
+				xSemaphoreGive(I2CMutex);
+				continue;
+			}
 
-			if (bytes_available > 0) {
-				uint8_t i2c_data[bytes_available];
+			uint8_t i2c_data[bytes_available];
 
-				if (MAXM10S_ReadStream(&hi2c, i2c_data, bytes_available)) {
-					bool SentenceFound = MAXM10S_ParseStream(i2c_data, bytes_available, &m10s_data);
+			if (!MAXM10S_ReadStream(&hi2c, i2c_data, bytes_available)) {
+				xSemaphoreGive(I2CMutex);
+				continue;
+			}
 
-					if (SentenceFound) {
+			xSemaphoreGive(I2CMutex);
+
+			uint16_t readoffset = 0;
+			while (readoffset < bytes_available) {
+				if (MAXM10S_ParseUBXStream(i2c_data, bytes_available, &readoffset, &pkt)) {
+					if (pkt.class == 0x01 && pkt.id == 0x07) {
+						TS_GPS m10s_data;
+						MAXM10S_ExtractPVTData(&pkt, &m10s_data);
+
 						SensorData data;
 						data.type = SENSOR_DATA_GPS;
 						data.data.tsgps = m10s_data;
@@ -170,8 +185,6 @@ void ReadM10STask(void *param) {
 					}
 				}
 			}
-
-			xSemaphoreGive(I2CMutex);
         }
     }
 }
@@ -746,7 +759,7 @@ int main(void) {
 	RadioQueue = xQueueCreate(5, sizeof(NetPacket));
 	if (RadioQueue == NULL) { Error_Handler(); }
 
-	DataLogQueue = xQueueCreate(100, sizeof(SensorData));
+	DataLogQueue = xQueueCreate(40, sizeof(SensorData));
 	if (DataLogQueue == NULL) { Error_Handler(); }
 
 	SPIRfMutex = xSemaphoreCreateMutex();
@@ -785,7 +798,7 @@ int main(void) {
 
 
     // Set up periodic polling of MAX-M10S module (twice expected data rate)
-    M10SPollTimer = xTimerCreate("M10SPollTimer", pdMS_TO_TICKS(250), pdTRUE, (void *)0, PrimeMS10Poll);
+    M10SPollTimer = xTimerCreate("M10SPollTimer", pdMS_TO_TICKS(250), pdTRUE, (void *)0, PrimeM10SPoll);
     xTimerStart(M10SPollTimer, 0);
 
     // Set up periodic data logging to flash
@@ -809,7 +822,7 @@ void TIM2_IRQHandler() {
 }
 
 
-void PrimeMS10Poll(TimerHandle_t Timer) {
+void PrimeM10SPoll(TimerHandle_t Timer) {
 	xTaskNotifyGive(M10SReadTaskNotif);
 }
 

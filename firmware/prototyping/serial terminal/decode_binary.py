@@ -94,15 +94,26 @@ for idx, chunk in enumerate(chunks):
             lat = struct.unpack('<f', chunk[pos + 6 : pos + 10])[0]
             long = struct.unpack('<f', chunk[pos + 10 : pos + 14])[0]
             alt = struct.unpack('<f', chunk[pos + 14 : pos + 18])[0]
-            spd = struct.unpack('<f', chunk[pos + 18 : pos + 22])[0]
-            sats = chunk[pos + 22]
-            fix = chunk[pos + 23]
+
+            velNorth = struct.unpack('<f', chunk[pos + 18 : pos + 22])[0]
+            velEast = struct.unpack('<f', chunk[pos + 22 : pos + 26])[0]
+            velDown = struct.unpack('<f', chunk[pos + 26 : pos + 30])[0]
+            groundSpd = struct.unpack('<f', chunk[pos + 30 : pos + 34])[0]
+
+            heading = struct.unpack('<f', chunk[pos + 34 : pos + 38])[0]
+
+            horzAcc = struct.unpack('<f', chunk[pos + 38 : pos + 42])[0]
+            vertAcc = struct.unpack('<f', chunk[pos + 42 : pos + 46])[0]
+            spdAcc = struct.unpack('<f', chunk[pos + 46 : pos + 50])[0]
+
+            sats = chunk[pos + 50]
+            fix = chunk[pos + 51]
 
             if t != 0:
-                gps.append([t, lat, long, alt, spd, sats, fix])
+                gps.append([t, lat, long, alt, velNorth, velEast, velDown, groundSpd, heading, horzAcc, vertAcc, spdAcc, sats, fix])
 
                 with open("latlong.txt", "a") as file:
-                    file.write(f"{long}, {lat}\n")
+                    file.write(f"{long}, {lat}\n")#
                 print(gps[-1])
 
         pos += dlen + 2
@@ -169,7 +180,7 @@ if temp:
 
 # GPS
 if gps:
-    t, lat, long, alt, spd, sats, fix = zip(*gps)
+    t, lat, long, alt, velNorth, velEast, velDown, groundSpd, heading, horzAcc, vertAcc, spdAcc, sats, fix = zip(*gps)
 
     axs[3, 0].plot(t, lat, label='Latitude', color='blue')
     axs[3, 0].set_ylabel("Latitude", color='blue')
@@ -188,7 +199,7 @@ if gps:
 
     # Twin axis for Speed
     ax_spd = axs[3, 1].twinx()
-    ax_spd.plot(t, spd, label='Speed', color='green')
+    ax_spd.plot(t, groundSpd, label='Speed', color='green')
     ax_spd.set_ylabel("Speed", color='green')
     ax_spd.tick_params(axis='y', labelcolor='green')
 

@@ -25,12 +25,24 @@ typedef struct {
 
 typedef struct {
 	float Timestamp;
+
 	float Latitude;
 	float Longitude;
 	float Altitude;
-	float Speed;
+
+	float VelNorth;
+	float VelEast;
+	float VelDown;
+	float GroundSpeed;
+
+	float Heading;
+
+	float HorzAccuracy;
+	float VertAccuracy;
+	float SpeedAccuracy;
+
 	uint8_t Satellites;
-	bool HasFix;
+	uint8_t FixType;
 } TS_GPS;
 
 

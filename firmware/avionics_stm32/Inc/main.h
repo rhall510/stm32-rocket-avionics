@@ -65,7 +65,7 @@ QueueHandle_t DataLogQueue;
 
 // Timers and callback functions
 TimerHandle_t M10SPollTimer;
-void PrimeMS10Poll(TimerHandle_t Timer);
+void PrimeM10SPoll(TimerHandle_t Timer);
 
 TimerHandle_t LogDataTimer;
 void PrimeLogData(TimerHandle_t Timer);
