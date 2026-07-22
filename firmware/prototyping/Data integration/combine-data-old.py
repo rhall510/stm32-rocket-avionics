@@ -4,7 +4,7 @@ import tools
 import math
 
 
-DATA_FILE = 'flight_dataroll.bin'
+DATA_FILE = 'flight_datasr.bin'
 
 # Calibration values
 gyr_cal = np.array([0.068633, -0.866754, 0.150951])
@@ -52,8 +52,7 @@ tp, prs = np.array(tp), np.array(prs)
 # tt, tmp = np.array(tt), np.array(tmp)
 
 tgps, lat, long, alt, velNorth, velEast, velDown, groundSpd, heading, horzAcc, vertAcc, spdAcc, sats, fix = zip(*gps)
-tgps, lat, long, alt, velNorth, velEast, velDown, groundSpd, heading, horzAcc, vertAcc, spdAcc, sats, fix =  np.array(tgps), np.array(lat), np.array(long), np.array(alt), np.array(velNorth), np.array(velEast), \
-        np.array(velDown), np.array(groundSpd), np.array(heading), np.array(horzAcc), np.array(vertAcc), np.array(spdAcc), np.array(sats), np.array(fix)
+tgps, lat, long, alt, groundSpd, sats, fix = np.array(tgps), np.array(lat), np.array(long), np.array(alt), np.array(groundSpd), np.array(sats), np.array(fix)
 
 
 # --- 3D Orientation MEKF variables ---
@@ -72,9 +71,6 @@ R_acc = np.eye(3) * 0.1
 # Magnetometer noise
 R_mag = np.eye(3) * 0.5
 
-# Magnetic declination
-MAG_DEC = math.radians(1.08)
-
 
 # --- 1D Vertical kalman filter variables ---
 # State vector (Altitude (meters), Vertical velocity (m/s))
@@ -83,19 +79,9 @@ X_alt = np.array([0.0, 0.0])
 # Uncertainty matrix
 P_alt = np.eye(2) * 1.0
 
-# Barometer static noise (accelerometer and GPS variance calculated dynamically)
-R_baro = np.array([[2.0]])
+# Barometer noise
+R_baro = np.array([[2.0]]) # 2 meters squared variance
 
-# GPS vertical noise multiplier (set high as barometer should provide the more accurate measurement short term)
-NM_vgps_pos = 15.0
-NM_vgps_vel = 30.0
-
-# Base accelerometer noise added with each prediction step on top of the white noise covariance
-base_accel_noise = 0.01
-
-# Use the first pressure reading as the reference 0 altitude pressure
-ground_pressure = prs[0]
-ground_alt = alt[0]
 
 
 # --- 2D Horizontal kalman filter variables ---
@@ -105,9 +91,8 @@ X_horiz = np.array([0.0, 0.0, 0.0, 0.0])
 # Uncertainty matrix
 P_horiz = np.eye(4) * 1.0
 
-# GPS horizontal noise multiplier
-NM_hgps_pos = 5.0
-NM_hgps_vel = 20.0
+# GPS Noise
+R_gps = np.eye(2) * 4.0
 
 # Initialise home as the first GPS coordinate
 lat_home = lat[0]
@@ -246,13 +231,7 @@ def SensorUpdate(actual_vec, expected_vec, q, P, R):
 
     # Shrink uncertainty
     I = np.eye(3)
-
-    # Joseph form for updating covariance
-    I = np.eye(P.shape[0])
-    IKH = I - K @ H
-    P_new = IKH @ P @ IKH.T + K @ R @ K.T
-
-    #P_new = (I - K @ H) @ P
+    P_new = (I - K @ H) @ P
 
     return q_new, P_new
 
@@ -260,7 +239,7 @@ def SensorUpdate(actual_vec, expected_vec, q, P, R):
 def get_expected_gravity(q):
     qw, qx, qy, qz = q
 
-    g_expected = -np.array([
+    g_expected = np.array([
         2*qx*qz - 2*qy*qw,
         2*qy*qz + 2*qx*qw,
         1 - 2*qx*qx - 2*qy*qy
@@ -277,9 +256,7 @@ def get_expected_magnetic(q, m_actual):
     # Build the idealized reference vector (all horizontal strength along X)
     bx = math.sqrt(h[0]*h[0] + h[1]*h[1])
     bz = h[2]
-
-    # Apply true north correction
-    b_nav = np.array([bx * math.cos(MAG_DEC), bx * math.sin(MAG_DEC), bz])
+    b_nav = np.array([bx, 0.0, bz])
 
     # Rotate back to the body frame
     m_expected = R.T @ b_nav
@@ -293,13 +270,13 @@ def get_linear_acceleration(q, a_composite):
     a_nav = R @ a_composite
 
     # Remove gravity
-    a_lin = a_nav - np.array([0.0, 0.0, -1.0])
+    a_lin = a_nav - np.array([0.0, 0.0, 1.0])
 
     return a_lin * 9.80665    # Convert to m/s^2
 
 
 def pressure_to_altitude(pressure, baseline_pressure):
-    return 44330.0 * (1.0 - math.pow(pressure / baseline_pressure, 0.1903)) + ground_alt
+    return 44330.0 * (1.0 - math.pow(pressure / baseline_pressure, 0.1903))
 
 
 def latlon_to_meters(lat, lon, lat_home, lon_home):
@@ -317,49 +294,47 @@ def latlon_to_meters(lat, lon, lat_home, lon_home):
     return np.array([y, x])
 
 
-# Arrays for plotting estimated values later
+# Arrays for storing the updated orientation estimate over time
 t_q_est = []
 q_est = []
 q_raw_est = []
 
+# Simulate moving through time and update q when data is available
+# Start at time 0 and keep going until the last recording time of the sensors in use
+tstart = 0
+tend = tg[-1]    #max(tg[-1], tla[-1], tm[-1])
+tcurr = tstart
+
+posg, posla, posm = 0, 0, 0     # Keep track of the earliest unused measurement in each sensor for efficiency
+
+t_prev_g = tg[0]   # For calculating delta time between gyroscope measurements
+
+# Initialise memory for swapping between accelerometer readings
+latest_low_g = np.array([0.0, 0.0, 0.0])
+latest_high_g = np.array([0.0, 0.0, 0.0])
+
+t_prev_accel = min([tla[0], tha[0]])    # For calculating delta time between accelerometer measurements
+posha = 0
+
+# Use the first pressure reading as the reference 0 altitude pressure
+ground_pressure = prs[0]
+posp = 0
+
+# For plotting altitude and vertical velocity estimate
 t_vert_est = []
 vvel_est = []
 alt_est = []
 
+
+posgps = 0
+
+
+# For plotting horizontal movement estimates
 t_horz_est = []
 horz_nv_est = []
 horz_ev_est = []
 horz_nd_est = []
 horz_ed_est = []
-
-# Diagnostics plotting
-tposerror = []
-poserrorx = []
-poserrory = []
-
-kht = []
-khnp = []
-khep = []
-khnv = []
-khev = []
-
-tadyn = []
-adyn = []
-
-
-# Simulate moving through time and update filters when data is available
-# Start at time 0 and keep going until the last recording time of the sensors in use
-tcurr = 0
-tend = tg[-1]
-
-posg, posla, posm, posp, posha, posgps = 0, 0, 0, 0, 0, 0     # Keep track of the earliest unused measurement in each sensor for efficiency
-
-t_prev_g = tg[0]   # For calculating delta time between gyroscope measurements
-t_prev_accel = min([tla[0], tha[0]])    # For calculating delta time between accelerometer measurements
-
-# For swapping between accelerometer readings
-latest_low_g = np.array([0.0, 0.0, 0.0])
-latest_high_g = np.array([0.0, 0.0, 0.0])
 
 
 while tcurr < tend:
@@ -390,7 +365,6 @@ while tcurr < tend:
         t_q_est.append(tcurr)
         q_est.append(quat_to_euler(q))
         q_raw_est.append(q)
-
         posg += 1
     elif (posla < len(tla) and tcurr == tla[posla]) or (posha < len(tha) and tcurr == tha[posha]):      # Low or high G accelerometer update
         # Determine which accelerometer updated
@@ -426,9 +400,6 @@ while tcurr < tend:
             dynamic_variance = 0.1 + (1000.0 * (g_error ** 2))
             R_acc_dynamic = np.eye(3) * dynamic_variance
 
-            tadyn.append(tcurr)
-            adyn.append(dynamic_variance)
-
             # Update the attitude MEKF
             a_expected = get_expected_gravity(q)
             q, P_ori = SensorUpdate(active_accel, a_expected, q, P_ori, R_acc_dynamic)
@@ -454,7 +425,7 @@ while tcurr < tend:
 
                 # Dynamically calculate vertical kinematic process noise
                 sigma_alt = 2.0  # Vertical acceleration variance
-                qa_p = sigma_alt * (dt_accel**3) / 3.0 + base_accel_noise * dt_accel
+                qa_p = sigma_alt * (dt_accel**3) / 3.0
                 qa_c = sigma_alt * (dt_accel**2) / 2.0
                 qa_v = sigma_alt * dt_accel
 
@@ -465,10 +436,6 @@ while tcurr < tend:
 
                 # Grow uncertainty
                 P_alt = F @ P_alt @ F.T + Q_alt_dyn
-
-                t_vert_est.append(tcurr)
-                alt_est.append(X_alt[0])
-                vvel_est.append(X_alt[1])
 
 
                 # Horizontal prediction
@@ -496,7 +463,7 @@ while tcurr < tend:
 
                 # Dynamically calculate horizontal kinematic process noise
                 sigma_horiz = 5.0  # High variance to absorb IMU errors
-                qh_p = sigma_horiz * (dt_accel**3) / 3.0 + base_accel_noise * dt_accel
+                qh_p = sigma_horiz * (dt_accel**3) / 3.0
                 qh_c = sigma_horiz * (dt_accel**2) / 2.0
                 qh_v = sigma_horiz * dt_accel
 
@@ -532,79 +499,35 @@ while tcurr < tend:
         # Correct the state
         X_alt = X_alt + (K @ y).flatten()
 
-        # Shrink the uncertainty using Joseph form
+        # Shrink the uncertainty
         I = np.eye(2)
-        IKH = I - K @ H
-        P_alt = IKH @ P_alt @ IKH.T + K @ R_baro @ K.T
+        P_alt = (I - K @ H) @ P_alt
+
+        t_vert_est.append(tcurr)
+        alt_est.append(X_alt[0])
+        vvel_est.append(X_alt[1])
 
         posp += 1
     elif tcurr == tgps[posgps]:   # GPS update
-        if fix[posgps] == 0:   # Only trust the GPS if it has a satellite fix
-            posgps += 1
-            continue
+        if fix[posgps] > 0:   # Only trust the GPS if it has a satellite fix
+            # Convert spherical Lat/Lon to flat cartesian meters
+            measured_pos = latlon_to_meters(lat[posgps], long[posgps], lat_home, lon_home)
 
-        # --- Vertical movement ---
-        # Measurement matrix (measures both altitude and vertical velocity)
-        H = np.array([[1.0, 0.0],
-                      [0.0, 1.0]])
+            # Measurement matrix
+            H_h = np.array([
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0]
+            ])
 
-        # Dynamic variance matrix
-        vsAcc = spdAcc[posgps] * vertAcc[posgps] / horzAcc[posgps]   # Approximate vertical velocity accuracy by the ratio of position accuracies
-        Q_vgps = np.array([[vertAcc[posgps]**2 * NM_vgps_pos, 0.0],
-                           [0.0, vsAcc**2 * NM_vgps_vel]])
+            # Calculate error and kalman gain
+            y_h = measured_pos - (H_h @ X_horiz)
+            S_h = H_h @ P_horiz @ H_h.T + R_gps
+            K_h = P_horiz @ H_h.T @ np.linalg.inv(S_h)
 
-        # Calculate error and kalman gain
-        y = np.array([alt[posgps], -velDown[posgps]]) - (H @ X_alt)
-        S = H @ P_alt @ H.T + Q_vgps
-        K = P_alt @ H.T @ np.linalg.inv(S)
-
-        # Correct the state
-        X_alt = X_alt + (K @ y).flatten()
-
-        # Shrink the uncertainty using Joseph form
-        I = np.eye(2)
-        IKH = I - K @ H
-        P_alt = IKH @ P_alt @ IKH.T + K @ Q_vgps @ K.T
-
-
-        # --- Horizontal movement ---
-        # Convert spherical Lat/Lon to flat cartesian meters
-        measured_pos = latlon_to_meters(lat[posgps], long[posgps], lat_home, lon_home)
-
-        # Measurement matrix (measures position and velocity)
-        H_h = np.array([[1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.0, 0.0, 0.0, 1.0]])
-
-        # Dynamic variance matrix
-        Q_hgps = np.array([[horzAcc[posgps]**2 * NM_hgps_pos, 0.0, 0.0, 0.0],
-                           [0.0, horzAcc[posgps]**2 * NM_hgps_pos, 0.0, 0.0],
-                           [0.0, 0.0, spdAcc[posgps]**2 * NM_hgps_vel, 0.0],
-                           [0.0, 0.0, 0.0, spdAcc[posgps]**2 * NM_hgps_vel]])
-
-        # Calculate error and kalman gain
-        measured_posvel = np.array([measured_pos[0], measured_pos[1], velNorth[posgps], velEast[posgps]])
-
-        y_h = measured_posvel - (H_h @ X_horiz)
-        S_h = H_h @ P_horiz @ H_h.T + Q_hgps
-        K_h = P_horiz @ H_h.T @ np.linalg.inv(S_h)
-
-        tposerror.append(tcurr)
-        poserrorx.append(measured_pos[0] - X_horiz[0])
-        poserrory.append(measured_pos[1] - X_horiz[1])
-
-        kht.append(tcurr)
-        khnp.append(K_h[0][0])
-        khep.append(K_h[1][1])
-        khnv.append(K_h[2][2])
-        khev.append(K_h[3][3])
-
-        # Correct the state and shrink uncertainty using Joseph form
-        X_horiz = X_horiz + (K_h @ y_h).flatten()
-        I_h = np.eye(4)
-        IKH_h = I_h - K_h @ H_h
-        P_horiz = IKH_h @ P_horiz @ IKH_h.T + K_h @ Q_hgps @ K_h.T
+            # Correct the state and shrink uncertainty
+            X_horiz = X_horiz + (K_h @ y_h).flatten()
+            I_h = np.eye(4)
+            P_horiz = (I_h - K_h @ H_h) @ P_horiz
 
         posgps += 1
     else:      # Magnetometer update
@@ -627,23 +550,23 @@ fig, axs = plt.subplots(2, 2, figsize=(16, 10))
 fig.suptitle("Avionics Sensor Fusion Dashboard", fontsize=16, fontweight='bold')
 
 # 1. Orientation (Top Left)
-axs[0, 0].plot(t_q_est, q_est[:, 0], label='X (Roll)', color='tab:blue')
-axs[0, 0].plot(t_q_est, q_est[:, 1], label='Y (Pitch)', color='tab:orange')
-axs[0, 0].plot(t_q_est, q_est[:, 2], label='Z (Yaw)', color='tab:green')
-axs[0, 0].set_title("Orientation Estimate")
-axs[0, 0].set_ylabel("Angle (Degrees)")
-axs[0, 0].set_xlabel("Time (Seconds)")
-axs[0, 0].legend(loc='upper right')
-axs[0, 0].grid(True, linestyle='--', alpha=0.6)
-
-
-# axs[0, 0].plot(t_horz_est, horz_nv_est, label='North', color='tab:blue')
-# axs[0, 0].plot(t_horz_est, horz_ev_est, label='East', color='tab:orange')
-# axs[0, 0].set_title("Horzontal velocity")
-# axs[0, 0].set_ylabel("Speed")
+# axs[0, 0].plot(t_q_est, q_est[:, 0], label='X (Roll)', color='tab:blue')
+# axs[0, 0].plot(t_q_est, q_est[:, 1], label='Y (Pitch)', color='tab:orange')
+# axs[0, 0].plot(t_q_est, q_est[:, 2], label='Z (Yaw)', color='tab:green')
+# axs[0, 0].set_title("Orientation Estimate")
+# axs[0, 0].set_ylabel("Angle (Degrees)")
 # axs[0, 0].set_xlabel("Time (Seconds)")
 # axs[0, 0].legend(loc='upper right')
 # axs[0, 0].grid(True, linestyle='--', alpha=0.6)
+
+
+axs[0, 0].plot(t_horz_est, horz_nv_est, label='North', color='tab:blue')
+axs[0, 0].plot(t_horz_est, horz_ev_est, label='East', color='tab:orange')
+axs[0, 0].set_title("Horzontal velocity")
+axs[0, 0].set_ylabel("Speed")
+axs[0, 0].set_xlabel("Time (Seconds)")
+axs[0, 0].legend(loc='upper right')
+axs[0, 0].grid(True, linestyle='--', alpha=0.6)
 
 # 2. Altitude (Top Right)
 axs[0, 1].plot(t_vert_est, alt_est, color='tab:purple', linewidth=2)
@@ -676,57 +599,8 @@ plt.show()
 
 
 
-
-
-# Plot diagnostic data
-fig, axs = plt.subplots(2, 2, figsize=(16, 10))
-fig.suptitle("Avionics diagnostic data", fontsize=16, fontweight='bold')
-
-axs[0, 0].plot(tposerror, poserrorx, label='North', color='tab:blue')
-axs[0, 0].plot(tposerror, poserrory, label='East', color='tab:orange')
-axs[0, 0].set_title("Horzontal position error")
-axs[0, 0].set_ylabel("Error (m)")
-axs[0, 0].set_xlabel("Time (Seconds)")
-axs[0, 0].legend(loc='upper right')
-axs[0, 0].grid(True, linestyle='--', alpha=0.6)
-
-axs[0, 1].plot(tgps, horzAcc, label='Horizontal error (m)', color='tab:blue')
-axs[0, 1].plot(tgps, spdAcc, label='Speed error (m/s)', color='tab:orange')
-axs[0, 1].set_title("GPS accuracy")
-axs[0, 1].set_ylabel("Value")
-axs[0, 1].set_xlabel("Time (Seconds)")
-axs[0, 1].legend(loc='upper right')
-axs[0, 1].grid(True, linestyle='--', alpha=0.6)
-
-axs[1, 0].plot(kht, khep, label='Position gain (N+E)', color='tab:orange')
-axs[1, 0].plot(kht, khev, label='Velocity gain (N+E)', color='tab:red')
-axs[1, 0].set_title("GPS gain east")
-axs[1, 0].set_ylabel("Gain")
-axs[1, 0].set_xlabel("Time (Seconds)")
-axs[1, 0].legend(loc='upper right')
-axs[1, 0].grid(True, linestyle='--', alpha=0.6)
-
-axs[1, 1].plot(tadyn, adyn, label='Acceleration variance', color='tab:blue')
-axs[1, 1].set_title("Dynamic acceleration variance (orientation filter)")
-axs[1, 1].set_ylabel("Variance")
-axs[1, 1].set_xlabel("Time (Seconds)")
-axs[1, 1].legend(loc='upper right')
-axs[1, 1].grid(True, linestyle='--', alpha=0.6)
-
-
-
-plt.tight_layout()
-plt.subplots_adjust(top=0.92)
-plt.show()
-
-
-
-
-
 # Path and orientation animation
 import matplotlib.animation as animation
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import time
 
 # 1. Interpolate position data to match the high-speed gyroscope timestamps
 pos_n = np.interp(t_q_est, t_horz_est, horz_nd_est)
@@ -736,38 +610,17 @@ pos_u = np.interp(t_q_est, t_vert_est, alt_est)
 # Convert quaternions to numpy array
 q_raw_est = np.stack(q_raw_est, axis=0)
 
-fig = plt.figure(figsize=(16, 8))
-fig.suptitle("3D kinematics real time playback", fontsize=16, fontweight='bold')
+fig = plt.figure(figsize=(10, 10))
+ax = fig.add_subplot(111, projection='3d')
 
-# --- 3D Aircraft Model Definition ---
-# Define vertices in the Body Frame (NED: X=Forward, Y=Right, Z=Down)
-base_verts = np.array([
-    [ 2.0,  0.0,  0.0],  # 0: Nose
-    [-1.0, -1.5,  0.0],  # 1: Left wing tip
-    [-1.0,  1.5,  0.0],  # 2: Right wing tip
-    [-1.0,  0.0, -0.5],  # 3: Top tail fin (-Z is up in NED)
-    [-1.0,  0.0,  0.2]   # 4: Bottom fuselage
-])
+# Set axes labels to standard ENU (East, North, Up)
+ax.set_xlabel('East (X) [meters]')
+ax.set_ylabel('North (Y) [meters]')
+ax.set_zlabel('Altitude (Z) [meters]')
+ax.set_title("3D Flight Path & Orientation")
 
-# Define the triangular faces connecting the vertices
-faces_idx = [
-    [0, 1, 3], # 0: Top-left wing-to-fin (TOP)
-    [0, 2, 3], # 1: Top-right wing-to-fin (TOP)
-    [0, 1, 4], # 2: Bottom-left (BOTTOM)
-    [0, 2, 4], # 3: Bottom-right (BOTTOM)
-    [1, 2, 3], # 4: Back plate top (TOP)
-    [1, 2, 4]  # 5: Back plate bottom (BOTTOM)
-]
-
-
-# --- Subplot 1: Movement & Orientation ---
-ax1 = fig.add_subplot(121, projection='3d')
-ax1.set_xlabel('East (X) [meters]')
-ax1.set_ylabel('North (Y) [meters]')
-ax1.set_zlabel('Altitude (Z) [meters]')
-ax1.set_title("Flight Path & Orientation")
-
-# Dynamically scale the 3D axes so the flight path fits perfectly
+# 2. Dynamically scale the 3D axes so the flight path fits perfectly
+# We find the largest distance traveled in any one direction to lock the aspect ratio
 max_range = np.array([pos_e.max()-pos_e.min(), pos_n.max()-pos_n.min(), pos_u.max()-pos_u.min()]).max() / 2.0
 if max_range < 1.0:
     max_range = 1.0 # Prevent zero-division if the board hasn't moved at all
@@ -776,106 +629,58 @@ mid_x = (pos_e.max() + pos_e.min()) * 0.5
 mid_y = (pos_n.max() + pos_n.min()) * 0.5
 mid_z = (pos_u.max() + pos_u.min()) * 0.5
 
-ax1.set_xlim(mid_x - max_range, mid_x + max_range)
-ax1.set_ylim(mid_y - max_range, mid_y + max_range)
-ax1.set_zlim(mid_z - max_range, mid_z + max_range)
+ax.set_xlim(mid_x - max_range, mid_x + max_range)
+ax.set_ylim(mid_y - max_range, mid_y + max_range)
+ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
-# Initialize visual elements for Subplot 1
-trail, = ax1.plot([], [], [], color='gray', alpha=0.5, linestyle='--', label='Flight Path')
-ax1.legend(loc='upper left')
+# 3. Initialize the visual elements
+# The flight trail
+trail, = ax.plot([], [], [], color='gray', alpha=0.5, linestyle='--', label='Flight Path')
 
-# Define face colors for Subplot 1 (Top faces are cyan, bottom are teal)
-face_colors_1 = ['teal', 'teal', 'cyan', 'cyan', 'teal', 'cyan']
+# The axis indicators (Scaled to 10% of the flight path so they are always visible)
+axis_len = max_range * 0.1 
+line_x, = ax.plot([], [], [], color='r', linewidth=4, label='X Axis (Roll)')
+line_y, = ax.plot([], [], [], color='g', linewidth=4, label='Y Axis (Pitch)')
+line_z, = ax.plot([], [], [], color='b', linewidth=4, label='Z Axis (Yaw)')
+ax.legend()
 
-# Create and add the 3D aircraft polygon to Subplot 1
-plane1 = Poly3DCollection([], facecolors=face_colors_1, edgecolors='blue', alpha=0.9)
-ax1.add_collection3d(plane1)
-axis_len = max_range * 0.1  # Scale the aircraft to the size of the plot
-
-
-# --- Subplot 2: Orientation Only (Anchored to Origin) ---
-ax2 = fig.add_subplot(122, projection='3d')
-ax2.set_xlabel('East (X)')
-ax2.set_ylabel('North (Y)')
-ax2.set_zlabel('Up (Z)')
-ax2.set_title("Orientation Only (No Movement)")
-
-# Fixed scale for the centered orientation plot
-ax2.set_xlim(-1, 1)
-ax2.set_ylim(-1, 1)
-ax2.set_zlim(-1, 1)
-
-# Define face colors for Subplot 2 (Top faces are orange, bottom are saddlebrown)
-face_colors_2 = ['saddlebrown', 'saddlebrown', 'orange', 'orange', 'saddlebrown', 'orange']
-
-# Create and add the 3D aircraft polygon to Subplot 2
-plane2 = Poly3DCollection([], facecolors=face_colors_2, edgecolors='maroon', alpha=0.9)
-ax2.add_collection3d(plane2)
-
-
-def body_to_plot_frame(verts, R):
-    # Rotate vertices from Body to Nav frame (NED)
-    v_nav = (R @ verts.T).T
-    # Map Math/Nav frame (North, East, Down) to Plot frame (East, North, Up)
-    v_plot = np.column_stack((v_nav[:, 1], v_nav[:, 0], -v_nav[:, 2]))
-    return v_plot
-
-
-def update(num, q_raw, p_e, p_n, p_u, plane_1, plane_2, trail_line):
+def update(num, q_raw, p_e, p_n, p_u, line_x, line_y, line_z, trail):
     # Get current position for this frame
     cx, cy, cz = p_e[num], p_n[num], p_u[num]
     
     # Get the Body-to-Navigation rotation matrix for the current quaternion
     R = quat_to_matrix(q_raw[num])
     
-    # --- Update Subplot 1 ---
-    # Scale aircraft, rotate it, and translate it to the current flight path position
-    verts_scaled = base_verts * (axis_len * 0.3) 
-    v_plot_1 = body_to_plot_frame(verts_scaled, R) + np.array([cx, cy, cz])
+    # Map the Math (North, East, Down) to the Plot (East, North, Up)
+    # R[0,:] is North, R[1,:] is East, R[2,:] is Down
+    # We multiply by axis_len so the lines scale to the size of the graph
     
-    # Rebuild faces with new vertex coordinates
-    faces_1 = [[v_plot_1[idx] for idx in face] for face in faces_idx]
-    plane_1.set_verts(faces_1)
+    # X Axis (Roll)
+    x_vec = np.array([R[1,0], R[0,0], -R[2,0]]) * axis_len
+    line_x.set_data_3d([cx, cx + x_vec[0]], [cy, cy + x_vec[1]], [cz, cz + x_vec[2]])
     
-    # Update trail
-    trail_line.set_data_3d(p_e[:num], p_n[:num], p_u[:num])
+    # Y Axis (Pitch)
+    y_vec = np.array([R[1,1], R[0,1], -R[2,1]]) * axis_len
+    line_y.set_data_3d([cx, cx + y_vec[0]], [cy, cy + y_vec[1]], [cz, cz + y_vec[2]])
     
-    # --- Update Subplot 2 ---
-    # Scale aircraft to unit size, rotate it, but anchor at origin (0,0,0)
-    verts_unit = base_verts * 0.4
-    v_plot_2 = body_to_plot_frame(verts_unit, R)
+    # Z Axis (Yaw)
+    z_vec = np.array([R[1,2], R[0,2], -R[2,2]]) * axis_len
+    line_z.set_data_3d([cx, cx + z_vec[0]], [cy, cy + z_vec[1]], [cz, cz + z_vec[2]])
     
-    faces_2 = [[v_plot_2[idx] for idx in face] for face in faces_idx]
-    plane_2.set_verts(faces_2)
+    # Update the flight path trail (from start up to current frame)
+    trail.set_data_3d(p_e[:num], p_n[:num], p_u[:num])
     
-    return plane_1, plane_2, trail_line
+    return line_x, line_y, line_z, trail
 
+# Step by 5 frames for playback speed
+ani = animation.FuncAnimation(fig, update, frames=range(0, len(q_raw_est), 5),
+                              fargs=(q_raw_est, pos_e, pos_n, pos_u, line_x, line_y, line_z, trail),
+                              interval=20, blit=False)
 
-# --- Real-Time Syncing Logic ---
-def realtime_frames():
-    """Yields frame indices perfectly synced to the system clock."""
-    start_real = time.time()
-    start_sim = t_q_est[0]
-    end_sim = t_q_est[-1]
-    
-    while True:
-        elapsed_real = time.time() - start_real
-        target_sim = start_sim + elapsed_real
-        
-        # Stop animation when we hit the end of the data
-        if target_sim >= end_sim:
-            yield len(t_q_est) - 1
-            break
-            
-        # Find the closest timestamp index using binary search
-        idx = np.searchsorted(t_q_est, target_sim)
-        yield idx
-
-# Run animation at ~30fps target interval (33ms)
-ani = animation.FuncAnimation(fig, update, frames=realtime_frames,
-                              fargs=(q_raw_est, pos_e, pos_n, pos_u, plane1, plane2, trail),
-                              interval=33, blit=False, repeat=False, cache_frame_data=False)
-
-plt.tight_layout()
 plt.show()
+
+
+
+
+
 

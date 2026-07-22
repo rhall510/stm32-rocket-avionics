@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import tools
 
 
-READ_FILE = 'flight_dataroll.bin'
+READ_FILE = 'flight_datasr.bin'
 
 lowAcc = []
 highAcc = []
