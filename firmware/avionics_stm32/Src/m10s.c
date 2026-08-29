@@ -281,8 +281,8 @@ void MAXM10S_ExtractPVTData(UBXPacket *pkt, TS_GPS *data) {
 
 	data->Timestamp = (float)HAL_GetTick() / 1000.0f;
 
-	data->Latitude = pvt->lat * 1e-7;
-	data->Longitude = pvt->lon * 1e-7;
+	data->Latitude = pvt->lat;
+	data->Longitude = pvt->lon;
 	data->Altitude = pvt->hMSL * 1e-3;
 
 	data->VelNorth = pvt->velN * 1e-3;

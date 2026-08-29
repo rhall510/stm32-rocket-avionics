@@ -148,6 +148,11 @@ void ReadM10STask(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+//        	LAMBDA62_PrintStatus(LAMBDA62_Status(&hspi3_rf, true), "post-SetRx");
+//        	printf("[INFO] L62 IRQ status post-SetRx: 0x%04X\n", LAMBDA62_GetIRQStatus(&hspi3_rf, true));
+//        	printf("[INFO] L62 DevErrors post-SetRx: 0x%04X\n", LAMBDA62_DevErrors(&hspi3_rf, true));
+//        	printf("[INFO] L62 instantaneous RSSI: %d dBm\n", LAMBDA62_GetInstRSSI(&hspi3_rf, true));
+
 			if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 				printf("[ERROR] M10S read timed out due to unreleased I2C mutex\n");
 				continue;
@@ -442,6 +447,7 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 	uint8_t len = ConstructNetPacket(buff, 10, &ackpkt);
 
 	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+//	LAMBDA62_SetPacketParamsLoRa(&hspi3_rf, L62_LORA_PRMBL_LEN, L62_LORA_EXP_HDR, len, L62_LORA_CRC_ON, L62_LORA_STD_IQ, false);
 	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
 
 	xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
@@ -458,6 +464,7 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 	}
 
 	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
+//	LAMBDA62_SetPacketParamsLoRa(&hspi3_rf, L62_LORA_PRMBL_LEN, L62_LORA_EXP_HDR, NET_PACKET_MAXLEN, L62_LORA_CRC_ON, L62_LORA_STD_IQ, false);
 	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
 	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
@@ -735,6 +742,29 @@ int main(void) {
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
 	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, true);
 	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, true);
+
+//	InitialiseLAMBDA62LoRa(&hspi3_rf, true);
+//	LAMBDA62_SetPacketParamsLoRa(&hspi3_rf, L62_LORA_PRMBL_LEN, L62_LORA_EXP_HDR, NET_PACKET_MAXLEN, L62_LORA_CRC_ON, L62_LORA_STD_IQ, true);
+//	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, true);
+
+//	InitialiseLAMBDA62FSK(&hspi3_rf, true);
+//
+//	LAMBDA62_PrintStatus(LAMBDA62_Status(&hspi3_rf, true), "post-init");
+//	printf("[INFO] L62 DevErrors post-init: 0x%04X\n", LAMBDA62_DevErrors(&hspi3_rf, true));
+//
+//	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, true);
+//
+//	LAMBDA62_PrintStatus(LAMBDA62_Status(&hspi3_rf, true), "post-packetparams");
+//
+//	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, true);
+//
+//	LAMBDA62_PrintStatus(LAMBDA62_Status(&hspi3_rf, true), "post-SetRx");
+//	printf("[INFO] L62 IRQ status post-SetRx: 0x%04X\n", LAMBDA62_GetIRQStatus(&hspi3_rf, true));
+//	printf("[INFO] L62 DevErrors post-SetRx: 0x%04X\n", LAMBDA62_DevErrors(&hspi3_rf, true));
+//	printf("[INFO] L62 instantaneous RSSI: %d dBm\n", LAMBDA62_GetInstRSSI(&hspi3_rf, true));
+
+
+
 
 	InitialiseLAMBDA80(&hspi3_rf, true);
 	LAMBDA80_SetMode_Telemetry(&hspi3_rf, true);

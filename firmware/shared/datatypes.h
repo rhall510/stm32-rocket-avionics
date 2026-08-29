@@ -26,8 +26,8 @@ typedef struct {
 typedef struct {
 	float Timestamp;
 
-	float Latitude;
-	float Longitude;
+	int32_t Latitude;
+	int32_t Longitude;
 	float Altitude;
 
 	float VelNorth;

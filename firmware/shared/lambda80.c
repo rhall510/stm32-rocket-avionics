@@ -52,6 +52,8 @@ void InitialiseLAMBDA80(SPI_HandleTypeDef *hspi, bool Blocking) {
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(L80_RST_PORT, L80_RST_PIN, GPIO_PIN_SET);
 
+	HAL_Delay(5);
+
 	LAMBDA80_WaitBusy(Blocking);   // Wait for startup
 
 	// Set packet type to LoRa

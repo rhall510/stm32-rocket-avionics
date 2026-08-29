@@ -4,7 +4,7 @@ import tools
 import math
 
 
-DATA_FILE = 'flight_dataroll.bin'
+DATA_FILE = 'flight_datamr.bin'
 
 # Calibration values
 gyr_cal = np.array([0.068633, -0.866754, 0.150951])
@@ -26,7 +26,7 @@ hacc_cal_dist = np.array([[0.971669703, 0.0375371840, 0.000657705583],
 
 
 # Validate each data chunk and parse contents
-lowAcc, highAcc, gyr, mag, temp, press, gps = tools.ReadBinaryData(DATA_FILE)
+lowAcc, highAcc, gyr, mag, temp, press, gps = tools.ReadBinaryDataNew(DATA_FILE)
 
 # Calibrate gyroscope, accelerometers, and magnetometer
 tg, xg, yg, zg = zip(*gyr)
@@ -423,7 +423,7 @@ while tcurr < tend:
             # Calculate distance from 1G magnitude to dynamically adjust weight lower when accelerating
             accel_magnitude = np.linalg.norm(active_accel)
             g_error = abs(accel_magnitude - 1.0)
-            dynamic_variance = 0.1 + (1000.0 * (g_error ** 2))
+            dynamic_variance = 0.1 + (1000.0 * (g_error ** 2)) #+ (tcurr - min(tg)) ** 2
             R_acc_dynamic = np.eye(3) * dynamic_variance
 
             tadyn.append(tcurr)

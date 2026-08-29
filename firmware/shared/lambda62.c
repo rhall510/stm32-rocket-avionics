@@ -1,6 +1,42 @@
 #include "lambda62.h"
 
 
+
+
+
+
+void LAMBDA62_PrintStatus(uint8_t status, const char *label) {
+	uint8_t mode = (status >> 4) & 0x7;
+	uint8_t cmdstatus = (status >> 1) & 0x7;
+
+	const char *modestr;
+	switch (mode) {
+		case 0x2: modestr = "STBY_RC"; break;
+		case 0x3: modestr = "STBY_XOSC"; break;
+		case 0x4: modestr = "FS"; break;
+		case 0x5: modestr = "RX"; break;
+		case 0x6: modestr = "TX"; break;
+		default:  modestr = "UNKNOWN/RESERVED"; break;
+	}
+
+	const char *cmdstr;
+	switch (cmdstatus) {
+		case 0x2: cmdstr = "Data available"; break;
+		case 0x3: cmdstr = "Command timeout"; break;
+		case 0x4: cmdstr = "Command processing error"; break;
+		case 0x5: cmdstr = "Failure to execute command"; break;
+		case 0x6: cmdstr = "Command TX done"; break;
+		default:  cmdstr = "OK/unspecified"; break;
+	}
+
+	printf("[INFO] L62 status (%s): raw=0x%02X mode=0x%X (%s) cmdstatus=0x%X (%s)\n",
+		   label, status, mode, modestr, cmdstatus, cmdstr);
+}
+
+
+
+
+
 uint8_t LAMBDA62_Status(SPI_HandleTypeDef *hspi, bool Blocking) {
 	LAMBDA62_WaitBusy(Blocking);
 
@@ -25,7 +61,7 @@ uint16_t LAMBDA62_DevErrors(SPI_HandleTypeDef *hspi, bool Blocking) {
     HAL_SPI_TransmitReceive(hspi, tx, rx, 4, HAL_MAX_DELAY);
     HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
-    return (((uint16_t)rx[2] << 8) | rx[3]) & 0b1111111010000000;   // Mask only non reserved bits
+    return (((uint16_t)rx[2] << 8) | rx[3]);
 }
 
 
@@ -112,88 +148,38 @@ void InitialiseLAMBDA62LoRa(SPI_HandleTypeDef *hspi, bool Blocking) {
 	HAL_GPIO_WritePin(L62_RST_PORT, L62_RST_PIN, GPIO_PIN_RESET);
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(L62_RST_PORT, L62_RST_PIN, GPIO_PIN_SET);
+	HAL_Delay(5);
 
 	LAMBDA62_WaitBusy(Blocking);   // Wait for startup
 
 
 	// Set packet type to LoRa
 	tx[0] = L62_PKT_TYPE;
-	tx[1] = 0x1;
+	tx[1] = L62_PKTTYPE_LORA;
 
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
-	LAMBDA62_WaitBusy(Blocking);
 
-	// Set frequency to 868MHz
-	tx[0] = L62_RF_FREQ;
-	tx[1] = 0x36;
-	tx[2] = 0x40;
-	tx[3] = 0x00;
-	tx[4] = 0x00;
-
-	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi, tx, 5, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
-
-	LAMBDA62_WaitBusy(Blocking);
-
-	// Set PA config (DutyCycle, hpMax, deviceSel, paLut)
-	tx[0] = L62_PA_CFG;
-	tx[1] = 0x04;
-	tx[2] = 0x07;
-	tx[3] = 0x00;
-	tx[4] = 0x01;
-
-	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi, tx, 5, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
-
-	LAMBDA62_WaitBusy(Blocking);
-
-	// Set TX params (Power, RampTime)
-	tx[0] = L62_TX_PARAMS;
-	tx[1] = 0x16;
-	tx[2] = 0x04;
-
-	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi, tx, 3, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
-
-	LAMBDA62_WaitBusy(Blocking);
-
-	// Optimise TxClampConfig to minimise losses in case of antenna mismatch (as per datasheet section 15.2)
-	uint8_t txconfig = LAMBDA62_ReadReg(hspi, L62_TXCLAMP, Blocking);
-	txconfig |= 0x1E;
-	LAMBDA62_WriteReg(hspi, L62_TXCLAMP, txconfig, Blocking);
-
-	LAMBDA62_WaitBusy(Blocking);
-
-	// Set buffer base addresses (TX, RX)
-	tx[0] = L62_BUFF_BASE_ADDR;
-	tx[1] = L62_TX_BASE_ADDR;
-	tx[2] = L62_RX_BASE_ADDR;
-
-	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi, tx, 3, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+	// Initialise parts common to both modulations
+	InitialiseLAMBDA62Common(hspi, Blocking);
 
 	LAMBDA62_WaitBusy(Blocking);
 
 	// Set modulation params (SF, BW, CR, LDR_OP)
 	tx[0] = L62_MOD_PARAMS;
 	tx[1] = 0x07;
-	tx[2] = 0x05;
-	tx[3] = 0x01;
-	tx[4] = 0x00;
+	tx[2] = L62_LORA_BW_250;
+	tx[3] = L62_LORA_CR_4_5;
+	tx[4] = L62_LORA_LDR_OFF;
 
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(hspi, tx, 5, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
 	// Set default packet parameters
-	LAMBDA62_SetPacketParamsLoRa(hspi, 8, 0, 10, 1, 0, Blocking);   // 8 bit preamble, explicit header, CRC on, normal IQ
+	LAMBDA62_SetPacketParamsLoRa(hspi, L62_LORA_PRMBL_LEN, L62_LORA_EXP_HDR, 10, L62_LORA_CRC_ON, L62_LORA_STD_IQ, Blocking);
 
 	// Set Tx done interrupt on DIO1 and Rx done interrupt on DIO2
 	LAMBDA62_SetIRQ(hspi, 0x0003, 0x0001, 0x0002, 0x0, Blocking);
@@ -209,32 +195,61 @@ void InitialiseLAMBDA62FSK(SPI_HandleTypeDef *hspi, bool Blocking) {
 	HAL_GPIO_WritePin(L62_RST_PORT, L62_RST_PIN, GPIO_PIN_RESET);
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(L62_RST_PORT, L62_RST_PIN, GPIO_PIN_SET);
-
 	HAL_Delay(5);
 
 	LAMBDA62_WaitBusy(Blocking);   // Wait for startup
 
 	// Set packet type to FSK
 	tx[0] = L62_PKT_TYPE;
-	tx[1] = 0x0;
+	tx[1] = L62_PKTTYPE_GFSK;
 
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(hspi, tx, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
+	// Initialise parts common to both modulations
+	InitialiseLAMBDA62Common(hspi, Blocking);
+
 	LAMBDA62_WaitBusy(Blocking);
 
-	// Image calibration for 863-870MHz
-	tx[0] = L62_IMG_CAL;
-	tx[1] = 0xD7;
-	tx[2] = 0xDB;
+	// Set modulation params (BR[3], SHAPE, BW, FDEV[3])
+	// BR = 32 * Fxtal / bit rate
+	// FDEV = fdev * Fxtal / 2^25
+	// Fxtal = 32x10^6
+	tx[0] = L62_MOD_PARAMS;
+	tx[1] = 0x00;    // 250kbps
+	tx[2] = 0x10;
+	tx[3] = 0x00;
+	tx[4] = L62_GFSK_SHAPE_GBT0_5;
+	tx[5] = L62_GFSK_BW_467;
+	tx[6] = 0x01;   // 68.72kHz
+	tx[7] = 0x00;
+	tx[8] = 0x00;
 
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi, tx, 3, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(hspi, tx, 9, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
 
-	LAMBDA62_WaitBusy(Blocking);
+	// Set sync word
+	uint8_t syncword[8] = {0xC3, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+	LAMBDA62_WriteRegBurst(hspi, 0x06C0, syncword, 8, Blocking);
 
+	// Set default packet parameters
+	LAMBDA62_SetPacketParamsFSK(hspi, L62_GFSK_PRMBL_LEN, L62_GFSK_PRMBL_DET_16, L62_GFSK_SYNC_LEN, L62_GFSK_ADDRFILT_OFF,
+							    true, 10, L62_GFSK_CRC_2BYTE, false, Blocking);
+
+	// Set Tx done interrupt on DIO1 and Rx done interrupt on DIO2
+	LAMBDA62_SetIRQ(hspi, 0x0003, 0x0001, 0x0002, 0x0, Blocking);
+
+	LAMBDA62_ClearIRQ(hspi, 0xFFFF, Blocking);
+}
+
+
+
+void InitialiseLAMBDA62Common(SPI_HandleTypeDef *hspi, bool Blocking) {
+	uint8_t tx[5] = {0};
+
+	LAMBDA62_WaitBusy(Blocking);
 
 	// Set frequency to 868MHz
 	tx[0] = L62_RF_FREQ;
@@ -281,15 +296,7 @@ void InitialiseLAMBDA62FSK(SPI_HandleTypeDef *hspi, bool Blocking) {
 	// Set to boosted gain mode - from datasheet
 	LAMBDA62_WriteReg(hspi, 0x08AC, 0x96, Blocking);
 
-	// Set sync word
-	LAMBDA62_WriteReg(hspi, 0x06C0, 0xC3, Blocking);
-	LAMBDA62_WriteReg(hspi, 0x06C1, 0x22, Blocking);
-	LAMBDA62_WriteReg(hspi, 0x06C2, 0x33, Blocking);
-	LAMBDA62_WriteReg(hspi, 0x06C3, 0x44, Blocking);
-	LAMBDA62_WriteReg(hspi, 0x06C4, 0x55, Blocking);
-	LAMBDA62_WriteReg(hspi, 0x06C5, 0x66, Blocking);
-	LAMBDA62_WriteReg(hspi, 0x06C6, 0x77, Blocking);
-	LAMBDA62_WriteReg(hspi, 0x06C7, 0x88, Blocking);
+	LAMBDA62_WaitBusy(Blocking);
 
 	// Set buffer base addresses (TX, RX)
 	tx[0] = L62_BUFF_BASE_ADDR;
@@ -299,31 +306,6 @@ void InitialiseLAMBDA62FSK(SPI_HandleTypeDef *hspi, bool Blocking) {
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(hspi, tx, 3, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
-
-	LAMBDA62_WaitBusy(Blocking);
-
-	// Set modulation params (BR[3], SHAPE, BW, FDEV[3])
-	tx[0] = L62_MOD_PARAMS;
-	tx[1] = 0x00;
-	tx[2] = 0x10;
-	tx[3] = 0x00;
-	tx[4] = 0x09;
-	tx[5] = 0x09;
-	tx[6] = 0x01;
-	tx[7] = 0x00;
-	tx[8] = 0x00;
-
-	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(hspi, tx, 9, HAL_MAX_DELAY);
-	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
-
-	// Set default packet parameters
-	LAMBDA62_SetPacketParamsFSK(hspi, 32, 5, 32, 0, true, 10, 2, false, Blocking);
-
-	// Set Tx done interrupt on DIO1 and Rx done interrupt on DIO2
-	LAMBDA62_SetIRQ(hspi, 0x0003, 0x0001, 0x0002, 0x0, Blocking);
-
-	LAMBDA62_ClearIRQ(hspi, 0xFFFF, Blocking);
 }
 
 
@@ -506,6 +488,51 @@ void LAMBDA62_WriteReg(SPI_HandleTypeDef *hspi, uint16_t RegAddr, uint8_t val, b
 }
 
 
+
+void LAMBDA62_WriteRegBurst(SPI_HandleTypeDef *hspi, uint16_t RegAddr, uint8_t *vals, uint8_t len, bool Blocking) {
+	LAMBDA62_WaitBusy(Blocking);
+
+	uint8_t tx[3 + len];
+
+	tx[0] = L62_WRITE_REG;
+	tx[1] = (uint8_t)(RegAddr >> 8);
+	tx[2] = (uint8_t)RegAddr;
+
+	for (int i = 0; i < len; i++) {
+		tx[3 + i] = vals[i];
+	}
+
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(hspi, tx, 3 + len, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+}
+
+
+void LAMBDA62_ReadRegBurst(SPI_HandleTypeDef *hspi, uint16_t RegAddr, uint8_t *vals, uint8_t len, bool Blocking) {
+	LAMBDA62_WaitBusy(Blocking);
+
+	uint8_t tx[4 + len];
+	uint8_t rx[4 + len];
+
+	for (int i = 0; i < 4 + len; i++) {
+		tx[i] = 0; rx[i] = 0;
+	}
+
+	tx[0] = L62_READ_REG;
+	tx[1] = (uint8_t)(RegAddr >> 8);
+	tx[2] = (uint8_t)RegAddr;
+
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(hspi, tx, rx, 4 + len, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+
+	for (int i = 0; i < len; i++) {
+		vals[i] = rx[4 + i];
+	}
+}
+
+
+
 void LAMBDA62_SendContinuousWave(SPI_HandleTypeDef *hspi, bool Blocking) {
 	LAMBDA62_WaitBusy(Blocking);
 
@@ -514,6 +541,20 @@ void LAMBDA62_SendContinuousWave(SPI_HandleTypeDef *hspi, bool Blocking) {
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(hspi, &tx, 1, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+}
+
+
+int8_t LAMBDA62_GetInstRSSI(SPI_HandleTypeDef *hspi, bool Blocking) {
+	LAMBDA62_WaitBusy(Blocking);
+
+	uint8_t tx[3] = {L62_INST_RSSI, 0, 0};
+	uint8_t rx[3] = {0};
+
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(hspi, tx, rx, 3, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+
+	return -rx[2] / 2;   // RSSI = -RssiInst / 2
 }
 
 

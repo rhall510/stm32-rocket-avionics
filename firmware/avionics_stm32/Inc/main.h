@@ -28,6 +28,8 @@
 #include "misc.h"
 #include "networking.h"
 
+#include "arm_math.h"
+
 
 I2C_HandleTypeDef hi2c;
 SPI_HandleTypeDef hspi1_acc;
