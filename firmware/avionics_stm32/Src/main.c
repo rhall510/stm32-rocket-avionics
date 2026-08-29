@@ -725,6 +725,50 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp) {
 
 
 
+
+
+
+
+
+void SensorFusionTask(void *param) {
+	(void) param;
+
+	SensorData datapkt;
+
+    while (1) {
+    	if (xQueueReceive(FusionQueue, &datapkt, pdMS_TO_TICKS(portMAX_DELAY)) == pdPASS) {   // Try to receive any queued sensor data packets
+    		// If a packet is received call the appropriate function
+    		switch (datapkt.type) {
+    			case SENSOR_DATA_LRACC:
+    				Fusion_NewLRAccData(&datapkt);
+    				break;
+    			case SENSOR_DATA_GYR:
+    				Fusion_NewGyrData(&datapkt);
+    				break;
+    			case SENSOR_DATA_HRACC:
+    				Fusion_NewHRAccData(&datapkt);
+    				break;
+    			case SENSOR_DATA_MAG:
+    				Fusion_NewMagData(&datapkt);
+    				break;
+    			case SENSOR_DATA_PRSTMP:
+    				Fusion_NewPressData(&datapkt);
+    				break;
+    			case SENSOR_DATA_GPS:
+    				Fusion_NewGPSData(&datapkt);
+    				break;
+    		}
+    	}
+    }
+}
+
+
+
+
+
+
+
+
 int main(void) {
 	// System init
 	HAL_Init();
@@ -789,8 +833,11 @@ int main(void) {
 	RadioQueue = xQueueCreate(5, sizeof(NetPacket));
 	if (RadioQueue == NULL) { Error_Handler(); }
 
-	DataLogQueue = xQueueCreate(40, sizeof(SensorData));
+	DataLogQueue = xQueueCreate(25, sizeof(SensorData));
 	if (DataLogQueue == NULL) { Error_Handler(); }
+
+	FusionQueue = xQueueCreate(25, sizeof(SensorData));
+	if (FusionQueue == NULL) { Error_Handler(); }
 
 	SPIRfMutex = xSemaphoreCreateMutex();
 	if (SPIRfMutex == NULL) { Error_Handler(); }
@@ -825,6 +872,8 @@ int main(void) {
     xTaskCreate(TriggerDataCollectionTask, "Trigger-Data-Collection", 512, NULL, 1, &DataCollectionTaskNotif);
 
     xTaskCreate(LogDataTask, "Log-Data", 1024, NULL, 3, &LogDataTaskNotif);
+
+    xTaskCreate(SensorFusionTask, "Fuse-Data", 1024, NULL, 1, NULL);
 
 
     // Set up periodic polling of MAX-M10S module (twice expected data rate)

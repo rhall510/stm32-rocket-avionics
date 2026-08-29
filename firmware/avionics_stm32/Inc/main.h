@@ -28,7 +28,7 @@
 #include "misc.h"
 #include "networking.h"
 
-#include "arm_math.h"
+#include "fusion.h"
 
 
 I2C_HandleTypeDef hi2c;
@@ -64,6 +64,7 @@ SemaphoreHandle_t I2CMutex = NULL;
 // Queue handles
 QueueHandle_t RadioQueue;
 QueueHandle_t DataLogQueue;
+QueueHandle_t FusionQueue;
 
 // Timers and callback functions
 TimerHandle_t M10SPollTimer;
@@ -96,6 +97,9 @@ void TriggerDataCollectionTask(void *param);   // Enable or disable data collect
 
 // Log data to flash storage
 void LogDataTask(void *param);
+
+// Fuse sensor data into 3D estimate
+void SensorFusionTask(void *param);
 
 
 // States for the transaction manager state machine

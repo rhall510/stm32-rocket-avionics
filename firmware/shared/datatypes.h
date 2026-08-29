@@ -1,6 +1,9 @@
 #ifndef DATATYPES_H_
 #define DATATYPES_H_
 
+#include <stdint.h>
+
+
 typedef struct{
 	float X;
 	float Y;
