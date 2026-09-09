@@ -187,13 +187,85 @@ void InitialiseOrientationFilter() {
 
 
 void OF_NewGyrData(SensorData *data) {
-	static float t_last = data->data.tsvec3.Timestamp;   // Initialise to first timestamp to skip first reading (no dt to calculate)
+	static float t_last = 0.0f;
 	float dt = data->data.tsvec3.Timestamp - t_last;
 
-	if (dt <= 0) { return; }
+	if (t_last == 0.0f) { return; }   // Skip first reading (no dt to calculate)
+
+	t_last = data->data.tsvec3.Timestamp;
 
 	// Calculate rotation done in timestep
 	float dang[3] = {DEG2RAD(data->data.tsvec3.X) * dt, DEG2RAD(data->data.tsvec3.Y) * dt, DEG2RAD(data->data.tsvec3.Z) * dt};
+
+	float theta;
+	arm_sqrt_f32(dang[0]*dang[0] + dang[1]*dang[1] + dang[2]*dang[2], &theta);
+
+	float dq[4] = {0.0f};
+
+	if (theta > 1e-8f) {   // If a measurable amount of rotation happened, calculate the rotation quaternion using exponential map
+		float sht = arm_sin_f32(theta / 2.0f);
+
+		dq[0] = arm_cos_f32(theta / 2.0f);
+		dq[1] = sht * dang[0] / theta;
+		dq[2] = sht * dang[1] / theta;
+		dq[3] = sht * dang[2] / theta;
+	}
+
+
+	// Apply the rotation and normalise
+	float q_upd[4];
+	QuatMult(OF_STATE, dq, q_upd);
+
+	float qmag;
+	arm_sqrt_f32(q_upd[0]*q_upd[0] + q_upd[1]*q_upd[1] + q_upd[2]*q_upd[2] + q_upd[3]*q_upd[3], &qmag);
+	q_upd[0] = q_upd[0] / qmag;
+	q_upd[1] = q_upd[1] / qmag;
+	q_upd[2] = q_upd[2] / qmag;
+	q_upd[3] = q_upd[3] / qmag;
+
+
+	// Build the state transition matrix
+	float skew_dang[9];
+	SkewMatrix(dq, skew_dang);
+
+	float F[9];
+	for (int i = 0; i < 9; i++) {   // Identity minus skew matrix
+		if (i % 4 == 0) {
+			F[i] = 1.0f - skew_dang[i];
+		} else {
+			F[i] = -skew_dang[i];
+		}
+	}
+
+	arm_matrix_instance_f32 F_Mat;
+	arm_mat_init_f32(&F_Mat, 3, 3, F);
+
+
+	// Grow uncertainty
+	float FT[9];
+	arm_matrix_instance_f32 FT_Mat;
+	arm_mat_init_f32(&FT_Mat, 3, 3, FT);
+	arm_mat_trans_f32(&F_Mat, &FT_Mat);
+
+
+	float FP[9];
+	arm_matrix_instance_f32 FP_Mat;
+	arm_mat_init_f32(&FP_Mat, 3, 3, FP);
+
+	arm_mat_mult_f32(&F_Mat, &OF_UNCRT_M, &FP_Mat);
+
+
+	float FPFT[9];
+	arm_matrix_instance_f32 FPFT_Mat;
+	arm_mat_init_f32(&FPFT_Mat, 3, 3, FPFT);
+
+	arm_mat_mult_f32(&FP_Mat, &FT_Mat, &FPFT_Mat);
+
+
+	// Add gyroscope noise
+	for (int i = 0; i < 9; i++) {
+		OF_UNCRT[i] += OF_GYR_NOISE[i] * dt;
+	}
 }
 
 
