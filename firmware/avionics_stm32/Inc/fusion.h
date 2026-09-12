@@ -5,11 +5,20 @@
 #include "datatypes.h"
 #include "arm_math.h"
 #include <math.h>
+#include <stdbool.h>
 
 
 // Angle converters
 #define RAD2DEG(x) ((x) * (180.0f / M_PI))
 #define DEG2RAD(x) ((x) * (M_PI / 180.0f))
+
+
+// Configuration
+// Threshold above which a reading from the low range accelerometer is considered unreliable
+// The high range accelerometer readings will be used instead while above this threshold
+#define LRACC_SAT_THRESH 7.0f
+
+
 
 
 // Update all filters based on new sensor data
@@ -27,7 +36,7 @@ void Fusion_NewGPSData(SensorData *data);
 void InitialiseOrientationFilter();
 
 // Update the filters orientation estimate based on new sensor data
-void OF_NewGyrData(SensorData *data);
+void OF_NewGyrData(SensorData *data, float dt);
 void OF_NewAccData(SensorData *data);
 void OF_NewMagData(SensorData *data);
 
@@ -49,6 +58,13 @@ void SkewMatrix(float *v, float *m);
 // Corrects for magnetic declination and uses an actual measurement (mag_meas) to account for the downward component of readings
 void GetExpectedMag(float *q_est, float *mag_meas, float *mag_exp);
 
+// Get the expected gravity vector based on the current estimated rotation
+void GetExpectedGravity(float *q_est, float *g_exp);
+
+// Expose state
+extern float32_t OF_STATE[4];
+
+
 
 
 // *** VERTICAL FILTER ***
@@ -56,13 +72,35 @@ void GetExpectedMag(float *q_est, float *mag_meas, float *mag_exp);
 void InitialiseVerticalFilter(float GroundPress, float GroundAlt);
 
 // Update the filters altitude estimate based on new sensor data
-void VF_NewAccData(SensorData *data);
+void VF_NewAccData(SensorData *data, float dt);
 void VF_NewPressData(SensorData *data);
 void VF_NewGPSData(SensorData *data);
 
 // Convert a pressure reading to altitude based on the current ground reference
 float PressToAlt(float Pressure);
 
+// Get the navigation frame acceleration (lacc) based on the current estimated rotation (q_est) and body frame acceleration (macc)
+void GetLinearAcceleration(float *q_est, float *macc, float *lacc);
+
+// Expose state
+extern float32_t VF_STATE[2];
+
+
+
+
+// *** HORIZONTAL FILTER ***
+// Initialise the horizontal filter matrices and set the home GPS coordinates
+void InitialiseHorizontalFilter(float HomeLat, float HomeLon);
+
+// Update the filters horizontal tracking estimate based on new sensor data
+void HF_NewAccData(SensorData *data, float dt);
+void HF_NewGPSData(SensorData *data);
+
+// Convert a GPS coordinate to flat Earth meters relative to the home position
+void LatLonToMeters(float lat, float lon, float *meters_north, float *meters_east);
+
+// Expose state
+extern float32_t HF_STATE[4];
 
 
 #endif /* FUSION_H_ */

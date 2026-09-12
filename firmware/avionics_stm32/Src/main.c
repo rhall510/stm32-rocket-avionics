@@ -39,15 +39,22 @@ void ReadLSM6DSRTask(void *param) {
 
 				if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
 					printf("[ERROR] Data log queue full\n");
-					break;
 				}
+
+				if (xQueueSend(FusionQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+					printf("[ERROR] Fusion queue full\n");
+				}
+
 
 				data.type = SENSOR_DATA_GYR;
 				data.data.tsvec3 = lsm_gyrbuff[i];
 
 				if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
 					printf("[ERROR] Data log queue full\n");
-					break;
+				}
+
+				if (xQueueSend(FusionQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+					printf("[ERROR] Fusion queue full\n");
 				}
 			}
         }
@@ -77,7 +84,10 @@ void ReadADXL375Task(void *param) {
 
 				if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
 					printf("[ERROR] Data log queue full\n");
-					break;
+				}
+
+				if (xQueueSend(FusionQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+					printf("[ERROR] Fusion queue full\n");
 				}
 			}
         }
@@ -107,7 +117,10 @@ void ReadBMP581Task(void *param) {
 
 				if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
 					printf("[ERROR] Data log queue full\n");
-					break;
+				}
+
+				if (xQueueSend(FusionQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+					printf("[ERROR] Fusion queue full\n");
 				}
 			}
         }
@@ -135,6 +148,10 @@ void ReadMMC5983Task(void *param) {
 
 			if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
 				printf("[ERROR] Data log queue full\n");
+			}
+
+			if (xQueueSend(FusionQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+				printf("[ERROR] Fusion queue full\n");
 			}
         }
     }
@@ -186,6 +203,10 @@ void ReadM10STask(void *param) {
 
 						if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
 							printf("[ERROR] Data log queue full\n");
+						}
+
+						if (xQueueSend(FusionQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+							printf("[ERROR] Fusion queue full\n");
 						}
 					}
 				}
@@ -733,6 +754,8 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp) {
 void SensorFusionTask(void *param) {
 	(void) param;
 
+	InitialiseOrientationFilter();
+
 	SensorData datapkt;
 
     while (1) {
@@ -750,6 +773,9 @@ void SensorFusionTask(void *param) {
     				break;
     			case SENSOR_DATA_MAG:
     				Fusion_NewMagData(&datapkt);
+
+    				printf("ORI: %f, %f, %f, %f\n", OF_STATE[0], OF_STATE[1], OF_STATE[2], OF_STATE[3]);
+
     				break;
     			case SENSOR_DATA_PRSTMP:
     				Fusion_NewPressData(&datapkt);
@@ -886,7 +912,6 @@ int main(void) {
     printf("INIT\n");
 
     vTaskStartScheduler();
-
 
 	while (1) {}
 }

@@ -1,0 +1,1385 @@
+Found metadata start at 0x00560000
+Read data start at 0x0174B000
+Found data end at 0x0178F0BF
+INIT
+[INFO] Starting data logging
+[INFO] Wiping previous flight data
+Erased sector 0x0174B000
+Erased sector 0x0174C000
+Erased sector 0x0174D000
+Erased sector 0x0174E000
+Erased sector 0x0174F000
+Erased sector 0x01750000
+Erased sector 0x01751000
+Erased sector 0x01752000
+Erased sector 0x01753000
+Erased sector 0x01754000
+Erased sector 0x01755000
+Erased sector 0x01756000
+Erased sector 0x01757000
+Erased sector 0x01758000
+Erased sector 0x01759000
+Erased sector 0x0175A000
+Erased sector 0x0175B000
+Erased sector 0x0175C000
+Erased sector 0x0175D000
+Erased sector 0x0175E000
+Erased sector 0x0175F000
+Erased sector 0x01760000
+Erased sector 0x01761000
+Erased sector 0x01762000
+Erased sector 0x01763000
+Erased sector 0x01764000
+Erased sector 0x01765000
+Erased sector 0x01766000
+Erased sector 0x01767000
+Erased sector 0x01768000
+Erased sector 0x01769000
+Erased sector 0x0176A000
+Erased sector 0x0176B000
+Erased sector 0x0176C000
+Erased sector 0x0176D000
+Erased sector 0x0176E000
+Erased sector 0x0176F000
+Erased sector 0x01770000
+Erased sector 0x01771000
+Erased sector 0x01772000
+Erased sector 0x01773000
+Erased sector 0x01774000
+Erased sector 0x01775000
+Erased sector 0x01776000
+Erased sector 0x01777000
+Erased sector 0x01778000
+Erased sector 0x01779000
+Erased sector 0x0177A000
+Erased sector 0x0177B000
+Erased sector 0x0177C000
+Erased sector 0x0177D000
+Erased sector 0x0177E000
+Erased sector 0x0177F000
+Erased sector 0x01780000
+Erased sector 0x01781000
+Erased sector 0x01782000
+Erased sector 0x01783000
+Erased sector 0x01784000
+Erased sector 0x01785000
+Erased sector 0x01786000
+Erased sector 0x01787000
+Erased sector 0x01788000
+Erased sector 0x01789000
+Erased sector 0x0178A000
+Erased sector 0x0178B000
+Erased sector 0x0178C000
+Erased sector 0x0178D000
+Erased sector 0x0178E000
+Erased sector 0x0178F000
+Flight data erased between 0x0174B000 and 0x0178F000
+Erased sector 0x00560000
+Writing metadata to 0x00570000
+ORI: 0.987066, 0.067257, -0.067643, -0.128848
+Flight data written. New bounds: 0x01790000 to 0x017901A1
+[INFO] Logged 23 readings
+ORI: 0.857151, 0.361493, -0.330889, -0.158515
+Flight data written. New bounds: 0x01790000 to 0x01790451
+[INFO] Logged 38 readings
+ORI: 0.552280, 0.625557, -0.545967, -0.074733
+ORI: 0.417400, 0.687580, -0.591797, -0.052790
+Flight data written. New bounds: 0x01790000 to 0x01790671
+[INFO] Logged 28 readings
+ORI: 0.292675, 0.728158, -0.618856, -0.033818
+Flight data written. New bounds: 0x01790000 to 0x0179090F
+[INFO] Logged 37 readings
+ORI: 0.238487, 0.742818, -0.625027, -0.026200
+Flight data written. New bounds: 0x01790000 to 0x01790B77
+[INFO] Logged 34 readings
+ORI: 0.181689, 0.755532, -0.629141, -0.018513
+Flight data written. New bounds: 0x01790000 to 0x01790E27
+[INFO] Logged 38 readings
+ORI: 0.153316, 0.762352, -0.628569, -0.014642
+Flight data written. New bounds: 0x01790000 to 0x0179108F
+[INFO] Logged 34 readings
+ORI: 0.120695, 0.769093, -0.627549, -0.010496
+Flight data written. New bounds: 0x01790000 to 0x017912E5
+[INFO] Logged 31 readings
+ORI: 0.103628, 0.773770, -0.624878, -0.008252
+Flight data written. New bounds: 0x01790000 to 0x0179154D
+[INFO] Logged 34 readings
+ORI: 0.082760, 0.778608, -0.622002, -0.005861
+Flight data written. New bounds: 0x01790000 to 0x017917FD
+[INFO] Logged 38 readings
+ORI: 0.071199, 0.782642, -0.618372, -0.004391
+Flight data written. New bounds: 0x01790000 to 0x01791A65
+[INFO] Logged 34 readings
+ORI: 0.057244, 0.786789, -0.614554, -0.002974
+Flight data written. New bounds: 0x01790000 to 0x01791C97
+[INFO] Logged 31 readings
+ORI: 0.049446, 0.790603, -0.610326, -0.002078
+ORI: 0.040038, 0.794504, -0.605936, -0.001280
+Flight data written. New bounds: 0x01790000 to 0x01791F35
+[INFO] Logged 35 readings
+ORI: 0.035371, 0.797516, -0.602257, -0.001549
+Flight data written. New bounds: 0x01790000 to 0x017921E5
+[INFO] Logged 38 readings
+ORI: 0.030219, 0.801424, -0.597332, -0.001041
+Flight data written. New bounds: 0x01790000 to 0x0179244D
+[INFO] Logged 34 readings
+ORI: 0.021525, 0.801873, -0.597106, 0.000505
+Flight data written. New bounds: 0x01790000 to 0x0179267F
+[INFO] Logged 31 readings
+ORI: 0.018320, 0.805887, -0.591785, 0.000652
+Flight data written. New bounds: 0x01790000 to 0x017928D5
+[INFO] Logged 33 readings
+ORI: 0.014920, 0.809982, -0.586265, 0.000722
+Flight data written. New bounds: 0x01790000 to 0x01792B85
+[INFO] Logged 36 readings
+ORI: 0.012569, 0.814017, -0.580704, 0.000748
+Flight data written. New bounds: 0x01790000 to 0x01792E23
+[INFO] Logged 37 readings
+ORI: 0.010206, 0.818115, -0.574963, 0.000702
+Flight data written. New bounds: 0x01790000 to 0x0179308B
+[INFO] Logged 34 readings
+ORI: 0.008439, 0.822168, -0.569182, 0.000648
+Flight data written. New bounds: 0x01790000 to 0x017932AB
+[INFO] Logged 30 readings
+ORI: 0.006838, 0.826270, -0.563232, 0.000556
+Flight data written. New bounds: 0x01790000 to 0x01793525
+[INFO] Logged 35 readings
+ORI: 0.005472, 0.830325, -0.557253, 0.000437
+ORI: 0.004374, 0.834410, -0.551127, 0.000306
+Flight data written. New bounds: 0x01790000 to 0x0179380B
+[INFO] Logged 39 readings
+ORI: 0.003320, 0.838443, -0.544980, 0.000162
+Flight data written. New bounds: 0x01790000 to 0x01793A73
+[INFO] Logged 34 readings
+ORI: 0.002575, 0.842491, -0.538704, 0.000018
+Flight data written. New bounds: 0x01790000 to 0x01793C93
+[INFO] Logged 30 readings
+ORI: 0.001754, 0.846503, -0.532381, -0.000109
+Flight data written. New bounds: 0x01790000 to 0x01793EFB
+[INFO] Logged 34 readings
+ORI: 0.001326, 0.850510, -0.525957, -0.000242
+Flight data written. New bounds: 0x01790000 to 0x017941AB
+[INFO] Logged 38 readings
+ORI: 0.000632, 0.854456, -0.519523, -0.000406
+Flight data written. New bounds: 0x01790000 to 0x01794449
+[INFO] Logged 35 readings
+ORI: 0.000396, 0.858403, -0.512975, -0.000482
+Flight data written. New bounds: 0x01790000 to 0x0179467B
+[INFO] Logged 31 readings
+ORI: -0.000151, 0.862307, -0.506386, -0.000626
+Flight data written. New bounds: 0x01790000 to 0x017948D1
+[INFO] Logged 33 readings
+ORI: -0.000282, 0.866192, -0.499711, -0.000680
+Flight data written. New bounds: 0x01790000 to 0x01794B81
+[INFO] Logged 38 readings
+ORI: -0.000717, 0.870020, -0.493015, -0.000818
+Flight data written. New bounds: 0x01790000 to 0x01794DFB
+[INFO] Logged 35 readings
+ORI: -0.000771, 0.873842, -0.486209, -0.000894
+ORI: -0.001010, 0.877585, -0.479419, -0.001031
+Flight data written. New bounds: 0x01790000 to 0x017950E1
+[INFO] Logged 39 readings
+ORI: -0.000640, 0.881331, -0.472498, -0.001013
+Flight data written. New bounds: 0x01790000 to 0x017952B9
+[INFO] Logged 26 readings
+ORI: -0.001136, 0.884994, -0.465599, -0.001191
+Flight data written. New bounds: 0x01790000 to 0x01795569
+[INFO] Logged 38 readings
+ORI: -0.001054, 0.888646, -0.458590, -0.001194
+Flight data written. New bounds: 0x01790000 to 0x017957D1
+[INFO] Logged 34 readings
+ORI: -0.001439, 0.892215, -0.451606, -0.001363
+Flight data written. New bounds: 0x01790000 to 0x01795A81
+[INFO] Logged 38 readings
+ORI: -0.001298, 0.895782, -0.444490, -0.001333
+Flight data written. New bounds: 0x01790000 to 0x01795C8F
+[INFO] Logged 27 readings
+ORI: 0.000185, 0.895782, -0.444493, -0.000888
+Flight data written. New bounds: 0x01790000 to 0x01795EF7
+[INFO] Logged 34 readings
+ORI: -0.000312, 0.899435, -0.437052, -0.001077
+Flight data written. New bounds: 0x01790000 to 0x017961A7
+[INFO] Logged 38 readings
+ORI: 0.006015, 0.899430, -0.437021, -0.001088
+Flight data written. New bounds: 0x01790000 to 0x0179640F
+[INFO] Logged 34 readings
+ORI: 0.004803, 0.903155, -0.429286, -0.001275
+Flight data written. New bounds: 0x01790000 to 0x01796641
+[INFO] Logged 31 readings
+ORI: 0.001256, 0.906180, -0.422890, -0.000977
+ORI: 0.000599, 0.909785, -0.415079, -0.001203
+Flight data written. New bounds: 0x01790000 to 0x017968DF
+[INFO] Logged 35 readings
+ORI: 0.000404, 0.913338, -0.407200, -0.001243
+Flight data written. New bounds: 0x01790000 to 0x01796B8F
+[INFO] Logged 38 readings
+ORI: -0.000150, 0.916769, -0.399415, -0.001443
+Flight data written. New bounds: 0x01790000 to 0x01796DF7
+[INFO] Logged 34 readings
+ORI: -0.000183, 0.920161, -0.391538, -0.001427
+Flight data written. New bounds: 0x01790000 to 0x017970A7
+[INFO] Logged 38 readings
+ORI: -0.000653, 0.923433, -0.383757, -0.001617
+Flight data written. New bounds: 0x01790000 to 0x0179727F
+[INFO] Logged 26 readings
+ORI: -0.000604, 0.926665, -0.375885, -0.001554
+Flight data written. New bounds: 0x01790000 to 0x01797565
+[INFO] Logged 39 readings
+ORI: -0.001022, 0.929777, -0.368119, -0.001714
+Flight data written. New bounds: 0x01790000 to 0x017977CD
+[INFO] Logged 34 readings
+ORI: -0.000911, 0.932845, -0.360273, -0.001648
+Flight data written. New bounds: 0x01790000 to 0x01797A7D
+[INFO] Logged 38 readings
+ORI: -0.001294, 0.935814, -0.352488, -0.001830
+Flight data written. New bounds: 0x01790000 to 0x01797C67
+[INFO] Logged 27 readings
+ORI: -0.001131, 0.938739, -0.344621, -0.001742
+Flight data written. New bounds: 0x01790000 to 0x01797F05
+[INFO] Logged 37 readings
+ORI: -0.001452, 0.941569, -0.336811, -0.001896
+ORI: -0.001324, 0.944347, -0.328943, -0.001837
+Flight data written. New bounds: 0x01790000 to 0x017981B5
+[INFO] Logged 36 readings
+ORI: -0.001632, 0.947041, -0.321104, -0.001984
+Flight data written. New bounds: 0x01790000 to 0x01798465
+[INFO] Logged 38 readings
+ORI: -0.001423, 0.949680, -0.313212, -0.001897
+Flight data written. New bounds: 0x01790000 to 0x0179864F
+[INFO] Logged 27 readings
+ORI: -0.001732, 0.952232, -0.305362, -0.002066
+Flight data written. New bounds: 0x01790000 to 0x017988ED
+[INFO] Logged 37 readings
+ORI: -0.001476, 0.954727, -0.297473, -0.001960
+Flight data written. New bounds: 0x01790000 to 0x01798B55
+[INFO] Logged 34 readings
+ORI: -0.001746, 0.957139, -0.289618, -0.002114
+Flight data written. New bounds: 0x01790000 to 0x01798E05
+[INFO] Logged 36 readings
+ORI: -0.001484, 0.959499, -0.281700, -0.001983
+Flight data written. New bounds: 0x01790000 to 0x017990A3
+[INFO] Logged 37 readings
+ORI: -0.001742, 0.961778, -0.273816, -0.002131
+Flight data written. New bounds: 0x01790000 to 0x0179928D
+[INFO] Logged 27 readings
+ORI: -0.001497, 0.963999, -0.265894, -0.002008
+Flight data written. New bounds: 0x01790000 to 0x0179952B
+[INFO] Logged 37 readings
+ORI: -0.001732, 0.966138, -0.258010, -0.002172
+Flight data written. New bounds: 0x01790000 to 0x01799793
+[INFO] Logged 34 readings
+ORI: -0.001482, 0.968231, -0.250045, -0.002017
+ORI: 0.004915, 0.968236, -0.249988, -0.000673
+Flight data written. New bounds: 0x01790000 to 0x01799A8B
+[INFO] Logged 40 readings
+ORI: 0.003880, 0.970334, -0.241736, -0.001041
+Flight data written. New bounds: 0x01790000 to 0x01799C63
+[INFO] Logged 26 readings
+ORI: 0.006174, 0.972015, -0.234839, -0.000617
+Flight data written. New bounds: 0x01790000 to 0x01799F13
+[INFO] Logged 38 readings
+ORI: 0.004976, 0.974001, -0.226487, -0.000926
+Flight data written. New bounds: 0x01790000 to 0x0179A17B
+[INFO] Logged 34 readings
+ORI: 0.004014, 0.975910, -0.218134, -0.001006
+Flight data written. New bounds: 0x01790000 to 0x0179A42B
+[INFO] Logged 38 readings
+ORI: 0.003106, 0.977731, -0.209837, -0.001269
+Flight data written. New bounds: 0x01790000 to 0x0179A64B
+[INFO] Logged 28 readings
+ORI: 0.002473, 0.979483, -0.201508, -0.001265
+Flight data written. New bounds: 0x01790000 to 0x0179A8E9
+[INFO] Logged 37 readings
+ORI: 0.001752, 0.981150, -0.193234, -0.001481
+Flight data written. New bounds: 0x01790000 to 0x0179AB51
+[INFO] Logged 34 readings
+ORI: 0.001386, 0.982749, -0.184933, -0.001452
+Flight data written. New bounds: 0x01790000 to 0x0179AE01
+[INFO] Logged 38 readings
+ORI: 0.000797, 0.984268, -0.176670, -0.001698
+Flight data written. New bounds: 0x01790000 to 0x0179B069
+[INFO] Logged 34 readings
+ORI: 0.000624, 0.985719, -0.168391, -0.001642
+ORI: 0.000180, 0.987087, -0.160176, -0.001830
+Flight data written. New bounds: 0x01790000 to 0x0179B2D1
+[INFO] Logged 32 readings
+ORI: 0.000095, 0.988392, -0.151913, -0.001776
+Flight data written. New bounds: 0x01790000 to 0x0179B539
+[INFO] Logged 34 readings
+ORI: -0.000345, 0.989616, -0.143720, -0.002020
+Flight data written. New bounds: 0x01790000 to 0x0179B7E9
+[INFO] Logged 38 readings
+ORI: -0.000318, 0.990786, -0.135425, -0.001930
+Flight data written. New bounds: 0x01790000 to 0x0179BA51
+[INFO] Logged 34 readings
+ORI: -0.000641, 0.991867, -0.127262, -0.002122
+Flight data written. New bounds: 0x01790000 to 0x0179BC3B
+[INFO] Logged 27 readings
+ORI: -0.000532, 0.992894, -0.118983, -0.001978
+Flight data written. New bounds: 0x01790000 to 0x0179BF0F
+[INFO] Logged 38 readings
+ORI: -0.000838, 0.993836, -0.110833, -0.002168
+Flight data written. New bounds: 0x01790000 to 0x0179C177
+[INFO] Logged 34 readings
+ORI: -0.000744, 0.994723, -0.102571, -0.002071
+Flight data written. New bounds: 0x01790000 to 0x0179C427
+[INFO] Logged 38 readings
+ORI: -0.001042, 0.995530, -0.094410, -0.002302
+Flight data written. New bounds: 0x01790000 to 0x0179C611
+[INFO] Logged 27 readings
+ORI: -0.000885, 0.996277, -0.086177, -0.002153
+Flight data written. New bounds: 0x01790000 to 0x0179C8AF
+[INFO] Logged 37 readings
+ORI: -0.001160, 0.996947, -0.078035, -0.002380
+ORI: -0.000956, 0.997558, -0.069806, -0.002234
+Flight data written. New bounds: 0x01790000 to 0x0179CB5F
+[INFO] Logged 36 readings
+ORI: -0.001184, 0.998094, -0.061650, -0.002454
+Flight data written. New bounds: 0x01790000 to 0x0179CE0F
+[INFO] Logged 38 readings
+ORI: -0.001009, 0.998568, -0.053435, -0.002293
+Flight data written. New bounds: 0x01790000 to 0x0179D077
+[INFO] Logged 34 readings
+ORI: -0.001210, 0.998971, -0.045271, -0.002477
+Flight data written. New bounds: 0x01790000 to 0x0179D297
+[INFO] Logged 30 readings
+ORI: -0.001017, 0.999309, -0.037087, -0.002357
+Flight data written. New bounds: 0x01790000 to 0x0179D4FF
+[INFO] Logged 34 readings
+ORI: -0.000824, 0.999582, -0.028818, -0.002169
+Flight data written. New bounds: 0x01790000 to 0x0179D7E5
+[INFO] Logged 39 readings
+ORI: -0.001072, 0.999783, -0.020646, -0.002420
+Flight data written. New bounds: 0x01790000 to 0x0179DA4D
+[INFO] Logged 34 readings
+ORI: 0.004856, 0.999776, -0.020590, 0.000417
+Flight data written. New bounds: 0x01790000 to 0x0179DC6D
+[INFO] Logged 30 readings
+ORI: 0.003938, 0.999919, -0.012120, -0.000177
+Flight data written. New bounds: 0x01790000 to 0x0179DED5
+[INFO] Logged 34 readings
+ORI: 0.003199, 0.999988, -0.003593, -0.000447
+Flight data written. New bounds: 0x01790000 to 0x0179E185
+[INFO] Logged 38 readings
+ORI: 0.002496, 0.999985, 0.004822, -0.000899
+ORI: 0.002060, 0.999909, 0.013312, -0.001028
+Flight data written. New bounds: 0x01790000 to 0x0179E435
+[INFO] Logged 36 readings
+ORI: 0.001499, 0.999763, 0.021688, -0.001415
+Flight data written. New bounds: 0x01790000 to 0x0179E667
+[INFO] Logged 31 readings
+ORI: 0.001228, 0.999545, 0.030105, -0.001431
+Flight data written. New bounds: 0x01790000 to 0x0179E8BD
+[INFO] Logged 33 readings
+ORI: 0.000766, 0.999259, 0.038437, -0.001777
+Flight data written. New bounds: 0x01790000 to 0x0179EB25
+[INFO] Logged 34 readings
+ORI: 0.000607, 0.998903, 0.046789, -0.001791
+Flight data written. New bounds: 0x01790000 to 0x0179EDD5
+[INFO] Logged 38 readings
+ORI: 0.000236, 0.998480, 0.055085, -0.002078
+Flight data written. New bounds: 0x01790000 to 0x0179F073
+[INFO] Logged 35 readings
+ORI: 0.000191, 0.997987, 0.063382, -0.002014
+Flight data written. New bounds: 0x01790000 to 0x0179F293
+[INFO] Logged 30 readings
+ORI: -0.000135, 0.997428, 0.071638, -0.002308
+Flight data written. New bounds: 0x01790000 to 0x0179F4FB
+[INFO] Logged 34 readings
+ORI: -0.000099, 0.996801, 0.079894, -0.002178
+Flight data written. New bounds: 0x01790000 to 0x0179F7AB
+[INFO] Logged 38 readings
+ORI: -0.000360, 0.996107, 0.088115, -0.002461
+Flight data written. New bounds: 0x01790000 to 0x0179FA13
+[INFO] Logged 34 readings
+ORI: -0.000298, 0.995343, 0.096366, -0.002308
+ORI: -0.000569, 0.994518, 0.104529, -0.002602
+Flight data written. New bounds: 0x01790000 to 0x0179FC7B
+[INFO] Logged 32 readings
+ORI: -0.000433, 0.993622, 0.112733, -0.002419
+Flight data written. New bounds: 0x01790000 to 0x0179FEE3
+[INFO] Logged 34 readings
+ORI: -0.000658, 0.992665, 0.120868, -0.002693
+Flight data written. New bounds: 0x01790000 to 0x017A0193
+[INFO] Logged 38 readings
+ORI: -0.000545, 0.991636, 0.129041, -0.002556
+Flight data written. New bounds: 0x01790000 to 0x017A03FB
+[INFO] Logged 34 readings
+ORI: -0.000726, 0.990549, 0.137126, -0.002784
+Flight data written. New bounds: 0x01790000 to 0x017A062D
+[INFO] Logged 31 readings
+ORI: -0.000566, 0.989386, 0.145284, -0.002583
+Flight data written. New bounds: 0x01790000 to 0x017A08B9
+[INFO] Logged 34 readings
+ORI: -0.000732, 0.988172, 0.153325, -0.002820
+Flight data written. New bounds: 0x01790000 to 0x017A0B69
+[INFO] Logged 38 readings
+ORI: -0.000546, 0.986878, 0.161443, -0.002607
+Flight data written. New bounds: 0x01790000 to 0x017A0DD1
+[INFO] Logged 34 readings
+ORI: -0.000766, 0.985535, 0.169444, -0.002908
+Flight data written. New bounds: 0x01790000 to 0x017A1081
+[INFO] Logged 38 readings
+ORI: -0.000578, 0.984111, 0.177536, -0.002663
+Flight data written. New bounds: 0x01790000 to 0x017A1259
+[INFO] Logged 26 readings
+ORI: 0.002195, 0.982870, 0.184286, -0.000793
+ORI: 0.001674, 0.981311, 0.192419, -0.001291
+Flight data written. New bounds: 0x01790000 to 0x017A1551
+[INFO] Logged 40 readings
+ORI: 0.002227, 0.981312, 0.192413, -0.000124
+Flight data written. New bounds: 0x01790000 to 0x017A17B9
+[INFO] Logged 34 readings
+ORI: 0.001720, 0.979625, 0.200826, -0.000727
+Flight data written. New bounds: 0x01790000 to 0x017A1A33
+[INFO] Logged 35 readings
+ORI: 0.001460, 0.977859, 0.209257, -0.000850
+Flight data written. New bounds: 0x01790000 to 0x017A1C41
+[INFO] Logged 29 readings
+ORI: 0.001058, 0.976041, 0.217578, -0.001344
+Flight data written. New bounds: 0x01790000 to 0x017A1EA9
+[INFO] Logged 34 readings
+ORI: 0.000900, 0.974146, 0.225912, -0.001381
+Flight data written. New bounds: 0x01790000 to 0x017A218F
+[INFO] Logged 39 readings
+ORI: 0.000575, 0.972204, 0.234130, -0.001766
+Flight data written. New bounds: 0x01790000 to 0x017A23F7
+[INFO] Logged 34 readings
+ORI: 0.000511, 0.970184, 0.242362, -0.001753
+Flight data written. New bounds: 0x01790000 to 0x017A2629
+[INFO] Logged 31 readings
+ORI: 0.000247, 0.968121, 0.250474, -0.002105
+Flight data written. New bounds: 0x01790000 to 0x017A287F
+[INFO] Logged 33 readings
+ORI: 0.000274, 0.965970, 0.258645, -0.001976
+Flight data written. New bounds: 0x01790000 to 0x017A2B2F
+[INFO] Logged 38 readings
+ORI: 0.000058, 0.963781, 0.266684, -0.002303
+ORI: 0.000072, 0.961511, 0.274757, -0.002214
+Flight data written. New bounds: 0x01790000 to 0x017A2DDF
+[INFO] Logged 36 readings
+ORI: -0.000101, 0.959203, 0.282707, -0.002505
+Flight data written. New bounds: 0x01790000 to 0x017A308F
+[INFO] Logged 38 readings
+ORI: 0.000000, 0.956806, 0.290717, -0.002332
+Flight data written. New bounds: 0x01790000 to 0x017A3267
+[INFO] Logged 26 readings
+ORI: -0.000153, 0.954369, 0.298619, -0.002624
+Flight data written. New bounds: 0x01790000 to 0x017A3517
+[INFO] Logged 38 readings
+ORI: -0.000081, 0.951851, 0.306551, -0.002509
+Flight data written. New bounds: 0x01790000 to 0x017A377F
+[INFO] Logged 34 readings
+ORI: -0.000206, 0.949290, 0.314388, -0.002801
+Flight data written. New bounds: 0x01790000 to 0x017A3A65
+[INFO] Logged 39 readings
+ORI: -0.000115, 0.946654, 0.322241, -0.002631
+Flight data written. New bounds: 0x01790000 to 0x017A3C3D
+[INFO] Logged 26 readings
+ORI: -0.000236, 0.943971, 0.330015, -0.002887
+Flight data written. New bounds: 0x01790000 to 0x017A3EED
+[INFO] Logged 38 readings
+ORI: -0.000075, 0.941212, 0.337805, -0.002635
+Flight data written. New bounds: 0x01790000 to 0x017A4155
+[INFO] Logged 34 readings
+ORI: -0.000195, 0.938408, 0.345516, -0.002923
+Flight data written. New bounds: 0x01790000 to 0x017A4405
+[INFO] Logged 38 readings
+ORI: -0.000058, 0.935541, 0.353207, -0.002679
+ORI: -0.000154, 0.932621, 0.360844, -0.002965
+Flight data written. New bounds: 0x01790000 to 0x017A4637
+[INFO] Logged 29 readings
+ORI: -0.000030, 0.929616, 0.368520, -0.002705
+Flight data written. New bounds: 0x01790000 to 0x017A489F
+[INFO] Logged 34 readings
+ORI: -0.000123, 0.926580, 0.376085, -0.002986
+Flight data written. New bounds: 0x01790000 to 0x017A4B3D
+[INFO] Logged 37 readings
+ORI: 0.000018, 0.923464, 0.383677, -0.002672
+Flight data written. New bounds: 0x01790000 to 0x017A4DB7
+[INFO] Logged 35 readings
+ORI: 0.000650, 0.923467, 0.383677, -0.001129
+Flight data written. New bounds: 0x01790000 to 0x017A5055
+[INFO] Logged 37 readings
+ORI: 0.000477, 0.920160, 0.391539, -0.001615
+Flight data written. New bounds: 0x01790000 to 0x017A5263
+[INFO] Logged 27 readings
+ORI: -0.001478, 0.917376, 0.398003, -0.003391
+Flight data written. New bounds: 0x01790000 to 0x017A5513
+[INFO] Logged 38 readings
+ORI: -0.001331, 0.913918, 0.405882, -0.003532
+Flight data written. New bounds: 0x01790000 to 0x017A577B
+[INFO] Logged 34 readings
+ORI: -0.000946, 0.910390, 0.413737, -0.003156
+Flight data written. New bounds: 0x01790000 to 0x017A5A2B
+[INFO] Logged 38 readings
+ORI: -0.000861, 0.906832, 0.421479, -0.003370
+Flight data written. New bounds: 0x01790000 to 0x017A5C15
+[INFO] Logged 27 readings
+ORI: -0.000554, 0.903200, 0.429208, -0.003026
+ORI: -0.000515, 0.899541, 0.436823, -0.003299
+Flight data written. New bounds: 0x01790000 to 0x017A5EFB
+[INFO] Logged 39 readings
+ORI: -0.000245, 0.895803, 0.444442, -0.002925
+Flight data written. New bounds: 0x01790000 to 0x017A6163
+[INFO] Logged 34 readings
+ORI: -0.000244, 0.892041, 0.451944, -0.003126
+Flight data written. New bounds: 0x01790000 to 0x017A6413
+[INFO] Logged 38 readings
+ORI: -0.000053, 0.888209, 0.459431, -0.002809
+Flight data written. New bounds: 0x01790000 to 0x017A65FD
+[INFO] Logged 27 readings
+ORI: -0.000091, 0.884354, 0.466806, -0.003082
+Flight data written. New bounds: 0x01790000 to 0x017A689B
+[INFO] Logged 37 readings
+ORI: 0.000098, 0.880409, 0.474206, -0.002758
+Flight data written. New bounds: 0x01790000 to 0x017A6B39
+[INFO] Logged 35 readings
+ORI: 0.000056, 0.876455, 0.481474, -0.003070
+Flight data written. New bounds: 0x01790000 to 0x017A6DE9
+[INFO] Logged 38 readings
+ORI: 0.000178, 0.872408, 0.488770, -0.002800
+Flight data written. New bounds: 0x01790000 to 0x017A7051
+[INFO] Logged 34 readings
+ORI: 0.000133, 0.868348, 0.495945, -0.003077
+Flight data written. New bounds: 0x01790000 to 0x017A7271
+[INFO] Logged 30 readings
+ORI: 0.000252, 0.864185, 0.503166, -0.002789
+Flight data written. New bounds: 0x01790000 to 0x017A74D9
+[INFO] Logged 34 readings
+ORI: 0.000206, 0.860014, 0.510262, -0.003061
+ORI: 0.000359, 0.855747, 0.517387, -0.002788
+Flight data written. New bounds: 0x01790000 to 0x017A779B
+[INFO] Logged 37 readings
+ORI: 0.000309, 0.851473, 0.524390, -0.003081
+Flight data written. New bounds: 0x01790000 to 0x017A7A39
+[INFO] Logged 37 readings
+ORI: 0.000430, 0.847097, 0.531430, -0.002768
+Flight data written. New bounds: 0x01790000 to 0x017A7C11
+[INFO] Logged 26 readings
+ORI: 0.000390, 0.842719, 0.538345, -0.003019
+Flight data written. New bounds: 0x01790000 to 0x017A7EC1
+[INFO] Logged 38 readings
+ORI: 0.000476, 0.838239, 0.545297, -0.002749
+Flight data written. New bounds: 0x01790000 to 0x017A8129
+[INFO] Logged 34 readings
+ORI: 0.000420, 0.833745, 0.552142, -0.003063
+Flight data written. New bounds: 0x01790000 to 0x017A840F
+[INFO] Logged 39 readings
+ORI: 0.000506, 0.829172, 0.558986, -0.002752
+Flight data written. New bounds: 0x01790000 to 0x017A85F9
+[INFO] Logged 27 readings
+ORI: 0.000477, 0.824580, 0.565737, -0.003052
+Flight data written. New bounds: 0x01790000 to 0x017A8897
+[INFO] Logged 37 readings
+ORI: 0.000555, 0.819913, 0.572482, -0.002761
+Flight data written. New bounds: 0x01790000 to 0x017A8AFF
+[INFO] Logged 34 readings
+ORI: 0.000633, 0.815133, 0.579268, -0.002512
+Flight data written. New bounds: 0x01790000 to 0x017A8DAF
+[INFO] Logged 38 readings
+ORI: 0.000589, 0.810363, 0.585920, -0.002882
+ORI: -0.001897, 0.810392, 0.585861, -0.005267
+Flight data written. New bounds: 0x01790000 to 0x017A905F
+[INFO] Logged 36 readings
+ORI: -0.001596, 0.805353, 0.592771, -0.005159
+Flight data written. New bounds: 0x01790000 to 0x017A927F
+[INFO] Logged 30 readings
+ORI: -0.001119, 0.800226, 0.599681, -0.004429
+Flight data written. New bounds: 0x01790000 to 0x017A94E7
+[INFO] Logged 34 readings
+ORI: -0.000902, 0.795113, 0.606444, -0.004512
+Flight data written. New bounds: 0x01790000 to 0x017A9797
+[INFO] Logged 38 readings
+ORI: -0.000558, 0.789925, 0.613191, -0.003948
+Flight data written. New bounds: 0x01790000 to 0x017A99FF
+[INFO] Logged 34 readings
+ORI: -0.000400, 0.784735, 0.619817, -0.004084
+Flight data written. New bounds: 0x01790000 to 0x017A9C55
+[INFO] Logged 31 readings
+ORI: -0.000137, 0.779464, 0.626437, -0.003599
+Flight data written. New bounds: 0x01790000 to 0x017A9EBD
+[INFO] Logged 34 readings
+ORI: -0.000022, 0.774184, 0.632949, -0.003740
+Flight data written. New bounds: 0x01790000 to 0x017AA16D
+[INFO] Logged 38 readings
+ORI: 0.000182, 0.768829, 0.639445, -0.003319
+Flight data written. New bounds: 0x01790000 to 0x017AA3D5
+[INFO] Logged 34 readings
+ORI: 0.000269, 0.763463, 0.645842, -0.003524
+Flight data written. New bounds: 0x01790000 to 0x017AA5BF
+[INFO] Logged 27 readings
+ORI: 0.000415, 0.758037, 0.652204, -0.003115
+ORI: 0.000454, 0.752609, 0.658459, -0.003358
+Flight data written. New bounds: 0x01790000 to 0x017AA8A5
+[INFO] Logged 39 readings
+ORI: 0.000584, 0.747097, 0.664708, -0.003002
+Flight data written. New bounds: 0x01790000 to 0x017AAB0D
+[INFO] Logged 34 readings
+ORI: 0.000646, 0.741580, 0.670857, -0.003248
+Flight data written. New bounds: 0x01790000 to 0x017AADBD
+[INFO] Logged 38 readings
+ORI: 0.000724, 0.735968, 0.677010, -0.002865
+Flight data written. New bounds: 0x01790000 to 0x017AB025
+[INFO] Logged 34 readings
+ORI: 0.000775, 0.730366, 0.683048, -0.003130
+Flight data written. New bounds: 0x01790000 to 0x017AB245
+[INFO] Logged 30 readings
+ORI: 0.000855, 0.724665, 0.689095, -0.002773
+Flight data written. New bounds: 0x01790000 to 0x017AB4E3
+[INFO] Logged 35 readings
+ORI: 0.000887, 0.718979, 0.695025, -0.003037
+Flight data written. New bounds: 0x01790000 to 0x017AB793
+[INFO] Logged 38 readings
+ORI: 0.000928, 0.713217, 0.700938, -0.002689
+Flight data written. New bounds: 0x01790000 to 0x017AB9FB
+[INFO] Logged 34 readings
+ORI: 0.000963, 0.707445, 0.706761, -0.002968
+Flight data written. New bounds: 0x01790000 to 0x017ABC1B
+[INFO] Logged 30 readings
+ORI: 0.001015, 0.701581, 0.712584, -0.002651
+Flight data written. New bounds: 0x01790000 to 0x017ABE83
+[INFO] Logged 34 readings
+ORI: 0.001054, 0.695725, 0.718302, -0.002945
+ORI: 0.001082, 0.689771, 0.724022, -0.002629
+Flight data written. New bounds: 0x01790000 to 0x017AC17B
+[INFO] Logged 40 readings
+ORI: 0.001127, 0.683827, 0.729637, -0.002933
+Flight data written. New bounds: 0x01790000 to 0x017AC3E3
+[INFO] Logged 34 readings
+ORI: 0.001152, 0.677779, 0.735260, -0.002558
+Flight data written. New bounds: 0x01790000 to 0x017AC615
+[INFO] Logged 31 readings
+ORI: -0.000804, 0.677820, 0.735207, -0.005485
+Flight data written. New bounds: 0x01790000 to 0x017AC86B
+[INFO] Logged 33 readings
+ORI: -0.000550, 0.671489, 0.740995, -0.005386
+Flight data written. New bounds: 0x01790000 to 0x017ACB1B
+[INFO] Logged 38 readings
+ORI: 0.001541, 0.671446, 0.741051, 0.001496
+Flight data written. New bounds: 0x01790000 to 0x017ACDB9
+[INFO] Logged 35 readings
+ORI: 0.001560, 0.664855, 0.746970, 0.000694
+Flight data written. New bounds: 0x01790000 to 0x017AD069
+[INFO] Logged 38 readings
+ORI: 0.001525, 0.658222, 0.752822, 0.000360
+Flight data written. New bounds: 0x01790000 to 0x017AD241
+[INFO] Logged 26 readings
+ORI: 0.001543, 0.651641, 0.758526, -0.000320
+Flight data written. New bounds: 0x01790000 to 0x017AD4BB
+[INFO] Logged 35 readings
+ORI: 0.001475, 0.644992, 0.764188, -0.000455
+Flight data written. New bounds: 0x01790000 to 0x017AD759
+[INFO] Logged 37 readings
+ORI: 0.001484, 0.638387, 0.769714, -0.000988
+Flight data written. New bounds: 0x01790000 to 0x017ADA09
+[INFO] Logged 36 readings
+ORI: 0.001424, 0.631721, 0.775194, -0.001028
+ORI: 0.001443, 0.625087, 0.780552, -0.001460
+Flight data written. New bounds: 0x01790000 to 0x017ADC29
+[INFO] Logged 30 readings
+ORI: 0.001419, 0.618376, 0.785880, -0.001411
+Flight data written. New bounds: 0x01790000 to 0x017ADE91
+[INFO] Logged 34 readings
+ORI: 0.001440, 0.611701, 0.791086, -0.001814
+Flight data written. New bounds: 0x01790000 to 0x017AE141
+[INFO] Logged 38 readings
+ORI: 0.001406, 0.604941, 0.796268, -0.001686
+Flight data written. New bounds: 0x01790000 to 0x017AE3A9
+[INFO] Logged 34 readings
+ORI: 0.001458, 0.598220, 0.801328, -0.002045
+Flight data written. New bounds: 0x01790000 to 0x017AE68F
+[INFO] Logged 39 readings
+ORI: 0.001421, 0.591416, 0.806363, -0.001817
+Flight data written. New bounds: 0x01790000 to 0x017AE867
+[INFO] Logged 26 readings
+ORI: 0.001451, 0.584653, 0.811279, -0.002170
+Flight data written. New bounds: 0x01790000 to 0x017AEB17
+[INFO] Logged 38 readings
+ORI: 0.001428, 0.577818, 0.816162, -0.001893
+Flight data written. New bounds: 0x01790000 to 0x017AED7F
+[INFO] Logged 34 readings
+ORI: 0.001498, 0.571018, 0.820933, -0.002230
+Flight data written. New bounds: 0x01790000 to 0x017AF02F
+[INFO] Logged 38 readings
+ORI: 0.001500, 0.564153, 0.825666, -0.002017
+Flight data written. New bounds: 0x01790000 to 0x017AF24F
+[INFO] Logged 28 readings
+ORI: 0.001547, 0.557293, 0.830311, -0.002331
+ORI: 0.001496, 0.550363, 0.834922, -0.002070
+Flight data written. New bounds: 0x01790000 to 0x017AF4FF
+[INFO] Logged 38 readings
+ORI: 0.001558, 0.543435, 0.839446, -0.002371
+Flight data written. New bounds: 0x01790000 to 0x017AF767
+[INFO] Logged 34 readings
+ORI: 0.001517, 0.536464, 0.843919, -0.002090
+Flight data written. New bounds: 0x01790000 to 0x017AFA17
+[INFO] Logged 38 readings
+ORI: 0.001594, 0.529483, 0.848316, -0.002358
+Flight data written. New bounds: 0x01790000 to 0x017AFBEF
+[INFO] Logged 26 readings
+ORI: 0.001508, 0.522430, 0.852679, -0.002004
+Flight data written. New bounds: 0x01790000 to 0x017AFED5
+[INFO] Logged 39 readings
+ORI: 0.001611, 0.515405, 0.856942, -0.002276
+Flight data written. New bounds: 0x01790000 to 0x017B013D
+[INFO] Logged 34 readings
+ORI: 0.001554, 0.508306, 0.861173, -0.001931
+Flight data written. New bounds: 0x01790000 to 0x017B03B7
+[INFO] Logged 35 readings
+ORI: 0.001099, 0.508308, 0.861175, -0.000306
+Flight data written. New bounds: 0x01790000 to 0x017B05D7
+[INFO] Logged 30 readings
+ORI: 0.001251, 0.500898, 0.865505, -0.000737
+Flight data written. New bounds: 0x01790000 to 0x017B082D
+[INFO] Logged 33 readings
+ORI: 0.001640, 0.494722, 0.869046, 0.002365
+Flight data written. New bounds: 0x01790000 to 0x017B0B25
+[INFO] Logged 40 readings
+ORI: 0.001710, 0.487229, 0.873271, 0.001539
+ORI: 0.001645, 0.479679, 0.877441, 0.001141
+Flight data written. New bounds: 0x01790000 to 0x017B0D8D
+[INFO] Logged 34 readings
+ORI: 0.001712, 0.472194, 0.881493, 0.000465
+Flight data written. New bounds: 0x01790000 to 0x017B103D
+[INFO] Logged 38 readings
+ORI: 0.001636, 0.464655, 0.885490, 0.000267
+Flight data written. New bounds: 0x01790000 to 0x017B1215
+[INFO] Logged 26 readings
+ORI: 0.001706, 0.457172, 0.889377, -0.000265
+Flight data written. New bounds: 0x01790000 to 0x017B14C5
+[INFO] Logged 38 readings
+ORI: 0.001615, 0.449625, 0.893216, -0.000325
+Flight data written. New bounds: 0x01790000 to 0x017B1763
+[INFO] Logged 35 readings
+ORI: 0.001690, 0.442117, 0.896956, -0.000774
+Flight data written. New bounds: 0x01790000 to 0x017B1A13
+[INFO] Logged 38 readings
+ORI: 0.001611, 0.434535, 0.900653, -0.000702
+Flight data written. New bounds: 0x01790000 to 0x017B1BFD
+[INFO] Logged 27 readings
+ORI: 0.001746, 0.426990, 0.904254, -0.001153
+Flight data written. New bounds: 0x01790000 to 0x017B1E9B
+[INFO] Logged 37 readings
+ORI: 0.001649, 0.419375, 0.907811, -0.001005
+Flight data written. New bounds: 0x01790000 to 0x017B2103
+[INFO] Logged 34 readings
+ORI: 0.001752, 0.411822, 0.911261, -0.001378
+Flight data written. New bounds: 0x01790000 to 0x017B23FB
+[INFO] Logged 40 readings
+ORI: 0.001711, 0.404191, 0.914672, -0.001233
+ORI: 0.001833, 0.396617, 0.917981, -0.001532
+Flight data written. New bounds: 0x01790000 to 0x017B25E5
+[INFO] Logged 27 readings
+ORI: 0.001779, 0.388977, 0.921245, -0.001378
+Flight data written. New bounds: 0x01790000 to 0x017B2883
+[INFO] Logged 37 readings
+ORI: 0.001909, 0.381371, 0.924419, -0.001689
+Flight data written. New bounds: 0x01790000 to 0x017B2AEB
+[INFO] Logged 34 readings
+ORI: 0.001812, 0.373691, 0.927550, -0.001503
+Flight data written. New bounds: 0x01790000 to 0x017B2D9B
+[INFO] Logged 38 readings
+ORI: 0.001928, 0.366051, 0.930591, -0.001796
+Flight data written. New bounds: 0x01790000 to 0x017B3039
+[INFO] Logged 35 readings
+ORI: 0.001834, 0.358339, 0.933589, -0.001532
+Flight data written. New bounds: 0x01790000 to 0x017B3223
+[INFO] Logged 27 readings
+ORI: 0.001971, 0.350679, 0.936492, -0.001796
+Flight data written. New bounds: 0x01790000 to 0x017B34C1
+[INFO] Logged 37 readings
+ORI: 0.001869, 0.342950, 0.939351, -0.001545
+Flight data written. New bounds: 0x01790000 to 0x017B3729
+[INFO] Logged 34 readings
+ORI: 0.001992, 0.335267, 0.942119, -0.001803
+Flight data written. New bounds: 0x01790000 to 0x017B39D9
+[INFO] Logged 38 readings
+ORI: 0.001906, 0.327485, 0.944853, -0.001587
+Flight data written. New bounds: 0x01790000 to 0x017B3BF9
+[INFO] Logged 28 readings
+ORI: 0.002086, 0.319762, 0.947494, -0.001908
+ORI: 0.002004, 0.311961, 0.950091, -0.001692
+Flight data written. New bounds: 0x01790000 to 0x017B3EA9
+[INFO] Logged 38 readings
+ORI: 0.001954, 0.304080, 0.952644, -0.001480
+Flight data written. New bounds: 0x01790000 to 0x017B4111
+[INFO] Logged 34 readings
+ORI: 0.002118, 0.296235, 0.955111, -0.001734
+Flight data written. New bounds: 0x01790000 to 0x017B43C1
+[INFO] Logged 38 readings
+ORI: 0.002001, 0.288340, 0.957525, -0.001477
+Flight data written. New bounds: 0x01790000 to 0x017B45AB
+[INFO] Logged 27 readings
+ORI: 0.002154, 0.280483, 0.959855, -0.001732
+Flight data written. New bounds: 0x01790000 to 0x017B487F
+[INFO] Logged 38 readings
+ORI: 0.002019, 0.272559, 0.962136, -0.001493
+Flight data written. New bounds: 0x01790000 to 0x017B4AE7
+[INFO] Logged 34 readings
+ORI: 0.002194, 0.264701, 0.964327, -0.001762
+Flight data written. New bounds: 0x01790000 to 0x017B4D97
+[INFO] Logged 38 readings
+ORI: 0.002086, 0.256754, 0.966473, -0.001527
+Flight data written. New bounds: 0x01790000 to 0x017B4FFF
+[INFO] Logged 34 readings
+ORI: 0.002249, 0.248872, 0.968532, -0.001786
+Flight data written. New bounds: 0x01790000 to 0x017B521F
+[INFO] Logged 30 readings
+ORI: 0.002128, 0.240902, 0.970546, -0.001525
+Flight data written. New bounds: 0x01790000 to 0x017B54CF
+[INFO] Logged 36 readings
+ORI: 0.002286, 0.232985, 0.972476, -0.001784
+ORI: 0.002163, 0.224975, 0.974361, -0.001487
+Flight data written. New bounds: 0x01790000 to 0x017B577F
+[INFO] Logged 38 readings
+ORI: 0.002328, 0.217031, 0.976160, -0.001737
+Flight data written. New bounds: 0x01790000 to 0x017B59E7
+[INFO] Logged 34 readings
+ORI: 0.002207, 0.209025, 0.977907, -0.001490
+Flight data written. New bounds: 0x01790000 to 0x017B5C19
+[INFO] Logged 31 readings
+ORI: 0.002385, 0.201072, 0.979572, -0.001740
+Flight data written. New bounds: 0x01790000 to 0x017B5E6F
+[INFO] Logged 33 readings
+ORI: 0.002269, 0.193059, 0.981183, -0.001495
+Flight data written. New bounds: 0x01790000 to 0x017B611F
+[INFO] Logged 36 readings
+ORI: 0.002423, 0.185084, 0.982718, -0.001723
+Flight data written. New bounds: 0x01790000 to 0x017B63BD
+[INFO] Logged 37 readings
+ORI: 0.002270, 0.177038, 0.984200, -0.001461
+Flight data written. New bounds: 0x01790000 to 0x017B6595
+[INFO] Logged 26 readings
+ORI: 0.002392, 0.169041, 0.985605, -0.001649
+Flight data written. New bounds: 0x01790000 to 0x017B6845
+[INFO] Logged 38 readings
+ORI: 0.002260, 0.160961, 0.986957, -0.001402
+Flight data written. New bounds: 0x01790000 to 0x017B6AAD
+[INFO] Logged 34 readings
+ORI: 0.002439, 0.152949, 0.988230, -0.001616
+Flight data written. New bounds: 0x01790000 to 0x017B6DA5
+[INFO] Logged 40 readings
+ORI: 0.002309, 0.144881, 0.989445, -0.001401
+ORI: 0.002506, 0.136850, 0.990587, -0.001595
+Flight data written. New bounds: 0x01790000 to 0x017B700D
+[INFO] Logged 34 readings
+ORI: 0.002352, 0.128750, 0.991673, -0.001372
+Flight data written. New bounds: 0x01790000 to 0x017B722D
+[INFO] Logged 30 readings
+ORI: 0.002550, 0.120695, 0.992685, -0.001583
+Flight data written. New bounds: 0x01790000 to 0x017B7495
+[INFO] Logged 34 readings
+ORI: 0.002371, 0.112586, 0.993638, -0.001336
+Flight data written. New bounds: 0x01790000 to 0x017B7745
+[INFO] Logged 38 readings
+ORI: 0.002553, 0.104530, 0.994517, -0.001539
+Flight data written. New bounds: 0x01790000 to 0x017B79E3
+[INFO] Logged 35 readings
+ORI: 0.002386, 0.096413, 0.995338, -0.001286
+Flight data written. New bounds: 0x01790000 to 0x017B7C03
+[INFO] Logged 30 readings
+ORI: 0.002241, 0.088220, 0.996098, -0.001057
+Flight data written. New bounds: 0x01790000 to 0x017B7E6B
+[INFO] Logged 34 readings
+ORI: 0.002474, 0.080101, 0.996783, -0.001284
+Flight data written. New bounds: 0x01790000 to 0x017B811B
+[INFO] Logged 38 readings
+ORI: -0.000037, 0.080041, 0.996780, 0.004841
+Flight data written. New bounds: 0x01790000 to 0x017B8383
+[INFO] Logged 34 readings
+ORI: 0.000496, 0.071628, 0.997424, 0.003878
+Flight data written. New bounds: 0x01790000 to 0x017B85EB
+[INFO] Logged 32 readings
+ORI: -0.000261, 0.071644, 0.997421, 0.004242
+ORI: 0.000256, 0.062908, 0.998014, 0.003393
+Flight data written. New bounds: 0x01790000 to 0x017B8853
+[INFO] Logged 34 readings
+ORI: 0.000488, 0.054146, 0.998529, 0.002765
+Flight data written. New bounds: 0x01790000 to 0x017B8B03
+[INFO] Logged 38 readings
+ORI: 0.000923, 0.045501, 0.998962, 0.002092
+Flight data written. New bounds: 0x01790000 to 0x017B8D6B
+[INFO] Logged 34 readings
+ORI: 0.001046, 0.036836, 0.999319, 0.001675
+Flight data written. New bounds: 0x01790000 to 0x017B8FE5
+[INFO] Logged 35 readings
+ORI: 0.001398, 0.028310, 0.999598, 0.001128
+Flight data written. New bounds: 0x01790000 to 0x017B9229
+[INFO] Logged 30 readings
+ORI: 0.001417, 0.019722, 0.999804, 0.000916
+Flight data written. New bounds: 0x01790000 to 0x017B9491
+[INFO] Logged 34 readings
+ORI: 0.001726, 0.011237, 0.999935, 0.000496
+Flight data written. New bounds: 0x01790000 to 0x017B9741
+[INFO] Logged 38 readings
+ORI: 0.001714, 0.002714, 0.999995, 0.000370
+Flight data written. New bounds: 0x01790000 to 0x017B99A9
+[INFO] Logged 34 readings
+ORI: 0.002003, -0.005717, 0.999982, -0.000018
+Flight data written. New bounds: 0x01790000 to 0x017B9BC9
+[INFO] Logged 30 readings
+ORI: 0.001933, -0.014175, 0.999898, -0.000031
+Flight data written. New bounds: 0x01790000 to 0x017B9E67
+[INFO] Logged 35 readings
+ORI: 0.002255, -0.022517, 0.999744, -0.000394
+ORI: 0.002122, -0.030921, 0.999520, -0.000331
+Flight data written. New bounds: 0x01790000 to 0x017BA129
+[INFO] Logged 39 readings
+ORI: 0.002382, -0.039217, 0.999228, -0.000586
+Flight data written. New bounds: 0x01790000 to 0x017BA391
+[INFO] Logged 34 readings
+ORI: 0.002202, -0.047596, 0.998864, -0.000457
+Flight data written. New bounds: 0x01790000 to 0x017BA5C3
+[INFO] Logged 31 readings
+ORI: 0.002455, -0.055875, 0.998435, -0.000708
+Flight data written. New bounds: 0x01790000 to 0x017BA819
+[INFO] Logged 33 readings
+ORI: 0.002261, -0.064197, 0.997934, -0.000531
+Flight data written. New bounds: 0x01790000 to 0x017BAAFF
+[INFO] Logged 39 readings
+ORI: 0.002513, -0.072439, 0.997369, -0.000743
+Flight data written. New bounds: 0x01790000 to 0x017BAD67
+[INFO] Logged 34 readings
+ORI: 0.002356, -0.080728, 0.996733, -0.000572
+Flight data written. New bounds: 0x01790000 to 0x017BB017
+[INFO] Logged 38 readings
+ORI: 0.002617, -0.088924, 0.996035, -0.000780
+Flight data written. New bounds: 0x01790000 to 0x017BB1EF
+[INFO] Logged 26 readings
+ORI: 0.002379, -0.097164, 0.995265, -0.000591
+Flight data written. New bounds: 0x01790000 to 0x017BB49F
+[INFO] Logged 38 readings
+ORI: 0.002623, -0.105322, 0.994434, -0.000790
+Flight data written. New bounds: 0x01790000 to 0x017BB73D
+[INFO] Logged 35 readings
+ORI: 0.002392, -0.113508, 0.993534, -0.000587
+ORI: 0.002232, -0.121785, 0.992554, -0.000422
+Flight data written. New bounds: 0x01790000 to 0x017BB9FF
+[INFO] Logged 39 readings
+ORI: 0.002503, -0.129940, 0.991519, -0.000617
+Flight data written. New bounds: 0x01790000 to 0x017BBBD7
+[INFO] Logged 26 readings
+ORI: 0.003549, -0.129880, 0.991515, -0.003980
+Flight data written. New bounds: 0x01790000 to 0x017BBE51
+[INFO] Logged 35 readings
+ORI: 0.003681, -0.138354, 0.990369, -0.003770
+Flight data written. New bounds: 0x01790000 to 0x017BC0EF
+[INFO] Logged 37 readings
+ORI: 0.003317, -0.146865, 0.989146, -0.003077
+Flight data written. New bounds: 0x01790000 to 0x017BC38D
+[INFO] Logged 35 readings
+ORI: 0.003412, -0.155263, 0.987863, -0.002878
+Flight data written. New bounds: 0x01790000 to 0x017BC5BF
+[INFO] Logged 31 readings
+ORI: 0.003025, -0.163672, 0.986508, -0.002231
+Flight data written. New bounds: 0x01790000 to 0x017BC815
+[INFO] Logged 33 readings
+ORI: 0.003175, -0.171973, 0.985094, -0.002139
+Flight data written. New bounds: 0x01790000 to 0x017BCAC5
+[INFO] Logged 38 readings
+ORI: 0.002878, -0.180303, 0.983605, -0.001656
+Flight data written. New bounds: 0x01790000 to 0x017BCD2D
+[INFO] Logged 34 readings
+ORI: 0.003076, -0.188539, 0.982060, -0.001640
+Flight data written. New bounds: 0x01790000 to 0x017BD013
+[INFO] Logged 39 readings
+ORI: 0.002842, -0.196775, 0.980444, -0.001286
+ORI: 0.003062, -0.204945, 0.978768, -0.001297
+Flight data written. New bounds: 0x01790000 to 0x017BD1FD
+[INFO] Logged 27 readings
+ORI: 0.002829, -0.213101, 0.977026, -0.000981
+Flight data written. New bounds: 0x01790000 to 0x017BD4AD
+[INFO] Logged 38 readings
+ORI: 0.003094, -0.221206, 0.975222, -0.001065
+Flight data written. New bounds: 0x01790000 to 0x017BD715
+[INFO] Logged 34 readings
+ORI: 0.002827, -0.229300, 0.973351, -0.000815
+Flight data written. New bounds: 0x01790000 to 0x017BD9C5
+[INFO] Logged 38 readings
+ORI: 0.003045, -0.237314, 0.971428, -0.000891
+Flight data written. New bounds: 0x01790000 to 0x017BDBE5
+[INFO] Logged 28 readings
+ORI: 0.002855, -0.245358, 0.969428, -0.000692
+Flight data written. New bounds: 0x01790000 to 0x017BDE83
+[INFO] Logged 37 readings
+ORI: 0.003046, -0.253326, 0.967376, -0.000765
+Flight data written. New bounds: 0x01790000 to 0x017BE0EB
+[INFO] Logged 34 readings
+ORI: 0.002831, -0.261317, 0.965249, -0.000582
+Flight data written. New bounds: 0x01790000 to 0x017BE39B
+[INFO] Logged 38 readings
+ORI: 0.003043, -0.269230, 0.963071, -0.000647
+Flight data written. New bounds: 0x01790000 to 0x017BE573
+[INFO] Logged 26 readings
+ORI: 0.002821, -0.277163, 0.960818, -0.000458
+Flight data written. New bounds: 0x01790000 to 0x017BE86B
+[INFO] Logged 40 readings
+ORI: 0.003068, -0.285012, 0.958519, -0.000553
+ORI: 0.002408, -0.292926, 0.956132, -0.000293
+Flight data written. New bounds: 0x01790000 to 0x017BEAD3
+[INFO] Logged 34 readings
+ORI: 0.003151, -0.300719, 0.953707, -0.000520
+Flight data written. New bounds: 0x01790000 to 0x017BED4D
+[INFO] Logged 35 readings
+ORI: 0.002857, -0.308578, 0.951195, -0.000321
+Flight data written. New bounds: 0x01790000 to 0x017BEFEB
+[INFO] Logged 37 readings
+ORI: 0.003055, -0.316332, 0.948644, -0.000400
+Flight data written. New bounds: 0x01790000 to 0x017BF1C3
+[INFO] Logged 26 readings
+ORI: 0.002803, -0.324136, 0.946006, -0.000255
+Flight data written. New bounds: 0x01790000 to 0x017BF4A9
+[INFO] Logged 39 readings
+ORI: 0.003071, -0.331834, 0.943333, -0.000364
+Flight data written. New bounds: 0x01790000 to 0x017BF711
+[INFO] Logged 34 readings
+ORI: 0.002753, -0.339581, 0.940573, -0.000162
+Flight data written. New bounds: 0x01790000 to 0x017BF9C1
+[INFO] Logged 38 readings
+ORI: 0.000870, -0.339579, 0.940577, 0.000872
+Flight data written. New bounds: 0x01790000 to 0x017BFB99
+[INFO] Logged 26 readings
+ORI: 0.001227, -0.347596, 0.937643, 0.000768
+Flight data written. New bounds: 0x01790000 to 0x017BFE49
+[INFO] Logged 38 readings
+ORI: 0.001268, -0.355595, 0.934639, 0.000753
+Flight data written. New bounds: 0x01790000 to 0x017C00F9
+[INFO] Logged 36 readings
+ORI: 0.001712, -0.363466, 0.931606, 0.000544
+ORI: 0.001643, -0.371378, 0.928480, 0.000558
+Flight data written. New bounds: 0x01790000 to 0x017C03A9
+[INFO] Logged 38 readings
+ORI: 0.002053, -0.379157, 0.925330, 0.000381
+Flight data written. New bounds: 0x01790000 to 0x017C0593
+[INFO] Logged 27 readings
+ORI: 0.001947, -0.386959, 0.922095, 0.000433
+Flight data written. New bounds: 0x01790000 to 0x017C0831
+[INFO] Logged 37 readings
+ORI: 0.002297, -0.394649, 0.918829, 0.000302
+Flight data written. New bounds: 0x01790000 to 0x017C0A99
+[INFO] Logged 34 readings
+ORI: 0.001701, -0.402397, 0.915459, 0.002913
+Flight data written. New bounds: 0x01790000 to 0x017C0D7F
+[INFO] Logged 39 readings
+ORI: 0.002051, -0.410049, 0.912060, 0.001578
+Flight data written. New bounds: 0x01790000 to 0x017C0FE7
+[INFO] Logged 34 readings
+ORI: 0.001046, -0.417601, 0.908629, -0.001372
+Flight data written. New bounds: 0x01790000 to 0x017C1207
+[INFO] Logged 30 readings
+ORI: -0.000176, -0.424705, 0.905308, -0.006593
+Flight data written. New bounds: 0x01790000 to 0x017C146F
+[INFO] Logged 34 readings
+ORI: -0.007450, -0.431511, 0.901895, -0.018119
+Flight data written. New bounds: 0x01790000 to 0x017C16E9
+[INFO] Logged 35 readings
+ORI: -0.008650, -0.437633, 0.898833, -0.022378
+Flight data written. New bounds: 0x01790000 to 0x017C19BD
+[INFO] Logged 38 readings
+ORI: -0.010105, -0.442274, 0.895689, -0.045088
+ORI: -0.009649, -0.447492, 0.892555, -0.054801
+Flight data written. New bounds: 0x01790000 to 0x017C1BA7
+[INFO] Logged 27 readings
+ORI: 0.001510, -0.448451, 0.889340, -0.089239
+Flight data written. New bounds: 0x01790000 to 0x017C1E57
+[INFO] Logged 38 readings
+ORI: 0.014631, -0.448125, 0.884168, -0.131215
+Flight data written. New bounds: 0x01790000 to 0x017C20BF
+[INFO] Logged 34 readings
+ORI: 0.032996, -0.444218, 0.876506, -0.182535
+Flight data written. New bounds: 0x01790000 to 0x017C236F
+[INFO] Logged 38 readings
+ORI: 0.038385, -0.446634, 0.872505, -0.194372
+Flight data written. New bounds: 0x01790000 to 0x017C258F
+[INFO] Logged 28 readings
+ORI: 0.063404, -0.436962, 0.864485, -0.240228
+Flight data written. New bounds: 0x01790000 to 0x017C282D
+[INFO] Logged 37 readings
+ORI: 0.079783, -0.432355, 0.856380, -0.270770
+Flight data written. New bounds: 0x01790000 to 0x017C2A95
+[INFO] Logged 34 readings
+ORI: 0.101474, -0.423950, 0.844983, -0.309795
+Flight data written. New bounds: 0x01790000 to 0x017C2D45
+[INFO] Logged 38 readings
+ORI: 0.119490, -0.416151, 0.835452, -0.338467
+Flight data written. New bounds: 0x01790000 to 0x017C2FAD
+[INFO] Logged 34 readings
+ORI: 0.138091, -0.408434, 0.821648, -0.372837
+Flight data written. New bounds: 0x01790000 to 0x017C3203
+[INFO] Logged 31 readings
+ORI: 0.149311, -0.403917, 0.812910, -0.392090
+ORI: 0.178914, -0.385054, 0.789594, -0.443017
+Flight data written. New bounds: 0x01790000 to 0x017C347D
+[INFO] Logged 35 readings
+ORI: 0.208747, -0.368579, 0.764360, -0.486136
+Flight data written. New bounds: 0x01790000 to 0x017C372D
+[INFO] Logged 38 readings
+ORI: 0.224899, -0.356908, 0.748505, -0.511641
+Flight data written. New bounds: 0x01790000 to 0x017C3995
+[INFO] Logged 34 readings
+ORI: 0.232199, -0.350621, 0.741426, -0.522911
+Flight data written. New bounds: 0x01790000 to 0x017C3BB5
+[INFO] Logged 30 readings
+ORI: 0.241836, -0.343825, 0.730295, -0.538488
+Flight data written. New bounds: 0x01790000 to 0x017C3E53
+[INFO] Logged 35 readings
+ORI: 0.253616, -0.334412, 0.716020, -0.557820
+Flight data written. New bounds: 0x01790000 to 0x017C4103
+[INFO] Logged 38 readings
+ORI: 0.257867, -0.331390, 0.709540, -0.565895
+Flight data written. New bounds: 0x01790000 to 0x017C436B
+[INFO] Logged 34 readings
+ORI: 0.265664, -0.324195, 0.699615, -0.578670
+Flight data written. New bounds: 0x01790000 to 0x017C4555
+[INFO] Logged 27 readings
+ORI: 0.270010, -0.319925, 0.693927, -0.585839
+Flight data written. New bounds: 0x01790000 to 0x017C47F3
+[INFO] Logged 37 readings
+ORI: 0.273543, -0.316401, 0.688725, -0.592218
+Flight data written. New bounds: 0x01790000 to 0x017C4AA3
+[INFO] Logged 36 readings
+ORI: 0.275771, -0.314028, 0.685061, -0.596681
+ORI: 0.278905, -0.310385, 0.680477, -0.602349
+Flight data written. New bounds: 0x01790000 to 0x017C4D53
+[INFO] Logged 38 readings
+ORI: 0.280055, -0.308903, 0.678234, -0.605101
+Flight data written. New bounds: 0x01790000 to 0x017C4FBB
+[INFO] Logged 34 readings
+ORI: 0.281878, -0.306350, 0.675366, -0.608749
+Flight data written. New bounds: 0x01790000 to 0x017C51DB
+[INFO] Logged 30 readings
+ORI: 0.282353, -0.305427, 0.673574, -0.610974
+Flight data written. New bounds: 0x01790000 to 0x017C5443
+[INFO] Logged 34 readings
+ORI: 0.283787, -0.303135, 0.671732, -0.613474
+Flight data written. New bounds: 0x01790000 to 0x017C5729
+[INFO] Logged 39 readings
+ORI: 0.284052, -0.302395, 0.670665, -0.614882
+Flight data written. New bounds: 0x01790000 to 0x017C5991
+[INFO] Logged 34 readings
+ORI: 0.284829, -0.300863, 0.669733, -0.616288
+Flight data written. New bounds: 0x01790000 to 0x017C5BB1
+[INFO] Logged 30 readings
+ORI: 0.285067, -0.300038, 0.669312, -0.617038
+Flight data written. New bounds: 0x01790000 to 0x017C5E19
+[INFO] Logged 34 readings
+ORI: 0.285348, -0.299076, 0.668704, -0.618033
+Flight data written. New bounds: 0x01790000 to 0x017C60C9
+[INFO] Logged 38 readings
+ORI: 0.284891, -0.299030, 0.668334, -0.618666
+Flight data written. New bounds: 0x01790000 to 0x017C6367
+[INFO] Logged 35 readings
+ORI: 0.284223, -0.299010, 0.667834, -0.619523
+ORI: 0.283455, -0.299071, 0.667139, -0.620593
+Flight data written. New bounds: 0x01790000 to 0x017C65AB
+[INFO] Logged 32 readings
+ORI: 0.283044, -0.298649, 0.666479, -0.621691
+Flight data written. New bounds: 0x01790000 to 0x017C6801
+[INFO] Logged 33 readings
+ORI: 0.282606, -0.298310, 0.666385, -0.622154
+Flight data written. New bounds: 0x01790000 to 0x017C6AB1
+[INFO] Logged 38 readings
+ORI: 0.282821, -0.297358, 0.666727, -0.622146
+Flight data written. New bounds: 0x01790000 to 0x017C6D19
+[INFO] Logged 34 readings
+ORI: 0.282420, -0.297009, 0.666781, -0.622437
+Flight data written. New bounds: 0x01790000 to 0x017C6FFF
+[INFO] Logged 39 readings
+ORI: 0.281982, -0.296660, 0.666346, -0.623268
+Flight data written. New bounds: 0x01790000 to 0x017C71D7
+[INFO] Logged 26 readings
+ORI: 0.281260, -0.296507, 0.666650, -0.623341
+Flight data written. New bounds: 0x01790000 to 0x017C7451
+[INFO] Logged 35 readings
+ORI: 0.280566, -0.296649, 0.666801, -0.623424
+Flight data written. New bounds: 0x01790000 to 0x017C76EF
+[INFO] Logged 37 readings
+ORI: 0.285184, -0.300334, 0.663648, -0.622930
+Flight data written. New bounds: 0x01790000 to 0x017C7957
+[INFO] Logged 34 readings
+ORI: 0.284348, -0.300619, 0.664211, -0.622574
+Flight data written. New bounds: 0x01790000 to 0x017C7BBF
+[INFO] Logged 32 readings
+ORI: 0.284581, -0.300524, 0.665016, -0.621653
+ORI: 0.283457, -0.300961, 0.665462, -0.621478
+Flight data written. New bounds: 0x01790000 to 0x017C7E27
+[INFO] Logged 34 readings
+ORI: 0.282503, -0.301536, 0.666004, -0.621053
+Flight data written. New bounds: 0x01790000 to 0x017C80D7
+[INFO] Logged 38 readings
+ORI: 0.281543, -0.302273, 0.666299, -0.620814
+Flight data written. New bounds: 0x01790000 to 0x017C833F
+[INFO] Logged 34 readings
+ORI: 0.280752, -0.303758, 0.668059, -0.618553
+Flight data written. New bounds: 0x01790000 to 0x017C8571
+[INFO] Logged 31 readings
+ORI: 0.279540, -0.306782, 0.671233, -0.614157
+Flight data written. New bounds: 0x01790000 to 0x017C87FD
+[INFO] Logged 34 readings
+ORI: 0.278051, -0.312046, 0.676262, -0.606618
+Flight data written. New bounds: 0x01790000 to 0x017C8AAD
+[INFO] Logged 38 readings
+ORI: 0.277087, -0.317991, 0.680113, -0.599626
+Flight data written. New bounds: 0x01790000 to 0x017C8D15
+[INFO] Logged 34 readings
+ORI: 0.271814, -0.333830, 0.698555, -0.571573
+Flight data written. New bounds: 0x01790000 to 0x017C8FC5
+[INFO] Logged 38 readings
+ORI: 0.262878, -0.354903, 0.722586, -0.531798
+Flight data written. New bounds: 0x01790000 to 0x017C919D
+[INFO] Logged 26 readings
+ORI: 0.256171, -0.372047, 0.739787, -0.498672
+Flight data written. New bounds: 0x01790000 to 0x017C9483
+[INFO] Logged 39 readings
+ORI: 0.253709, -0.382807, 0.746576, -0.481367
+ORI: 0.228894, -0.412469, 0.783730, -0.404036
+Flight data written. New bounds: 0x01790000 to 0x017C96FD
+[INFO] Logged 35 readings
+ORI: 0.217157, -0.427218, 0.797799, -0.365846
+Flight data written. New bounds: 0x01790000 to 0x017C99AD
+[INFO] Logged 38 readings
+ORI: 0.210915, -0.439021, 0.805585, -0.337354
+Flight data written. New bounds: 0x01790000 to 0x017C9B85
+[INFO] Logged 26 readings
+ORI: 0.208378, -0.448040, 0.808823, -0.318818
+Flight data written. New bounds: 0x01790000 to 0x017C9E35
+[INFO] Logged 38 readings
+ORI: 0.190872, -0.462324, 0.823831, -0.266696
+Flight data written. New bounds: 0x01790000 to 0x017CA0D3
+[INFO] Logged 35 readings
+ORI: 0.188820, -0.468456, 0.823798, -0.257396
+Flight data written. New bounds: 0x01790000 to 0x017CA34D
+[INFO] Logged 35 readings
+ORI: 0.150562, -0.479694, 0.840574, -0.201644
+Flight data written. New bounds: 0x01790000 to 0x017CA56D
+[INFO] Logged 30 readings
+ORI: 0.143761, -0.485684, 0.841256, -0.189026
+Flight data written. New bounds: 0x01790000 to 0x017CA7C3
+[INFO] Logged 33 readings
+ORI: 0.118921, -0.493819, 0.847508, -0.154047
+Flight data written. New bounds: 0x01790000 to 0x017CAA73
+[INFO] Logged 38 readings
+ORI: 0.108175, -0.500084, 0.848221, -0.136878
+Flight data written. New bounds: 0x01790000 to 0x017CAD11
+[INFO] Logged 35 readings
+ORI: 0.088334, -0.506957, 0.850445, -0.109248
+ORI: 0.072150, -0.508039, 0.853555, -0.090194
+Flight data written. New bounds: 0x01790000 to 0x017CAFD3
+[INFO] Logged 39 readings
+ORI: 0.065121, -0.513696, 0.851888, -0.078507
+Flight data written. New bounds: 0x01790000 to 0x017CB1AB
+[INFO] Logged 26 readings
+ORI: 0.051743, -0.518080, 0.851515, -0.061959
+Flight data written. New bounds: 0x01790000 to 0x017CB45B
+[INFO] Logged 38 readings
+ORI: 0.046992, -0.523415, 0.849080, -0.053774
+Flight data written. New bounds: 0x01790000 to 0x017CB6C3
+[INFO] Logged 34 readings
+ORI: 0.037593, -0.528465, 0.847003, -0.043556
+Flight data written. New bounds: 0x01790000 to 0x017CB9A9
+[INFO] Logged 39 readings
+ORI: 0.033848, -0.533735, 0.844125, -0.037876
+Flight data written. New bounds: 0x01790000 to 0x017CBB81
+[INFO] Logged 26 readings
+ORI: 0.031793, -0.539523, 0.840807, -0.030786
+Flight data written. New bounds: 0x01790000 to 0x017CBE31
+[INFO] Logged 38 readings
+ORI: 0.029015, -0.544798, 0.837647, -0.026474
+Flight data written. New bounds: 0x01790000 to 0x017CC099
+[INFO] Logged 34 readings
+ORI: 0.024636, -0.550112, 0.834458, -0.021197
+Flight data written. New bounds: 0x01790000 to 0x017CC349
+[INFO] Logged 38 readings
+ORI: 0.022650, -0.555456, 0.831040, -0.018131
+Flight data written. New bounds: 0x01790000 to 0x017CC569
+[INFO] Logged 28 readings
+ORI: 0.019267, -0.560854, 0.827566, -0.014335
+ORI: 0.017912, -0.566274, 0.823931, -0.012253
+Flight data written. New bounds: 0x01790000 to 0x017CC819
+[INFO] Logged 38 readings
+ORI: 0.015343, -0.571728, 0.820243, -0.009598
+Flight data written. New bounds: 0x01790000 to 0x017CCA81
+[INFO] Logged 34 readings
+ORI: 0.014413, -0.577229, 0.816415, -0.008103
+Flight data written. New bounds: 0x01790000 to 0x017CCD31
+[INFO] Logged 38 readings
+ORI: 0.012417, -0.582756, 0.812528, -0.006238
+Flight data written. New bounds: 0x01790000 to 0x017CCF99
+[INFO] Logged 34 readings
+ORI: 0.010702, -0.588374, 0.808504, -0.004742
+Flight data written. New bounds: 0x01790000 to 0x017CD1B9
+[INFO] Logged 28 readings
+ORI: 0.010220, -0.593973, 0.804410, -0.003882
+Flight data written. New bounds: 0x01790000 to 0x017CD457
+[INFO] Logged 37 readings
+ORI: 0.009799, -0.599556, 0.800267, -0.003164
+Flight data written. New bounds: 0x01790000 to 0x017CD6BF
+[INFO] Logged 34 readings
+ORI: 0.008503, -0.605175, 0.796044, -0.002218
+Flight data written. New bounds: 0x01790000 to 0x017CD96F
+[INFO] Logged 38 readings
+ORI: 0.008228, -0.610798, 0.791742, -0.001718
+Flight data written. New bounds: 0x01790000 to 0x017CDB47
+[INFO] Logged 26 readings
+ORI: 0.007146, -0.616435, 0.787373, -0.001060
+Flight data written. New bounds: 0x01790000 to 0x017CDE2D
+[INFO] Logged 39 readings
+ORI: 0.007040, -0.622069, 0.782930, -0.000736
+ORI: 0.006117, -0.627742, 0.778397, -0.000252
+Flight data written. New bounds: 0x01790000 to 0x017CE0A7
+[INFO] Logged 35 readings
+ORI: 0.006074, -0.633366, 0.773829, -0.000013
+Flight data written. New bounds: 0x01790000 to 0x017CE357
+[INFO] Logged 38 readings
+ORI: 0.005373, -0.639043, 0.769152, 0.000301
+Flight data written. New bounds: 0x01790000 to 0x017CE541
+[INFO] Logged 27 readings
+ORI: 0.005397, -0.644661, 0.764449, 0.000440
+Flight data written. New bounds: 0x01790000 to 0x017CE7DF
+[INFO] Logged 37 readings
+ORI: 0.004715, -0.650332, 0.759635, 0.000679
+Flight data written. New bounds: 0x01790000 to 0x017CEA7D
+[INFO] Logged 35 readings
+ORI: -0.001780, -0.650375, 0.759604, 0.003290
+Flight data written. New bounds: 0x01790000 to 0x017CED2D
+[INFO] Logged 38 readings
+ORI: -0.000847, -0.656239, 0.754546, 0.003123
+Flight data written. New bounds: 0x01790000 to 0x017CEF95
+[INFO] Logged 34 readings
+ORI: -0.000370, -0.662104, 0.749406, 0.002870
+Flight data written. New bounds: 0x01790000 to 0x017CF1B5
+[INFO] Logged 30 readings
+ORI: 0.000345, -0.667887, 0.744258, 0.002688
+Flight data written. New bounds: 0x01790000 to 0x017CF41D
+[INFO] Logged 34 readings
+ORI: 0.000558, -0.673663, 0.739034, 0.002542
+Flight data written. New bounds: 0x01790000 to 0x017CF703
+[INFO] Logged 39 readings
+ORI: 0.001150, -0.679358, 0.733802, 0.002421
+ORI: 0.001225, -0.685045, 0.728496, 0.002307
+Flight data written. New bounds: 0x01790000 to 0x017CF97D
+[INFO] Logged 35 readings
+ORI: 0.001834, -0.690664, 0.723170, 0.002256
+Flight data written. New bounds: 0x01790000 to 0x017CFB55
+[INFO] Logged 26 readings
+ORI: 0.001723, -0.696282, 0.717763, 0.002196
+Flight data written. New bounds: 0x01790000 to 0x017CFE05
+[INFO] Logged 38 readings
+ORI: 0.002086, -0.701797, 0.712371, 0.002154
+Flight data written. New bounds: 0x01790000 to 0x017D007F
+[INFO] Logged 35 readings
+ORI: 0.001824, -0.707324, 0.706884, 0.002136
+Flight data written. New bounds: 0x01790000 to 0x017D0353
+[INFO] Logged 38 readings
+ORI: 0.002155, -0.712751, 0.701411, 0.002132
+Flight data written. New bounds: 0x01790000 to 0x017D053D
+[INFO] Logged 27 readings
+ORI: 0.001847, -0.718189, 0.695843, 0.002125
+Flight data written. New bounds: 0x01790000 to 0x017D07DB
+[INFO] Logged 37 readings
+ORI: 0.002104, -0.723523, 0.690294, 0.002105
+[INFO] Stopping data logging
+[INFO] Stopping data logging
+Flight data written. New bounds: 0x01790000 to 0x017D0A43
+[INFO] Logged 34 readings
