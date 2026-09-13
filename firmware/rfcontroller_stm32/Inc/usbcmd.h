@@ -25,10 +25,25 @@ typedef enum {
 	USB_MTYPE_STOP,
 	/* Command the device to stop the current action. No payload.
 	 */
-	USB_MTYPE_DATA_DOWNLOAD
+	USB_MTYPE_DATA_DOWNLOAD,
 	/* Command the device to request a range of data from the avionics unit. Also used to relay the received data.
 	 * HOST PAYLOAD: 8 bytes - [0:3] Number of bytes to transmit (0 means all available), [4:7] Offset in bytes from data start address to start reading
 	 * DEVICE PAYLOAD: Variable - [0:3] Sequence number, [4:] Requested data from each received packet
+	 */
+	USB_MTYPE_TELEMETRY_START,
+	/* Command the avionics unit to start recording and transmitting live telemetry data.
+	 */
+	USB_MTYPE_TELEMETRY_DATA,
+	/* Live telemetry data from the avionics unit relayed to the host.
+	 * DEVICE PAYLOAD:
+	 * [0:11] X/Y/Z position (m),
+	 * [12:23] X/Y/Z velocity (m/s),
+	 * [24:35] Orientation yaw/pitch/roll
+	 */
+	USB_MTYPE_SETHOME
+	/* Command the avionics unit to set its home position.
+	 * HOST PAYLOAD: empty
+	 * DEVICE PAYLOAD: 16 bytes - Home Alt/Lat/Lon/Pres
 	 */
 } USBMessageType;
 

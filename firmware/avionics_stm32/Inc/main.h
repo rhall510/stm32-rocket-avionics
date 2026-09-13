@@ -39,6 +39,8 @@ SPI_HandleTypeDef hspi3_rf;
 
 #define NET_ADDRESS NET_AVIONICS_ADDR
 
+#define TELEMETRY_PERIOD_MS 100   // Minimum ms between each telemetry packet sent
+
 
 // Task notifications
 TaskHandle_t LAMBDA80RxTaskNotif = NULL;
@@ -92,8 +94,9 @@ void ReadBMP581Task(void *param);
 void ReadMMC5983Task(void *param);
 void ReadM10STask(void *param);   // Must be polled as it doesn't have a ready interrupt
 
+// Enable or disable data collection
 bool DataCollectionEnabled = false;
-void TriggerDataCollectionTask(void *param);   // Enable or disable data collection
+void TriggerDataCollectionTask(void *param);
 
 // Log data to flash storage
 void LogDataTask(void *param);
@@ -109,6 +112,8 @@ typedef enum {
 	TM_PKTTEST_CMD,
 	TM_DATARNG_CMD,
 	TM_TRSMT_DATA_CMD,
+	TM_TELEMETRY_CMD,
+	TM_SETHOME,
     TM_NUM_STATES   // Not an actual state, just useful for getting the number of possible states
 } TMState;
 
@@ -122,6 +127,8 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt);
 TMState HandleStatePktTestCmd(NetPacket* resp);
 TMState HandleStateDataRangeCmd(NetPacket* resp);
 TMState HandleStateTransmitDataCmd(NetPacket* resp);
+TMState HandleStateTelemetryCmd(NetPacket* resp);
+TMState HandleStateSetHomeCmd(NetPacket* resp);
 
 
 
@@ -133,6 +140,14 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp);
 #define FLASH_BUFFER_LEN 1024
 
 void SetDataCollectionEnabled(bool Collect);
+
+
+// Samples needed for GPS and pressure to set home position. Home is set when both thresholds are met
+#define SETHOME_MIN_GPS_SAMPLES 10
+#define SETHOME_MIN_PRES_SAMPLES 10
+
+bool SettingHome = false;   // For redirecting readings to home position calculation
+bool HomePositionSet = false;   // Whether the home position has been initialised at least once since power on
 
 
 // System initialisation

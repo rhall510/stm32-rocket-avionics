@@ -120,7 +120,9 @@ void TransactionManagerTask(void *param) {
 		[TM_STATUS_CMD] = HandleStateStatusCmd,
 		[TM_DISC_CMD] = HandleStateDiscoveryCmd,
 		[TM_PKTTEST_CMD] = HandleStatePktTestCmd,
-		[TM_DATA_DOWNLOAD_CMD] = HandleStateDataDownloadCmd
+		[TM_DATA_DOWNLOAD_CMD] = HandleStateDataDownloadCmd,
+		[TM_TELEMETRY] = HandleStateTelemetryCmd,
+		[TM_SETHOME] = HandleStateSetHomeCmd
 	};
 
     TMState currState = TM_STATE_IDLE;
@@ -142,6 +144,8 @@ TMState HandleStateIdle(USBPacket* pkt, NetPacket* resp) {
 		if (pkt->type == USB_MTYPE_DISCOVERY) { return TM_DISC_CMD; }
 		if (pkt->type == USB_MTYPE_PKTTEST) { return TM_PKTTEST_CMD; }
 		if (pkt->type == USB_MTYPE_DATA_DOWNLOAD) { return TM_DATA_DOWNLOAD_CMD; }
+		if (pkt->type == USB_MTYPE_TELEMETRY_START) { return TM_TELEMETRY; }
+		if (pkt->type == USB_MTYPE_SETHOME) { return TM_SETHOME; }
 	}
 	return TM_STATE_IDLE;
 }
@@ -631,6 +635,244 @@ TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp) {
 	xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
 
 	return TM_STATE_IDLE;
+}
+
+
+TMState HandleStateTelemetryCmd(USBPacket* pkt, NetPacket* resp) {
+	// Pause discovery packets while telemetry is being received
+	xTimerStop(DiscoveryTimer, 0);
+
+	// Request avionics unit to start telemetry transmission
+	NetPacket sendpkt;
+	sendpkt.recipient = NET_AVIONICS_ADDR;
+	sendpkt.sender = NET_CONTROLLER_ADDR;
+	sendpkt.status = 0x0;
+	sendpkt.type = NET_MTYPE_TELEMETRY_START;
+	sendpkt.seqnum = 0;
+	sendpkt.payloadlen = 0;
+
+	uint8_t buff[NET_PACKET_MAXLEN];
+	uint8_t len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &sendpkt);
+
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] Telemetry start timed out due to unreleased SPI mutex\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+		return TM_STATE_IDLE;
+	}
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+	xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+	LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+	xSemaphoreGive(SPIRfMutex);
+
+	// Wait for Tx to finish before continuing
+	if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(100)) != pdTRUE) {
+		printf("[ERROR] Telemetry request Tx timed out\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+		return TM_STATE_IDLE;
+	}
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] L62 not reset after telemetry Tx due to unreleased SPI mutex\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+		return TM_STATE_IDLE;
+	}
+
+	// Clear Tx interrupt
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+
+	// Set to Rx continuous mode
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
+	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+	xSemaphoreGive(SPIRfMutex);
+
+
+	// Wait for response
+	if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(100)) != pdPASS) {
+		printf("[ERROR] Telemetry request ACK response timed out\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+		return TM_STATE_IDLE;
+	}
+
+	if (resp->type != NET_MTYPE_ACK) {
+		printf("[ERROR] Bad telemetry request ACK\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+		return TM_STATE_IDLE;
+	}
+
+
+	// If acknowledged correctly start receiving data
+	while (1) {
+		// Check for stop commands at the start of each loop
+		if (xQueueReceive(CommandQueue, pkt, pdMS_TO_TICKS(0)) == pdPASS) {
+			if (pkt->type == USB_MTYPE_STOP) {
+				// Request avionics unit to start telemetry transmission
+				sendpkt.type = NET_MTYPE_TELEMETRY_STOP;
+				len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &sendpkt);
+
+				if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+					printf("[ERROR] Telemetry stop timed out due to unreleased SPI mutex\n");
+					continue;  // Do not return to idle if the stop command cannot be executed correctly
+				}
+
+				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+				xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+				LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+				xSemaphoreGive(SPIRfMutex);
+
+				// Wait for Tx to finish before continuing
+				if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(100)) != pdTRUE) {
+					printf("[ERROR] Telemetry stop request Tx timed out\n");
+					continue;
+				}
+
+				if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+					printf("[ERROR] L62 not reset after telemetry stop Tx due to unreleased SPI mutex\n");
+					continue;
+				}
+
+				// Clear Tx interrupt
+				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+
+				// Set to Rx continuous mode
+				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
+				LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+				xSemaphoreGive(SPIRfMutex);
+
+
+				// Wait for response
+				if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(100)) != pdPASS) {
+					printf("[ERROR] Telemetry stop request ACK response timed out\n");
+					continue;
+				}
+
+				if (resp->type != NET_MTYPE_ACK) {
+					printf("[ERROR] Bad telemetry stop request ACK\n");
+					continue;
+				}
+
+				// If successfully stopped, restart discovery and return to idle
+				break;
+			}
+		}
+
+		if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(2000)) != pdPASS) {
+			// Send warning if no packets received in a full second
+			USBPacket nack;
+			nack.type = USB_MTYPE_INFO;
+			nack.payloadlen = 2;
+			nack.payload[0] = USB_MTYPE_TELEMETRY_DATA;
+			nack.payload[1] = 0;
+
+			SendPacketUSB(&nack);
+
+			continue;
+		}
+
+		if (resp->type != NET_MTYPE_TELEMETRY_DATA) { continue; }
+
+		// Relay packet contents to host
+		USBPacket relay;
+		relay.type = USB_MTYPE_TELEMETRY_DATA;
+		relay.payloadlen = 36;
+
+		for (int i = 0; i < relay.payloadlen; i++) {
+			relay.payload[i] = resp->payload[i];
+		}
+
+		SendPacketUSB(&relay);
+	}
+
+
+	xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+
+	return TM_STATE_IDLE;
+}
+
+
+TMState HandleStateSetHomeCmd(USBPacket* pkt, NetPacket* resp) {
+	// Pause discovery packets
+	xTimerStop(DiscoveryTimer, 0);
+
+	// Request avionics unit to set home position
+	NetPacket sendpkt;
+	sendpkt.recipient = NET_AVIONICS_ADDR;
+	sendpkt.sender = NET_CONTROLLER_ADDR;
+	sendpkt.status = 0x0;
+	sendpkt.type = NET_MTYPE_SETHOME;
+	sendpkt.seqnum = 0;
+	sendpkt.payloadlen = 0;
+
+	uint8_t buff[NET_PACKET_MAXLEN];
+	uint8_t len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &sendpkt);
+
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] Set home timed out due to unreleased SPI mutex\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+		return TM_STATE_IDLE;
+	}
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+	xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+	LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+	xSemaphoreGive(SPIRfMutex);
+
+	// Wait for Tx to finish before continuing
+	if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(100)) != pdTRUE) {
+		printf("[ERROR] Set home request Tx timed out\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+		return TM_STATE_IDLE;
+	}
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] L62 not reset after set home Tx due to unreleased SPI mutex\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+		return TM_STATE_IDLE;
+	}
+
+	// Clear Tx interrupt
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+
+	// Set to Rx continuous mode
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
+	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+	xSemaphoreGive(SPIRfMutex);
+
+
+	// Wait for response (give extra time to allow samples to accumulate)
+	if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(10000)) != pdPASS) {
+		printf("[ERROR] Set home request ACK response timed out\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+		return TM_STATE_IDLE;
+	}
+
+	if (resp->type != NET_MTYPE_SETHOME) {
+		printf("[ERROR] Bad set home request ACK\n");
+		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+		return TM_STATE_IDLE;
+	}
+
+	// Relay home position to host
+	USBPacket relay;
+	relay.type = USB_MTYPE_SETHOME;
+	relay.payloadlen = 16;
+
+	for (int i = 0; i < relay.payloadlen; i++) {
+		relay.payload[i] = resp->payload[i];
+	}
+
+	SendPacketUSB(&relay);
 }
 
 

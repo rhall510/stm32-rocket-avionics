@@ -932,7 +932,7 @@ void HF_NewGPSData(SensorData *data) {
     if (data->data.tsgps.FixType == 0) { return; }
 
     float mN, mE;
-    LatLonToMeters(data->data.tsgps.Latitude, data->data.tsgps.Longitude, &mN, &mE);
+    LatLonToMeters(data->data.tsgps.Latitude * 1e-7, data->data.tsgps.Longitude * 1e-7, &mN, &mE);
 
     // Dynamic variance matrix
     float q_pos = data->data.tsgps.HorzAccuracy * data->data.tsgps.HorzAccuracy * HF_GPS_NMult_pos;

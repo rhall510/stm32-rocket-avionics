@@ -66,6 +66,8 @@ typedef enum {
 	TM_DISC_CMD,
 	TM_PKTTEST_CMD,
 	TM_DATA_DOWNLOAD_CMD,
+	TM_TELEMETRY,
+	TM_SETHOME,
     TM_NUM_STATES   // Not an actual state, just useful for getting the number of possible states
 } TMState;
 
@@ -82,6 +84,8 @@ TMState HandleStateStatusCmd(USBPacket* pkt, NetPacket* resp);
 TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp);
 TMState HandleStatePktTestCmd(USBPacket* pkt, NetPacket* resp);
 TMState HandleStateDataDownloadCmd(USBPacket* pkt, NetPacket* resp);
+TMState HandleStateTelemetryCmd(USBPacket* pkt, NetPacket* resp);
+TMState HandleStateSetHomeCmd(USBPacket* pkt, NetPacket* resp);
 
 
 

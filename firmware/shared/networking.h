@@ -34,6 +34,24 @@ typedef enum {
 	 * SENDER PAYLOAD: 8 bytes - [0:3] Number of bytes to transmit, [4:7] Offset in bytes from data start address to start reading
 	 * RESPONDER PAYLOAD: Variable - [0:3] Sequence number, [4:] Requested data split into multiple packets if needed
 	 */
+	NET_MTYPE_TELEMETRY_START,
+	/* Request the avionics unit to start recording and transmitting live telemetry data.
+	 */
+	NET_MTYPE_TELEMETRY_STOP,
+	/* Request the avionics unit to stop recording and transmitting live telemetry data.
+	 */
+	NET_MTYPE_TELEMETRY_DATA,
+	/* Live telemetry data from the avionics unit.
+	 * SENDER PAYLOAD:
+	 * [0:11] N/E/U position (m),
+	 * [12:23] N/E/U velocity (m/s),
+	 * [24:35] Orientation yaw/pitch/roll
+	 */
+	NET_MTYPE_SETHOME,
+	/* Command the avionics unit to set its home position.
+	 * SENDER PAYLOAD: empty
+	 * RESPONDER PAYLOAD: 16 bytes - Home Alt/Lat/Lon/Pres
+	 */
 } NetMessageType;
 
 

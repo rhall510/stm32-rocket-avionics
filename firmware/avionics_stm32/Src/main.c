@@ -14,7 +14,7 @@ float bmp_data_time = 0.0f;
 TS_Vec3 mmc_buff;
 float mmc_data_time = 0.0f;
 
-TS_GPS m10s_data = {0};
+TS_GPS m10s_buff;
 
 
 void ReadLSM6DSRTask(void *param) {
@@ -115,8 +115,10 @@ void ReadBMP581Task(void *param) {
 				data.type = SENSOR_DATA_PRSTMP;
 				data.data.tsprstmp = bmp_buff[i];
 
-				if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
-					printf("[ERROR] Data log queue full\n");
+				if (!SettingHome) {   // Only push to log queue if not being used to set home
+					if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+						printf("[ERROR] Data log queue full\n");
+					}
 				}
 
 				if (xQueueSend(FusionQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
@@ -165,11 +167,6 @@ void ReadM10STask(void *param) {
 
     while (1) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
-//        	LAMBDA62_PrintStatus(LAMBDA62_Status(&hspi3_rf, true), "post-SetRx");
-//        	printf("[INFO] L62 IRQ status post-SetRx: 0x%04X\n", LAMBDA62_GetIRQStatus(&hspi3_rf, true));
-//        	printf("[INFO] L62 DevErrors post-SetRx: 0x%04X\n", LAMBDA62_DevErrors(&hspi3_rf, true));
-//        	printf("[INFO] L62 instantaneous RSSI: %d dBm\n", LAMBDA62_GetInstRSSI(&hspi3_rf, true));
-
 			if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 				printf("[ERROR] M10S read timed out due to unreleased I2C mutex\n");
 				continue;
@@ -194,15 +191,16 @@ void ReadM10STask(void *param) {
 			while (readoffset < bytes_available) {
 				if (MAXM10S_ParseUBXStream(i2c_data, bytes_available, &readoffset, &pkt)) {
 					if (pkt.class == 0x01 && pkt.id == 0x07) {
-						TS_GPS m10s_data;
-						MAXM10S_ExtractPVTData(&pkt, &m10s_data);
+						MAXM10S_ExtractPVTData(&pkt, &m10s_buff);
 
 						SensorData data;
 						data.type = SENSOR_DATA_GPS;
-						data.data.tsgps = m10s_data;
+						data.data.tsgps = m10s_buff;
 
-						if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
-							printf("[ERROR] Data log queue full\n");
+						if (!SettingHome) {   // Only push to log queue if not being used to set home
+							if (xQueueSend(DataLogQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
+								printf("[ERROR] Data log queue full\n");
+							}
 						}
 
 						if (xQueueSend(FusionQueue, &data, pdMS_TO_TICKS(0)) != pdPASS) {
@@ -223,6 +221,10 @@ void TriggerDataCollectionTask(void *param) {
         if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
         	if (DataCollectionEnabled) {   // When starting data collection, first wipe stored flight data and start the logging timer
         		printf("[INFO] Starting data logging\n");
+
+        		// Clear queues
+        		xQueueReset(DataLogQueue);
+        		xQueueReset(FusionQueue);
 
     			if (xSemaphoreTake(SPIFlashMutex, pdMS_TO_TICKS(20)) == pdTRUE) {
     				printf("[INFO] Wiping previous flight data\n");
@@ -422,7 +424,8 @@ void TransactionManagerTask(void *param) {
 		[TM_DISC_CMD] = HandleStateDiscoveryCmd,
 		[TM_PKTTEST_CMD] = HandleStatePktTestCmd,
 		[TM_DATARNG_CMD] = HandleStateDataRangeCmd,
-		[TM_TRSMT_DATA_CMD] = HandleStateTransmitDataCmd
+		[TM_TRSMT_DATA_CMD] = HandleStateTransmitDataCmd,
+		[TM_TELEMETRY_CMD] = HandleStateTelemetryCmd
 	};
 
     TMState currState = TM_STATE_IDLE;
@@ -442,6 +445,8 @@ TMState HandleStateIdle(NetPacket* pkt) {
 		if (pkt->type == NET_MTYPE_PKTTEST) { return TM_PKTTEST_CMD; }
 		if (pkt->type == NET_MTYPE_GET_DATA_RANGE) { return TM_DATARNG_CMD; }
 		if (pkt->type == NET_MTYPE_TRSMT_DATA) { return TM_TRSMT_DATA_CMD; }
+		if (pkt->type == NET_MTYPE_TELEMETRY_START) { return TM_TELEMETRY_CMD; }
+		if (pkt->type == NET_MTYPE_SETHOME) { return TM_SETHOME; }
 	}
 	return TM_STATE_IDLE;
 }
@@ -468,7 +473,6 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 	uint8_t len = ConstructNetPacket(buff, 10, &ackpkt);
 
 	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
-//	LAMBDA62_SetPacketParamsLoRa(&hspi3_rf, L62_LORA_PRMBL_LEN, L62_LORA_EXP_HDR, len, L62_LORA_CRC_ON, L62_LORA_STD_IQ, false);
 	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
 
 	xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
@@ -485,7 +489,6 @@ TMState HandleStateDiscoveryCmd(NetPacket* pkt) {
 	}
 
 	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
-//	LAMBDA62_SetPacketParamsLoRa(&hspi3_rf, L62_LORA_PRMBL_LEN, L62_LORA_EXP_HDR, NET_PACKET_MAXLEN, L62_LORA_CRC_ON, L62_LORA_STD_IQ, false);
 	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
 	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
@@ -745,16 +748,341 @@ TMState HandleStateTransmitDataCmd(NetPacket* resp) {
 }
 
 
+TMState HandleStateTelemetryCmd(NetPacket* resp) {
+	vTaskDelay(pdMS_TO_TICKS(4));   // Small delay to allow controller to switch to Rx mode
+
+	// Refuse request if home position isn't set
+	if (!HomePositionSet) {
+		NetPacket sendpkt;
+		sendpkt.recipient = NET_CONTROLLER_ADDR;
+		sendpkt.sender = NET_ADDRESS;
+		sendpkt.status = 0x0;
+		sendpkt.type = NET_MTYPE_NACK;
+		sendpkt.seqnum = 0;
+		sendpkt.payloadlen = 0;
+
+		uint8_t buff[NET_PACKET_MAXLEN];
+		uint8_t len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &sendpkt);
 
 
+		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+		xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+		LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+		xSemaphoreGive(SPIRfMutex);
+
+		if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(50)) != pdTRUE) {
+			printf("[ERROR] Telemetry start NACK response Tx timed out\n");
+		}
+
+		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+			printf("[ERROR] L62 not reset after telemetry start NACK due to unreleased SPI mutex\n");
+			return TM_STATE_IDLE;
+		}
+
+		LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
+		LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
+		LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+		xSemaphoreGive(SPIRfMutex);
+
+		return TM_STATE_IDLE;
+	}
+
+
+	// Enable data collection
+	DataCollectionEnabled = true;
+	xTaskNotifyGive(DataCollectionTaskNotif);
+
+
+	// Send ACK response to telemetry start call
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] Telemetry start ACK timed out due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	NetPacket sendpkt;
+	sendpkt.recipient = NET_CONTROLLER_ADDR;
+	sendpkt.sender = NET_ADDRESS;
+	sendpkt.status = 0x0;
+	sendpkt.type = NET_MTYPE_ACK;
+	sendpkt.seqnum = 0;
+	sendpkt.payloadlen = 0;
+
+
+	uint8_t buff[NET_PACKET_MAXLEN];
+	uint8_t len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &sendpkt);
+
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+	xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+	LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+	xSemaphoreGive(SPIRfMutex);
+
+	if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(50)) != pdTRUE) {
+		printf("[ERROR] Telemetry start ACK response Tx timed out\n");
+	}
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] L62 not reset after telemetry start ACK due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
+	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+	xSemaphoreGive(SPIRfMutex);
+
+
+
+
+	// Start transmitting telemetry until stopped
+	TickType_t prevtime = xTaskGetTickCount();
+	while (1) {
+		// Check for stop commands before each loop
+		if (xQueueReceive(RadioQueue, resp, portMAX_DELAY) == pdPASS) {
+			if (resp->type == NET_MTYPE_TELEMETRY_STOP) {
+				// Send ACK response to telemetry stop call
+				if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+					printf("[ERROR] Telemetry stop ACK timed out due to unreleased SPI mutex\n");
+					return TM_STATE_IDLE;
+				}
+
+				sendpkt.type = NET_MTYPE_ACK;
+				sendpkt.payloadlen = 0;
+
+				len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &sendpkt);
+
+
+				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+				xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+				LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+				xSemaphoreGive(SPIRfMutex);
+
+				if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(50)) != pdTRUE) {
+					printf("[ERROR] Telemetry stop ACK response Tx timed out\n");
+				}
+
+				if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+					printf("[ERROR] L62 not reset after telemetry stop ACK due to unreleased SPI mutex\n");
+					return TM_STATE_IDLE;
+				}
+
+				LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
+				LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
+				LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+				xSemaphoreGive(SPIRfMutex);
+
+				break;
+			}
+		}
+
+
+		// Update timer
+		if ((xTaskGetTickCount() - prevtime) < pdMS_TO_TICKS(TELEMETRY_PERIOD_MS)) {
+			vTaskDelay(pdMS_TO_TICKS(5));
+			continue;
+		}
+
+		prevtime = xTaskGetTickCount();
+
+
+		// Send telemetry packet
+		sendpkt.type = NET_MTYPE_TELEMETRY_DATA;
+		sendpkt.payloadlen = 36;
+
+		memcpy(sendpkt.payload, HF_STATE[0], sizeof(float));
+		memcpy(sendpkt.payload + 4, HF_STATE[1], sizeof(float));
+		memcpy(sendpkt.payload + 8, VF_STATE[0], sizeof(float));
+		memcpy(sendpkt.payload + 12, HF_STATE[2], sizeof(float));
+		memcpy(sendpkt.payload + 16, HF_STATE[3], sizeof(float));
+		memcpy(sendpkt.payload + 20, VF_STATE[1], sizeof(float));
+
+		float ori[3];
+		QuatToEuler(OF_STATE, ori);
+		memcpy(sendpkt.payload + 24, ori, sizeof(float) * 3);
+
+
+		len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &sendpkt);
+
+
+		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+			printf("[ERROR] Telemetry data timed out due to unreleased SPI mutex\n");
+			continue;
+		}
+
+		LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+		LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, len, 0x20, 0x40, false);
+
+		xSemaphoreTake(LAMBDA80TxSemphr, 0);   // Clear any spurious Tx notifications
+		LAMBDA80_SendPacket(&hspi3_rf, buff, len, false);
+		xSemaphoreGive(SPIRfMutex);
+
+		if (xSemaphoreTake(LAMBDA80TxSemphr, pdMS_TO_TICKS(150)) != pdTRUE) {
+			printf("[ERROR] Telemetry data L80 Tx timed out\n");
+		}
+
+		if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+			printf("[ERROR] L80 not reset after telemetry data due to unreleased SPI mutex\n");
+			continue;
+		}
+
+		LAMBDA80_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
+		LAMBDA80_SetPacketParams(&hspi3_rf, 0x23, 0, NET_PACKET_MAXLEN, 0x20, 0x40, false);
+		LAMBDA80_SetRx(&hspi3_rf, 0, 0xFFFF, false);
+
+		xSemaphoreGive(SPIRfMutex);
+	}
+
+
+	return TM_STATE_IDLE;
+}
+
+
+TMState HandleStateSetHomeCmd(NetPacket* resp) {
+	vTaskDelay(pdMS_TO_TICKS(4));   // Small delay to allow controller to switch to Rx mode
+
+	// Stop full data collection if enabled
+	if (DataCollectionEnabled) {
+		DataCollectionEnabled = false;
+
+		printf("[INFO] Stopping data logging\n");
+
+		xTimerStop(LogDataTimer, 0);
+		xTaskNotifyGive(LogDataTaskNotif);   // Allow any remaining stored data to be written
+
+		SetDataCollectionEnabled(DataCollectionEnabled);   // Stop data collection
+	}
+
+	SettingHome = true;
+	xQueueReset(FusionQueue);   // Reuse fusion queue for receiving pressure and GPS data
+
+	// Collect pressure and GPS samples
+	if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+		MAXM10S_SetDataOutput(&hi2c, true, false);
+		BMP581_SetMeasure(&hi2c, BMP_DR_10HZ);
+		xSemaphoreGive(I2CMutex);
+	} else {
+		printf("[ERROR] Home sensor wake timed out due to unreleased I2C mutex\n");
+		SettingHome = false;
+		return;
+	}
+
+
+	SensorData data;
+
+	float HomeAlt = 0.0f;
+	float HomeLat = 0.0f;
+	float HomeLon = 0.0f;
+	float HomePres = 101350.0f;
+
+	int PresSamples = 0;
+	int GPSSamples = 0;
+
+	while (1) {
+		// Finish if enough samples are collected
+		if (PresSamples >= SETHOME_MIN_PRES_SAMPLES && GPSSamples >= SETHOME_MIN_GPS_SAMPLES) { break; }
+
+		if (xQueueReceive(FusionQueue, &data, pdMS_TO_TICKS(500)) != pdPASS) {
+			printf("[WARN] Data receive timeout in setting home position\n");
+			break;
+		}
+
+		if (data.type == SENSOR_DATA_PRSTMP) {
+			PresSamples++;
+
+			// Incremental average calculation to save storing a large array
+			HomePres = (((PresSamples - 1.0f) / PresSamples) * HomePres) + ((1.0f / PresSamples) * data.data.tsprstmp.Press);
+		} else if (data.type == SENSOR_DATA_GPS) {
+			GPSSamples++;
+
+			HomeAlt = (((GPSSamples - 1.0f) / GPSSamples) * HomeAlt) + ((1.0f / GPSSamples) * data.data.tsgps.Altitude);
+			HomeLat = (((GPSSamples - 1.0f) / GPSSamples) * HomeLat) + ((1.0f / GPSSamples) * data.data.tsgps.Latitude * 1e-7);
+			HomeLon = (((GPSSamples - 1.0f) / GPSSamples) * HomeLon) + ((1.0f / GPSSamples) * data.data.tsgps.Longitude * 1e-7);
+		}
+	}
+
+
+	// Initialise filters
+	InitialiseOrientationFilter();
+	InitialiseVerticalFilter(HomePres, HomeAlt);
+	InitialiseHorizontalFilter(HomeLat, HomeLon);
+
+
+	// Stop collecting samples
+	if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+		BMP581_SetStandby(&hi2c);
+		MAXM10S_SetDataOutput(&hi2c, false, false);
+		xSemaphoreGive(I2CMutex);
+	} else {
+		printf("[ERROR] Home sensor sleep timed out due to unreleased I2C mutex\n");
+	}
+
+	SettingHome = false;
+	HomePositionSet = true;
+	xQueueReset(FusionQueue);
+
+
+	// Send home position back to controller
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] Home position response timed out due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	NetPacket sendpkt;
+	sendpkt.recipient = NET_CONTROLLER_ADDR;
+	sendpkt.sender = NET_ADDRESS;
+	sendpkt.status = 0x0;
+	sendpkt.type = NET_MTYPE_SETHOME;
+	sendpkt.seqnum = 0;
+	sendpkt.payloadlen = 16;
+
+	memcpy(sendpkt.payload, &HomeAlt, sizeof(float));
+	memcpy(sendpkt.payload + 4, &HomeLat, sizeof(float));
+	memcpy(sendpkt.payload + 8, &HomeLon, sizeof(float));
+	memcpy(sendpkt.payload + 12, &HomePres, sizeof(float));
+
+	uint8_t buff[NET_PACKET_MAXLEN];
+	uint8_t len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &sendpkt);
+
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
+
+	xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
+	LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
+	xSemaphoreGive(SPIRfMutex);
+
+	if (xSemaphoreTake(LAMBDA62TxSemphr, pdMS_TO_TICKS(50)) != pdTRUE) {
+		printf("[ERROR] Home position response Tx timed out\n");
+	}
+
+	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
+		printf("[ERROR] L62 not reset after home position response due to unreleased SPI mutex\n");
+		return TM_STATE_IDLE;
+	}
+
+	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);   // Clear Tx interrupt
+	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
+	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
+
+	xSemaphoreGive(SPIRfMutex);
+
+	return TM_STATE_IDLE;
+}
 
 
 
 
 void SensorFusionTask(void *param) {
 	(void) param;
-
-	InitialiseOrientationFilter();
 
 	SensorData datapkt;
 
@@ -773,9 +1101,6 @@ void SensorFusionTask(void *param) {
     				break;
     			case SENSOR_DATA_MAG:
     				Fusion_NewMagData(&datapkt);
-
-    				printf("ORI: %f, %f, %f, %f\n", OF_STATE[0], OF_STATE[1], OF_STATE[2], OF_STATE[3]);
-
     				break;
     			case SENSOR_DATA_PRSTMP:
     				Fusion_NewPressData(&datapkt);
@@ -812,28 +1137,6 @@ int main(void) {
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
 	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, true);
 	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, true);
-
-//	InitialiseLAMBDA62LoRa(&hspi3_rf, true);
-//	LAMBDA62_SetPacketParamsLoRa(&hspi3_rf, L62_LORA_PRMBL_LEN, L62_LORA_EXP_HDR, NET_PACKET_MAXLEN, L62_LORA_CRC_ON, L62_LORA_STD_IQ, true);
-//	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, true);
-
-//	InitialiseLAMBDA62FSK(&hspi3_rf, true);
-//
-//	LAMBDA62_PrintStatus(LAMBDA62_Status(&hspi3_rf, true), "post-init");
-//	printf("[INFO] L62 DevErrors post-init: 0x%04X\n", LAMBDA62_DevErrors(&hspi3_rf, true));
-//
-//	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, true);
-//
-//	LAMBDA62_PrintStatus(LAMBDA62_Status(&hspi3_rf, true), "post-packetparams");
-//
-//	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, true);
-//
-//	LAMBDA62_PrintStatus(LAMBDA62_Status(&hspi3_rf, true), "post-SetRx");
-//	printf("[INFO] L62 IRQ status post-SetRx: 0x%04X\n", LAMBDA62_GetIRQStatus(&hspi3_rf, true));
-//	printf("[INFO] L62 DevErrors post-SetRx: 0x%04X\n", LAMBDA62_DevErrors(&hspi3_rf, true));
-//	printf("[INFO] L62 instantaneous RSSI: %d dBm\n", LAMBDA62_GetInstRSSI(&hspi3_rf, true));
-
-
 
 
 	InitialiseLAMBDA80(&hspi3_rf, true);
@@ -988,6 +1291,8 @@ void SetDataCollectionEnabled(bool Collect) {
 		xSemaphoreGive(I2CMutex);
 	}
 }
+
+
 
 
 
