@@ -143,7 +143,7 @@ void SetDataCollectionEnabled(bool Collect);
 
 
 // Samples needed for GPS and pressure to set home position. Home is set when both thresholds are met
-#define SETHOME_MIN_GPS_SAMPLES 10
+#define SETHOME_MIN_GPS_SAMPLES 0
 #define SETHOME_MIN_PRES_SAMPLES 10
 
 bool SettingHome = false;   // For redirecting readings to home position calculation

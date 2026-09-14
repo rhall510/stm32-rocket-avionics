@@ -425,7 +425,8 @@ void TransactionManagerTask(void *param) {
 		[TM_PKTTEST_CMD] = HandleStatePktTestCmd,
 		[TM_DATARNG_CMD] = HandleStateDataRangeCmd,
 		[TM_TRSMT_DATA_CMD] = HandleStateTransmitDataCmd,
-		[TM_TELEMETRY_CMD] = HandleStateTelemetryCmd
+		[TM_TELEMETRY_CMD] = HandleStateTelemetryCmd,
+		[TM_SETHOME] = HandleStateSetHomeCmd
 	};
 
     TMState currState = TM_STATE_IDLE;
@@ -844,8 +845,12 @@ TMState HandleStateTelemetryCmd(NetPacket* resp) {
 	TickType_t prevtime = xTaskGetTickCount();
 	while (1) {
 		// Check for stop commands before each loop
-		if (xQueueReceive(RadioQueue, resp, portMAX_DELAY) == pdPASS) {
+		if (xQueueReceive(RadioQueue, resp, pdMS_TO_TICKS(0)) == pdPASS) {
 			if (resp->type == NET_MTYPE_TELEMETRY_STOP) {
+				// Disable data collection
+				DataCollectionEnabled = false;
+				xTaskNotifyGive(DataCollectionTaskNotif);
+
 				// Send ACK response to telemetry stop call
 				if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 					printf("[ERROR] Telemetry stop ACK timed out due to unreleased SPI mutex\n");
@@ -898,12 +903,12 @@ TMState HandleStateTelemetryCmd(NetPacket* resp) {
 		sendpkt.type = NET_MTYPE_TELEMETRY_DATA;
 		sendpkt.payloadlen = 36;
 
-		memcpy(sendpkt.payload, HF_STATE[0], sizeof(float));
-		memcpy(sendpkt.payload + 4, HF_STATE[1], sizeof(float));
-		memcpy(sendpkt.payload + 8, VF_STATE[0], sizeof(float));
-		memcpy(sendpkt.payload + 12, HF_STATE[2], sizeof(float));
-		memcpy(sendpkt.payload + 16, HF_STATE[3], sizeof(float));
-		memcpy(sendpkt.payload + 20, VF_STATE[1], sizeof(float));
+		memcpy(sendpkt.payload, &HF_STATE[0], sizeof(float));
+		memcpy(sendpkt.payload + 4, &HF_STATE[1], sizeof(float));
+		memcpy(sendpkt.payload + 8, &VF_STATE[0], sizeof(float));
+		memcpy(sendpkt.payload + 12, &HF_STATE[2], sizeof(float));
+		memcpy(sendpkt.payload + 16, &HF_STATE[3], sizeof(float));
+		memcpy(sendpkt.payload + 20, &VF_STATE[1], sizeof(float));
 
 		float ori[3];
 		QuatToEuler(OF_STATE, ori);
@@ -972,7 +977,7 @@ TMState HandleStateSetHomeCmd(NetPacket* resp) {
 	} else {
 		printf("[ERROR] Home sensor wake timed out due to unreleased I2C mutex\n");
 		SettingHome = false;
-		return;
+		return TM_STATE_IDLE;
 	}
 
 

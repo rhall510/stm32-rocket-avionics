@@ -251,6 +251,17 @@ void InitialiseLAMBDA62Common(SPI_HandleTypeDef *hspi, bool Blocking) {
 
 	LAMBDA62_WaitBusy(Blocking);
 
+	// Image calibration for 863-870MHz
+	tx[0] = L62_IMG_CAL;
+	tx[1] = 0xD7;
+	tx[2] = 0xDB;
+
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(hspi, tx, 3, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(L62_CS_PORT, L62_CS_PIN, GPIO_PIN_SET);
+
+	LAMBDA62_WaitBusy(Blocking);
+
 	// Set frequency to 868MHz
 	tx[0] = L62_RF_FREQ;
 	tx[1] = 0x36;

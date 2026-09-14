@@ -202,7 +202,6 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 
 	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
-//	LAMBDA62_SetPacketParamsLoRa(&hspi3_rf, L62_LORA_PRMBL_LEN, L62_LORA_EXP_HDR, len, L62_LORA_CRC_ON, L62_LORA_STD_IQ, false);
 
 	xSemaphoreTake(LAMBDA62TxSemphr, 0);   // Clear any spurious Tx notifications
 	LAMBDA62_SendPacket(&hspi3_rf, buff, len, false);
@@ -224,7 +223,6 @@ TMState HandleStateDiscoveryCmd(USBPacket* pkt, NetPacket* resp) {
 
 	// Set to Rx continuous mode
 	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, NET_PACKET_MAXLEN, 2, false, false);
-//	LAMBDA62_SetPacketParamsLoRa(&hspi3_rf, L62_LORA_PRMBL_LEN, L62_LORA_EXP_HDR, NET_PACKET_MAXLEN, L62_LORA_CRC_ON, L62_LORA_STD_IQ, false);
 	LAMBDA62_SetRx(&hspi3_rf, 0xFFFFFF, false);
 
 	xSemaphoreGive(SPIRfMutex);
@@ -873,6 +871,9 @@ TMState HandleStateSetHomeCmd(USBPacket* pkt, NetPacket* resp) {
 	}
 
 	SendPacketUSB(&relay);
+
+	xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+	return TM_STATE_IDLE;
 }
 
 
@@ -891,7 +892,6 @@ int main(void) {
 
 	// Initialise RF modules
 	InitialiseLAMBDA62FSK(&hspi3_rf, true);
-//	InitialiseLAMBDA62LoRa(&hspi3_rf, true);
 
 	InitialiseLAMBDA80(&hspi3_rf, true);
 	LAMBDA80_SetMode_Telemetry(&hspi3_rf, true);
