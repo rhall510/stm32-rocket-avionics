@@ -13,6 +13,30 @@
 #define DEG2RAD(x) ((x) * (M_PI / 180.0f))
 
 
+
+// Calibration values
+extern float GYR_CAL_CENT[3];
+
+extern float MAG_CAL_CENT[3];
+extern float MAG_CAL_DIST[9];
+
+extern float LACC_CAL_CENT[3];
+extern float LACC_CAL_DIST[9];
+
+extern float HACC_CAL_CENT[3];
+extern float HACC_CAL_DIST[9];
+
+
+// Reading calibration helpers
+// Simple offset calibration for sensor data vectors in the TS_Vec3 format. Subtracts the offset IN PLACE
+void CalVectorCent(TS_Vec3 *vec, float *offset);
+
+// Calibrate sensor data vectors in the TS_Vec3 format by subtracting offset and correcting distortions using dist (float[9]) IN PLACE
+void CalVectorCentDist(TS_Vec3 *vec, float *offset, float *dist);
+
+
+
+
 // Configuration
 // Threshold above which a reading from the low range accelerometer is considered unreliable
 // The high range accelerometer readings will be used instead while above this threshold

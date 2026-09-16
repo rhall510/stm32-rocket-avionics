@@ -34,6 +34,9 @@ void ReadLSM6DSRTask(void *param) {
 			SensorData data;
 
 			for (int i = 0; i < LSM6_FIFO_READNUM; i++) {
+				// Calibrate reading
+				CalVectorCentDist(&lsm_accbuff[i], LACC_CAL_CENT, LACC_CAL_DIST);
+
 				data.type = SENSOR_DATA_LRACC;
 				data.data.tsvec3 = lsm_accbuff[i];
 
@@ -45,6 +48,9 @@ void ReadLSM6DSRTask(void *param) {
 					printf("[ERROR] Fusion queue full\n");
 				}
 
+
+				// Calibrate reading
+				CalVectorCent(&lsm_gyrbuff[i], GYR_CAL_CENT);
 
 				data.type = SENSOR_DATA_GYR;
 				data.data.tsvec3 = lsm_gyrbuff[i];
@@ -79,6 +85,9 @@ void ReadADXL375Task(void *param) {
 			SensorData data;
 
 			for (int i = 0; i < ADXL_FIFO_READNUM; i++) {
+				// Calibrate reading
+				CalVectorCentDist(&adxl_accbuff[i], HACC_CAL_CENT, HACC_CAL_DIST);
+
 				data.type = SENSOR_DATA_HRACC;
 				data.data.tsvec3 = adxl_accbuff[i];
 
@@ -143,6 +152,9 @@ void ReadMMC5983Task(void *param) {
 			MMC5983MA_ReadData(&hi2c, &mmc_buff, mmc_data_time);
 
 			xSemaphoreGive(I2CMutex);
+
+			// Calibrate reading
+			CalVectorCentDist(&mmc_buff, MAG_CAL_CENT, MAG_CAL_DIST);
 
 			SensorData data;
 			data.type = SENSOR_DATA_MAG;

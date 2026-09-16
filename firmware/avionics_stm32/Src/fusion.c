@@ -1,6 +1,51 @@
 #include "fusion.h"
 
 
+// Calibration values
+float GYR_CAL_CENT[3] = {0.068633f, -0.866754f, 0.150951f};
+
+float MAG_CAL_CENT[3] = {0.05886926f, 0.44385249f, 0.02833682f};
+float MAG_CAL_DIST[9] = {2.10899989f, 0.02800124f, 0.04438672f,
+                		 0.02800124f, 2.02111567f, -0.00440351f,
+						 0.04438672f, -0.00440351f, 2.34470254f};
+
+float LACC_CAL_CENT[3] = {-0.00398834f, -0.01495143f, 0.00977724f};
+float LACC_CAL_DIST[9] = {1.00047372f, 0.000176672972f, -0.00303506789f,
+				 	 	  0.000176672972f, 0.996552141f, 0.000214283291f,
+				 	 	  -0.00303506789f, 0.000214283291f, 0.994217168f};
+
+float HACC_CAL_CENT[3] = {0.60846088f, 1.28277898f, 0.77979761f};
+float HACC_CAL_DIST[9] = {0.971669703f, 0.0375371840f, 0.000657705583f,
+				 	 	  0.0375371840f, 1.03017628f, 0.0208469271f,
+						  0.000657705583f, 0.0208469271f, 0.980978031f};
+
+
+// Calibration helpers
+void CalVectorCent(TS_Vec3 *vec, float *offset) {
+	vec->X -= offset[0];
+	vec->Y -= offset[1];
+	vec->Z -= offset[2];
+}
+
+
+void CalVectorCentDist(TS_Vec3 *vec, float *offset, float *dist) {
+	vec->X -= offset[0];
+	vec->Y -= offset[1];
+	vec->Z -= offset[2];
+
+	float x_corr = vec->X * dist[0] + vec->Y * dist[1] + vec->Z * dist[2];
+	float y_corr = vec->X * dist[3] + vec->Y * dist[4] + vec->Z * dist[5];
+	float z_corr = vec->X * dist[6] + vec->Y * dist[7] + vec->Z * dist[8];
+
+	vec->X = x_corr;
+	vec->Y = y_corr;
+	vec->Z = z_corr;
+}
+
+
+
+
+
 // Timestamps for calculating delta time
 static float gyr_tlast = 0.0f;
 static float acc_tlast = 0.0f;
@@ -152,10 +197,10 @@ void GetExpectedMag(float *q_est, float *mag_meas, float *mag_exp) {
 	// Rotate the measured vector to the navigation frame
 	float32_t H[3];
 	arm_matrix_instance_f32 H_Mat;
-	arm_mat_init_f32(&H_Mat, 1, 3, H);
+	arm_mat_init_f32(&H_Mat, 3, 1, H);
 
 	arm_matrix_instance_f32 MM_Mat;
-	arm_mat_init_f32(&MM_Mat, 1, 3, mag_meas);
+	arm_mat_init_f32(&MM_Mat, 3, 1, mag_meas);
 
 	arm_mat_mult_f32(&R_Mat, &MM_Mat, &H_Mat);
 
@@ -166,11 +211,11 @@ void GetExpectedMag(float *q_est, float *mag_meas, float *mag_exp) {
 	float b_nav[3] = {bx * arm_cos_f32(MAG_DEC), bx * arm_sin_f32(MAG_DEC), H[2]};
 
 	arm_matrix_instance_f32 BN_Mat;
-	arm_mat_init_f32(&BN_Mat, 1, 3, b_nav);
+	arm_mat_init_f32(&BN_Mat, 3, 1, b_nav);
 
 	// Rotate back to the body frame
 	arm_matrix_instance_f32 ME_Mat;
-	arm_mat_init_f32(&ME_Mat, 1, 3, mag_exp);
+	arm_mat_init_f32(&ME_Mat, 3, 1, mag_exp);
 
 
 	float32_t RT[9];
@@ -210,7 +255,7 @@ void OF_NewGyrData(SensorData *data, float dt) {
 	float theta;
 	arm_sqrt_f32(dang[0]*dang[0] + dang[1]*dang[1] + dang[2]*dang[2], &theta);
 
-	float dq[4] = {0.0f};
+	float dq[4] = {1.0f, 0.0f, 0.0f, 0.0f};
 
 	if (theta > 1e-8f) {   // If a measurable amount of rotation happened, calculate the rotation quaternion using exponential map
 		float sht = arm_sin_f32(theta / 2.0f);
@@ -228,10 +273,10 @@ void OF_NewGyrData(SensorData *data, float dt) {
 
 	float qmag;
 	arm_sqrt_f32(q_upd[0]*q_upd[0] + q_upd[1]*q_upd[1] + q_upd[2]*q_upd[2] + q_upd[3]*q_upd[3], &qmag);
-	q_upd[0] = q_upd[0] / qmag;
-	q_upd[1] = q_upd[1] / qmag;
-	q_upd[2] = q_upd[2] / qmag;
-	q_upd[3] = q_upd[3] / qmag;
+	OF_STATE[0] = q_upd[0] / qmag;
+	OF_STATE[1] = q_upd[1] / qmag;
+	OF_STATE[2] = q_upd[2] / qmag;
+	OF_STATE[3] = q_upd[3] / qmag;
 
 
 	// Build the state transition matrix
@@ -274,7 +319,7 @@ void OF_NewGyrData(SensorData *data, float dt) {
 
 	// Add gyroscope noise
 	for (int i = 0; i < 9; i++) {
-		OF_UNCRT[i] += OF_GYR_NOISE[i] * dt;
+		OF_UNCRT[i] = FPFT[i] + (OF_GYR_NOISE[i] * dt);
 	}
 }
 
