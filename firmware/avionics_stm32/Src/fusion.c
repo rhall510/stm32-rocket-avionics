@@ -245,6 +245,17 @@ void InitialiseOrientationFilter() {
 	arm_mat_init_f32(&OF_GYR_NOISE_M, 3, 3, OF_GYR_NOISE);
 	arm_mat_init_f32(&OF_ACC_NOISE_M, 3, 3, OF_ACC_NOISE);
 	arm_mat_init_f32(&OF_MAG_NOISE_M, 3, 3, OF_MAG_NOISE);
+
+
+	// Clear any existing data
+	OF_STATE[0] = 1.0f;
+	for (int i = 1; i < 4; i++) {
+		OF_STATE[i] = 0.0f;
+	}
+
+	for (int i = 0; i < 9; i++) {
+		OF_UNCRT[i] = 0.0f;
+	}
 }
 
 
@@ -552,12 +563,18 @@ void InitialiseVerticalFilter(float GroundPress, float GroundAlt) {
 	VF_GRND_PRESS = GroundPress;
 	VF_GRND_ALT = GroundAlt;
 
-	VF_STATE[0] = GroundAlt;
-	VF_STATE[1] = 0.0f;
-
 	// Initialise matrices
 	arm_mat_init_f32(&VF_STATE_M, 2, 1, VF_STATE);
 	arm_mat_init_f32(&VF_UNCRT_M, 2, 2, VF_UNCRT);
+
+
+	// Clear any existing data
+	VF_STATE[0] = GroundAlt;
+	VF_STATE[1] = 0.0f;
+
+	for (int i = 0; i < 4; i++) {
+		VF_UNCRT[i] = i % 2 == 0 ? 1.0f : 0.0f;
+	}
 }
 
 
@@ -894,12 +911,18 @@ void InitialiseHorizontalFilter(float HomeLat, float HomeLon) {
     HF_LAT_HOME = HomeLat;
     HF_LON_HOME = HomeLon;
 
+    arm_mat_init_f32(&HF_STATE_M, 4, 1, HF_STATE);
+    arm_mat_init_f32(&HF_UNCRT_M, 4, 4, HF_UNCRT);
+
+
+	// Clear any existing data
     for (int i = 0; i < 4; i++) {
         HF_STATE[i] = 0.0f;
     }
 
-    arm_mat_init_f32(&HF_STATE_M, 4, 1, HF_STATE);
-    arm_mat_init_f32(&HF_UNCRT_M, 4, 4, HF_UNCRT);
+	for (int i = 0; i < 16; i++) {
+		HF_UNCRT[i] = i % 4 == 0 ? 1.0f : 0.0f;
+	}
 }
 
 

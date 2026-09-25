@@ -779,7 +779,7 @@ TMState HandleStateTelemetryCmd(USBPacket* pkt, NetPacket* resp) {
 		// Relay packet contents to host
 		USBPacket relay;
 		relay.type = USB_MTYPE_TELEMETRY_DATA;
-		relay.payloadlen = 36;
+		relay.payloadlen = 44;
 
 		for (int i = 0; i < relay.payloadlen; i++) {
 			relay.payload[i] = resp->payload[i];

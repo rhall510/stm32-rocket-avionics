@@ -10,6 +10,7 @@ import json
 import struct
 import math
 import numpy as np
+import time
 
 # --- Matplotlib Integration ---
 import matplotlib
@@ -90,10 +91,13 @@ class ModernSerialTerminal:
         
         # Storage for the decoded floats
         self.avionics_data = {
+            'time': [],
             'x': [], 'y': [], 'z': [],
             'vx': [], 'vy': [], 'vz': [],
-            'yaw': [], 'pitch': [], 'roll': []
+            'yaw': [], 'pitch': [], 'roll': [],
+            'temp': [], 'press': []
         }
+        self.start_time = None
         
         # Basic 3D aircraft model definitions
         self.base_verts = np.array([
@@ -117,6 +121,21 @@ class ModernSerialTerminal:
         self.refresh_ports()
         self.load_settings()
 
+    def clear_telemetry_data(self):
+        self.avionics_data = {
+            'time': [], 'x': [], 'y': [], 'z': [],
+            'vx': [], 'vy': [], 'vz': [],
+            'yaw': [], 'pitch': [], 'roll': [],
+            'temp': [], 'press': []
+        }
+        self.start_time = None
+        
+        # Flush visuals if the plot window is open
+        if hasattr(self, 'trail_line'):
+            self.trail_line.set_data_3d([], [], [])
+            self.line_temp.set_data([], [])
+            self.line_press.set_data([], [])
+    
     def setup_ui(self):
         # --- Top: Connection Bar ---
         conn_frame = ctk.CTkFrame(self.root)
@@ -345,19 +364,25 @@ class ModernSerialTerminal:
             self.telemetry_buffer = self.telemetry_buffer[4 + payload_len:] # Advance buffer
             
             # Message Type 0x08 is the Telemetry Data
-            # Length 0x24 (36 bytes) -> 9 little endian floats
-            if msg_type == 0x08 and payload_len == 36:
+            # Length 0x2C (44 bytes) -> 11 little endian floats
+            if msg_type == 0x08 and payload_len == 44:
                 try:
-                    data = struct.unpack('<9f', payload)
+                    data = struct.unpack('<11f', payload)
+                    if self.start_time is None:
+                        self.start_time = time.time()
+                        
+                    self.avionics_data['time'].append(time.time() - self.start_time)
                     self.avionics_data['x'].append(data[0])
                     self.avionics_data['y'].append(data[1])
                     self.avionics_data['z'].append(data[2])
                     self.avionics_data['vx'].append(data[3])
                     self.avionics_data['vy'].append(data[4])
                     self.avionics_data['vz'].append(data[5])
-                    self.avionics_data['yaw'].append(data[6])
+                    self.avionics_data['roll'].append(data[6])
                     self.avionics_data['pitch'].append(data[7])
-                    self.avionics_data['roll'].append(data[8])
+                    self.avionics_data['yaw'].append(data[8])
+                    self.avionics_data['temp'].append(data[9])
+                    self.avionics_data['press'].append(data[10])
                 except struct.error:
                     pass
 
@@ -365,8 +390,8 @@ class ModernSerialTerminal:
     def toggle_live_plots(self):
         if self.plot_window is None or not self.plot_window.winfo_exists():
             self.plot_window = ctk.CTkToplevel(self.root)
-            self.plot_window.title("Avionics 3D Telemetry")
-            self.plot_window.geometry("1400x700") 
+            self.plot_window.title("Avionics Telemetry Dashboard")
+            self.plot_window.geometry("1400x900") 
             
             ctrl_frame = ctk.CTkFrame(self.plot_window, fg_color="transparent")
             ctrl_frame.pack(side=ctk.TOP, fill=ctk.X, padx=10, pady=5)
@@ -377,11 +402,20 @@ class ModernSerialTerminal:
             self.limit_entry = ctk.CTkEntry(ctrl_frame, textvariable=self.plot_limit_var, width=80)
             self.limit_entry.pack(side=ctk.LEFT)
 
-            self.fig = plt.figure(figsize=(14, 7))
-            self.fig.suptitle('Live 3D Flight Kinematics', fontsize=16, weight='bold')
+            self.clear_data_btn = ctk.CTkButton(ctrl_frame, text="Clear Data", width=80, command=self.clear_telemetry_data, fg_color="#8B0000", hover_color="#FF0000")
+            self.clear_data_btn.pack(side=ctk.RIGHT, padx=10)
+
+            self.fig = plt.figure(figsize=(14, 9))
+            self.fig.suptitle('Live Avionics Dashboard', fontsize=16, weight='bold')
             
-            self.ax1 = self.fig.add_subplot(121, projection='3d')
-            self.ax2 = self.fig.add_subplot(122, projection='3d')
+            # --- NEW GRIDSPEC LAYOUT ---
+            # Create a 3-row, 2-column grid. The left column is twice as wide.
+            gs = self.fig.add_gridspec(3, 2, width_ratios=[2, 1])
+            
+            self.ax1 = self.fig.add_subplot(gs[:, 0], projection='3d') # Spans all 3 rows in column 0
+            self.ax2 = self.fig.add_subplot(gs[0, 1], projection='3d') # Row 0, column 1
+            self.ax_temp = self.fig.add_subplot(gs[1, 1])              # Row 1, column 1
+            self.ax_press = self.fig.add_subplot(gs[2, 1])             # Row 2, column 1
             
             # --- INITIALIZE PLOT ELEMENTS ONCE ---
             self.ax1.set_xlabel('East (X) [meters]')
@@ -397,16 +431,33 @@ class ModernSerialTerminal:
             self.ax2.set_ylim(-1, 1)
             self.ax2.set_zlim(-1, 1)
 
-            # Trail line
+            self.ax2.set_xticklabels([])
+            self.ax2.set_yticklabels([])
+            self.ax2.set_zticklabels([])
+
+            # 3D Polygons & Trail (Updated trail color to red)
             self.trail_line, = self.ax1.plot([], [], [], color='red', alpha=0.8, linestyle='--', linewidth=2)
-            
-            # Polygons
             self.plane1 = Poly3DCollection([], facecolors=['teal', 'teal', 'cyan', 'cyan', 'teal', 'cyan'], edgecolors='blue', alpha=0.9)
             self.ax1.add_collection3d(self.plane1)
-            
             self.plane2 = Poly3DCollection([], facecolors=['saddlebrown', 'saddlebrown', 'orange', 'orange', 'saddlebrown', 'orange'], edgecolors='maroon', alpha=0.9)
             self.ax2.add_collection3d(self.plane2)
+            
+            # 2D Lines
+            self.ax_temp.set_title("Temperature")
+            self.ax_temp.set_ylabel("Temp (°C)")
+            self.ax_temp.set_xlabel("Time (s)")
+            self.ax_temp.grid(True, linestyle='--', alpha=0.3)
+            self.line_temp, = self.ax_temp.plot([], [], color='tab:red', linewidth=2)
+            
+            self.ax_press.set_title("Pressure")
+            self.ax_press.set_ylabel("Pressure (Pa)")
+            self.ax_press.set_xlabel("Time (s)")
+            self.ax_press.grid(True, linestyle='--', alpha=0.3)
+            self.line_press, = self.ax_press.plot([], [], color='tab:blue', linewidth=2)
             # -------------------------------------
+
+            # Prevent labels from overlapping in the stacked layout
+            self.fig.tight_layout()
 
             self.canvas = FigureCanvasTkAgg(self.fig, master=self.plot_window)
             self.canvas.get_tk_widget().pack(fill=ctk.BOTH, expand=True)
@@ -420,7 +471,7 @@ class ModernSerialTerminal:
             return 
             
         if not self.avionics_data['x']:
-            self.root.after(100, self.update_plots)
+            self.root.after(50, self.update_plots)
             return
 
         try:
@@ -429,9 +480,13 @@ class ModernSerialTerminal:
         except ValueError:
             limit = -500 
             
+        # Get path history tracking arrays
+        t_hist = np.array(self.avionics_data['time'][limit:])
         px_hist = np.array(self.avionics_data['x'][limit:])
         py_hist = np.array(self.avionics_data['y'][limit:])
         pz_hist = np.array(self.avionics_data['z'][limit:])
+        temp_hist = np.array(self.avionics_data['temp'][limit:])
+        press_hist = np.array(self.avionics_data['press'][limit:])
         
         cur_yaw = self.avionics_data['yaw'][-1]
         cur_pitch = self.avionics_data['pitch'][-1]
@@ -439,7 +494,7 @@ class ModernSerialTerminal:
         
         plot_e = py_hist
         plot_n = px_hist
-        plot_u = -pz_hist
+        plot_u = pz_hist
 
         R = euler_to_matrix(cur_yaw, cur_pitch, cur_roll)
         
@@ -456,7 +511,7 @@ class ModernSerialTerminal:
         self.ax1.set_ylim(mid_n - max_range, mid_n + max_range)
         self.ax1.set_zlim(mid_u - max_range, mid_u + max_range)
         
-        # --- FAST DATA UPDATES INSTEAD OF CLEARING ---
+        # --- FAST DATA UPDATES ---
         # Update path trail
         self.trail_line.set_data_3d(plot_e, plot_n, plot_u)
         
@@ -468,14 +523,28 @@ class ModernSerialTerminal:
         self.plane1.set_verts(faces_1)
 
         # Update Airplane 2 (Origin)
-        verts_unit = self.base_verts * 0.4
+        verts_unit = self.base_verts * 0.48
         v_plot_2 = body_to_plot_frame(verts_unit, R)
         faces_2 = [[v_plot_2[idx] for idx in face] for face in self.faces_idx]
         self.plane2.set_verts(faces_2)
 
+        # Update 2D lines and limits
+        if len(t_hist) > 0:
+            self.line_temp.set_data(t_hist, temp_hist)
+            self.ax_temp.set_xlim(t_hist[0], t_hist[-1])
+            self.ax_temp.set_ylim(temp_hist.min() - 1, temp_hist.max() + 1)
+            
+            self.line_press.set_data(t_hist, press_hist)
+            self.ax_press.set_xlim(t_hist[0], t_hist[-1])
+            
+            p_min, p_max = press_hist.min(), press_hist.max()
+            if p_max == p_min:
+                self.ax_press.set_ylim(p_min - 10, p_max + 10)
+            else:
+                p_pad = (p_max - p_min) * 0.1
+                self.ax_press.set_ylim(p_min - p_pad, p_max + p_pad)
+
         self.canvas.draw_idle()
-        
-        # 50ms interval ~ 20fps
         self.root.after(50, self.update_plots)
 
     def handle_incoming_data(self, raw_bytes):

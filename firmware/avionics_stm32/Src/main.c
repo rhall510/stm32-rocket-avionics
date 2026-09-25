@@ -913,7 +913,7 @@ TMState HandleStateTelemetryCmd(NetPacket* resp) {
 
 		// Send telemetry packet
 		sendpkt.type = NET_MTYPE_TELEMETRY_DATA;
-		sendpkt.payloadlen = 36;
+		sendpkt.payloadlen = 44;
 
 		memcpy(sendpkt.payload, &HF_STATE[0], sizeof(float));
 		memcpy(sendpkt.payload + 4, &HF_STATE[1], sizeof(float));
@@ -922,9 +922,13 @@ TMState HandleStateTelemetryCmd(NetPacket* resp) {
 		memcpy(sendpkt.payload + 16, &HF_STATE[3], sizeof(float));
 		memcpy(sendpkt.payload + 20, &VF_STATE[1], sizeof(float));
 
+
 		float ori[3];
 		QuatToEuler(OF_STATE, ori);
 		memcpy(sendpkt.payload + 24, ori, sizeof(float) * 3);
+
+		memcpy(sendpkt.payload + 36, &bmp_buff[BMP_FIFO_READNUM - 1].Temp, sizeof(float));
+		memcpy(sendpkt.payload + 40, &bmp_buff[BMP_FIFO_READNUM - 1].Press, sizeof(float));
 
 
 		len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &sendpkt);

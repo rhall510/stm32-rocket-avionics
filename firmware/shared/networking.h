@@ -46,6 +46,8 @@ typedef enum {
 	 * [0:11] N/E/U position (m),
 	 * [12:23] N/E/U velocity (m/s),
 	 * [24:35] Orientation yaw/pitch/roll
+	 * [36:39] Temperature
+	 * [40:43] Pressure
 	 */
 	NET_MTYPE_SETHOME,
 	/* Command the avionics unit to set its home position.
