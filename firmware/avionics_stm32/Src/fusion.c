@@ -254,8 +254,11 @@ void InitialiseOrientationFilter() {
 	}
 
 	for (int i = 0; i < 9; i++) {
-		OF_UNCRT[i] = 0.0f;
+		OF_UNCRT[i] = i % 4 == 0 ? 1.0f : 0.0f;
 	}
+
+	acc_tlast = 0.0f;
+	gyr_tlast = 0.0f;
 }
 
 
@@ -536,8 +539,8 @@ float32_t VF_STATE[2] = {0.0f, 0.0f};
 arm_matrix_instance_f32 VF_STATE_M;
 
 // Uncertainty matrix
-float32_t VF_UNCRT[4] = {0.0f, 0.0f,
-						 0.0f, 0.0f};
+float32_t VF_UNCRT[4] = {1.0f, 0.0f,
+						 0.0f, 1.0f};
 arm_matrix_instance_f32 VF_UNCRT_M;
 
 
@@ -573,7 +576,7 @@ void InitialiseVerticalFilter(float GroundPress, float GroundAlt) {
 	VF_STATE[1] = 0.0f;
 
 	for (int i = 0; i < 4; i++) {
-		VF_UNCRT[i] = i % 2 == 0 ? 1.0f : 0.0f;
+		VF_UNCRT[i] = i % 3 == 0 ? 1.0f : 0.0f;
 	}
 }
 
@@ -907,6 +910,10 @@ float HF_LAT_HOME = 0.0f;
 float HF_LON_HOME = 0.0f;
 
 
+// Navigation frame acceleration for flight state machine
+float32_t NAV_ACCEL[3] = {0.0f};
+
+
 void InitialiseHorizontalFilter(float HomeLat, float HomeLon) {
     HF_LAT_HOME = HomeLat;
     HF_LON_HOME = HomeLon;
@@ -921,7 +928,7 @@ void InitialiseHorizontalFilter(float HomeLat, float HomeLon) {
     }
 
 	for (int i = 0; i < 16; i++) {
-		HF_UNCRT[i] = i % 4 == 0 ? 1.0f : 0.0f;
+		HF_UNCRT[i] = i % 5 == 0 ? 1.0f : 0.0f;
 	}
 }
 
@@ -944,6 +951,11 @@ void HF_NewAccData(SensorData *data, float dt) {
     float a_comp[3] = {data->data.tsvec3.X, data->data.tsvec3.Y, data->data.tsvec3.Z};
     float a_nav[3];
     GetLinearAcceleration(OF_STATE, a_comp, a_nav);
+
+    // Update NAV_ACCEL
+    NAV_ACCEL[0] = a_nav[0];
+	NAV_ACCEL[1] = a_nav[1];
+	NAV_ACCEL[2] = a_nav[2];
 
 
     // State prediction (manual to save matrix operations)

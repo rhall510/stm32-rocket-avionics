@@ -850,8 +850,32 @@ TMState HandleStateSetHomeCmd(USBPacket* pkt, NetPacket* resp) {
 
 	// Wait for response (give extra time to allow samples to accumulate)
 	if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(10000)) != pdPASS) {
+		// Send warning if no packets received
+		USBPacket nack;
+		nack.type = USB_MTYPE_INFO;
+		nack.payloadlen = 2;
+		nack.payload[0] = USB_MTYPE_SETHOME;
+		nack.payload[1] = 0;
+
+		SendPacketUSB(&nack);
+
 		printf("[ERROR] Set home request ACK response timed out\n");
 		xTimerReset(DiscoveryTimer, 0);   // Restart discovery calls
+		return TM_STATE_IDLE;
+	}
+
+	// Handle NACK if home cannot be set (likely due to no GPS lock)
+	if (resp->type == NET_MTYPE_NACK) {
+		printf("[ERROR] Avionics unit failed to set home position\n");
+
+		USBPacket nack;
+		nack.type = USB_MTYPE_INFO;
+		nack.payloadlen = 2;
+		nack.payload[0] = USB_MTYPE_SETHOME;
+		nack.payload[1] = 1;
+		SendPacketUSB(&nack);
+
+		xTimerReset(DiscoveryTimer, 0);
 		return TM_STATE_IDLE;
 	}
 

@@ -53,9 +53,12 @@ TaskHandle_t M10SReadTaskNotif = NULL;
 TaskHandle_t DataCollectionTaskNotif = NULL;
 TaskHandle_t LogDataTaskNotif = NULL;
 
+TaskHandle_t FusionTaskHandle = NULL;
+
 // Semaphores
 SemaphoreHandle_t LAMBDA80TxSemphr = NULL;
 SemaphoreHandle_t LAMBDA62TxSemphr = NULL;
+SemaphoreHandle_t DataReadySemphr = NULL;
 
 // Mutexes
 SemaphoreHandle_t SPIRfMutex = NULL;
@@ -104,6 +107,12 @@ void LogDataTask(void *param);
 // Fuse sensor data into 3D estimate
 void SensorFusionTask(void *param);
 
+// Keep track of what state of flight the unit is currently in
+void FlightControlTask(void *param);
+
+// Trigger the parachute system
+void DeployParachute();
+
 
 // States for the transaction manager state machine
 typedef enum {
@@ -143,11 +152,25 @@ void SetDataCollectionEnabled(bool Collect);
 
 
 // Samples needed for GPS and pressure to set home position. Home is set when both thresholds are met
-#define SETHOME_MIN_GPS_SAMPLES 0
-#define SETHOME_MIN_PRES_SAMPLES 10
+#define SETHOME_MIN_GPS_SAMPLES 10
+#define SETHOME_MIN_PRES_SAMPLES 30
 
 bool SettingHome = false;   // For redirecting readings to home position calculation
 bool HomePositionSet = false;   // Whether the home position has been initialised at least once since power on
+
+
+
+// Flight stage state machine
+typedef enum {
+    FLIGHT_STATE_PAD,
+    FLIGHT_STATE_BOOST,
+    FLIGHT_STATE_COAST,
+    FLIGHT_STATE_DESCENT,
+    FLIGHT_STATE_LANDED
+} FlightState_t;
+
+
+
 
 
 // System initialisation

@@ -17,6 +17,11 @@ float mmc_data_time = 0.0f;
 TS_GPS m10s_buff;
 
 
+
+FlightState_t CurrentFlightState = FLIGHT_STATE_PAD;
+
+
+
 void ReadLSM6DSRTask(void *param) {
 	(void) param;
 
@@ -260,6 +265,8 @@ void TriggerDataCollectionTask(void *param) {
         	}
 
         	SetDataCollectionEnabled(DataCollectionEnabled);
+
+        	xSemaphoreGive(DataReadySemphr);
         }
     }
 }
@@ -805,8 +812,13 @@ TMState HandleStateTelemetryCmd(NetPacket* resp) {
 
 
 	// Enable data collection
+	xSemaphoreTake(DataReadySemphr, 0);   // Reset semaphore
 	DataCollectionEnabled = true;
 	xTaskNotifyGive(DataCollectionTaskNotif);
+
+
+	// Reset flight state machine
+	CurrentFlightState = FLIGHT_STATE_PAD;
 
 
 	// Send ACK response to telemetry start call
@@ -851,7 +863,8 @@ TMState HandleStateTelemetryCmd(NetPacket* resp) {
 	xSemaphoreGive(SPIRfMutex);
 
 
-
+	// Wait for data wipe to finish before transmitting
+	xSemaphoreTake(DataReadySemphr, portMAX_DELAY);
 
 	// Start transmitting telemetry until stopped
 	TickType_t prevtime = xTaskGetTickCount();
@@ -983,7 +996,9 @@ TMState HandleStateSetHomeCmd(NetPacket* resp) {
 	}
 
 	SettingHome = true;
+	vTaskSuspend(FusionTaskHandle);   // Stop fusion task from consuming data
 	xQueueReset(FusionQueue);   // Reuse fusion queue for receiving pressure and GPS data
+
 
 	// Collect pressure and GPS samples
 	if (xSemaphoreTake(I2CMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
@@ -1007,9 +1022,19 @@ TMState HandleStateSetHomeCmd(NetPacket* resp) {
 	int PresSamples = 0;
 	int GPSSamples = 0;
 
+	TickType_t start_time = xTaskGetTickCount();
+	bool timeout = false;
+
 	while (1) {
 		// Finish if enough samples are collected
 		if (PresSamples >= SETHOME_MIN_PRES_SAMPLES && GPSSamples >= SETHOME_MIN_GPS_SAMPLES) { break; }
+
+		// Timeout after 9s
+		if ((xTaskGetTickCount() - start_time) > pdMS_TO_TICKS(9000)) {
+			printf("[ERROR] Home position GPS lock timed out\n");
+			timeout = true;
+			break;
+		}
 
 		if (xQueueReceive(FusionQueue, &data, pdMS_TO_TICKS(500)) != pdPASS) {
 			printf("[WARN] Data receive timeout in setting home position\n");
@@ -1022,19 +1047,15 @@ TMState HandleStateSetHomeCmd(NetPacket* resp) {
 			// Incremental average calculation to save storing a large array
 			HomePres = (((PresSamples - 1.0f) / PresSamples) * HomePres) + ((1.0f / PresSamples) * data.data.tsprstmp.Press);
 		} else if (data.type == SENSOR_DATA_GPS) {
-			GPSSamples++;
+			if (data.data.tsgps.FixType > 0) {   // Discard readings with no fix
+				GPSSamples++;
 
-			HomeAlt = (((GPSSamples - 1.0f) / GPSSamples) * HomeAlt) + ((1.0f / GPSSamples) * data.data.tsgps.Altitude);
-			HomeLat = (((GPSSamples - 1.0f) / GPSSamples) * HomeLat) + ((1.0f / GPSSamples) * data.data.tsgps.Latitude * 1e-7);
-			HomeLon = (((GPSSamples - 1.0f) / GPSSamples) * HomeLon) + ((1.0f / GPSSamples) * data.data.tsgps.Longitude * 1e-7);
+				HomeAlt = (((GPSSamples - 1.0f) / GPSSamples) * HomeAlt) + ((1.0f / GPSSamples) * data.data.tsgps.Altitude);
+				HomeLat = (((GPSSamples - 1.0f) / GPSSamples) * HomeLat) + ((1.0f / GPSSamples) * data.data.tsgps.Latitude * 1e-7);
+				HomeLon = (((GPSSamples - 1.0f) / GPSSamples) * HomeLon) + ((1.0f / GPSSamples) * data.data.tsgps.Longitude * 1e-7);
+			}
 		}
 	}
-
-
-	// Initialise filters
-	InitialiseOrientationFilter();
-	InitialiseVerticalFilter(HomePres, HomeAlt);
-	InitialiseHorizontalFilter(HomeLat, HomeLon);
 
 
 	// Stop collecting samples
@@ -1047,11 +1068,11 @@ TMState HandleStateSetHomeCmd(NetPacket* resp) {
 	}
 
 	SettingHome = false;
-	HomePositionSet = true;
 	xQueueReset(FusionQueue);
+	vTaskResume(FusionTaskHandle);   // Restart fusion task
 
 
-	// Send home position back to controller
+	// Send outcome back to controller
 	if (xSemaphoreTake(SPIRfMutex, pdMS_TO_TICKS(20)) != pdTRUE) {
 		printf("[ERROR] Home position response timed out due to unreleased SPI mutex\n");
 		return TM_STATE_IDLE;
@@ -1061,18 +1082,27 @@ TMState HandleStateSetHomeCmd(NetPacket* resp) {
 	sendpkt.recipient = NET_CONTROLLER_ADDR;
 	sendpkt.sender = NET_ADDRESS;
 	sendpkt.status = 0x0;
-	sendpkt.type = NET_MTYPE_SETHOME;
 	sendpkt.seqnum = 0;
-	sendpkt.payloadlen = 16;
 
-	memcpy(sendpkt.payload, &HomeAlt, sizeof(float));
-	memcpy(sendpkt.payload + 4, &HomeLat, sizeof(float));
-	memcpy(sendpkt.payload + 8, &HomeLon, sizeof(float));
-	memcpy(sendpkt.payload + 12, &HomePres, sizeof(float));
+	if (timeout) {   // Send a NACK
+		sendpkt.type = NET_MTYPE_NACK;
+		sendpkt.payloadlen = 0;
+	} else {   // Initialise filters and send success
+		InitialiseOrientationFilter();
+		InitialiseVerticalFilter(HomePres, HomeAlt);
+		InitialiseHorizontalFilter(HomeLat, HomeLon);
+		HomePositionSet = true;
+
+		sendpkt.type = NET_MTYPE_SETHOME;
+		sendpkt.payloadlen = 16;
+		memcpy(sendpkt.payload, &HomeAlt, sizeof(float));
+		memcpy(sendpkt.payload + 4, &HomeLat, sizeof(float));
+		memcpy(sendpkt.payload + 8, &HomeLon, sizeof(float));
+		memcpy(sendpkt.payload + 12, &HomePres, sizeof(float));
+	}
 
 	uint8_t buff[NET_PACKET_MAXLEN];
 	uint8_t len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &sendpkt);
-
 
 	LAMBDA62_ClearIRQ(&hspi3_rf, 0xFFFF, false);
 	LAMBDA62_SetPacketParamsFSK(&hspi3_rf, 32, 5, 64, 0, true, len, 2, false, false);
@@ -1098,7 +1128,6 @@ TMState HandleStateSetHomeCmd(NetPacket* resp) {
 
 	return TM_STATE_IDLE;
 }
-
 
 
 
@@ -1135,8 +1164,108 @@ void SensorFusionTask(void *param) {
 }
 
 
+void FlightControlTask(void *param) {
+	(void) param;
+
+	// State transition thresholds
+	const float LAUNCH_VEL_THRESH  = 15.0f;   // 3D velocity in m/s above which to transition from pad to boost phase
+	const float LAUNCH_ALT_THRESH  = 5.0f;   // Altitude in m above which to transition from pad to boost phase
+	const float BURNOUT_ACC_THRESH = 5.0f;   // 3D acceleration in m/s^2 below which to transition from boost to coast phase
+	const float APOGEE_VEL_THRESH  = -1.0f;   // 1D vertical velocity in m/s below which to transition from coast to descent phase
+	const float LANDING_ALT_THRESH = 15.0f;   // Altitude in m below which to transition from descent to landed phase
+	const float LANDING_VEL_THRESH = 2.0f;   // 3D velocity in m/s below which to transition from descent to landed phase
 
 
+	const uint8_t REQUIRED_CONFIRMATIONS = 5;   // Number of times each transition condition must be met to actually trigger the transition
+	uint8_t condition_counter = 0;
+
+	while (1) {
+		vTaskDelay(pdMS_TO_TICKS(200));   // 5Hz
+
+		float current_alt  = VF_STATE[0];
+		float current_v_up = VF_STATE[1];
+
+		// Calculate 3D velocity and acceleration magnitude
+		float v3d_sq = (HF_STATE[2] * HF_STATE[2]) + (HF_STATE[3] * HF_STATE[3]) + (VF_STATE[1] * VF_STATE[1]);
+		float v3d;
+		arm_sqrt_f32(v3d_sq, &v3d);
+
+		float a3d_sq = (NAV_ACCEL[0] * NAV_ACCEL[0]) + (NAV_ACCEL[1] * NAV_ACCEL[1]) + ((NAV_ACCEL[2] + 9.80665) * (NAV_ACCEL[2] + 9.80665));
+		float a3d;
+		arm_sqrt_f32(a3d_sq, &a3d);
+
+		switch (CurrentFlightState) {
+			case FLIGHT_STATE_PAD:
+				// Transition when velocity and altitude are above thresholds
+				if (v3d > LAUNCH_VEL_THRESH && current_alt > LAUNCH_ALT_THRESH) {
+					condition_counter++;
+					if (condition_counter >= REQUIRED_CONFIRMATIONS) {
+						CurrentFlightState = FLIGHT_STATE_BOOST;
+						condition_counter = 0;
+						printf("[FLIGHT] LAUNCH DETECTED\n");
+					}
+				} else {
+					condition_counter = 0;
+				}
+				break;
+
+			case FLIGHT_STATE_BOOST:
+				// Transition when acceleration (IGNORING GRAVITY!) drops below threshold
+				if (a3d < BURNOUT_ACC_THRESH) {
+					condition_counter++;
+					if (condition_counter >= REQUIRED_CONFIRMATIONS) {
+						CurrentFlightState = FLIGHT_STATE_COAST;
+						condition_counter = 0;
+						printf("[FLIGHT] BURNOUT DETECTED\n");
+					}
+				} else {
+					condition_counter = 0;
+				}
+				break;
+
+			case FLIGHT_STATE_COAST:
+				// Transition when vertical velocity goes negative
+				if (current_v_up < APOGEE_VEL_THRESH) {
+					condition_counter++;
+					if (condition_counter >= REQUIRED_CONFIRMATIONS) {
+						CurrentFlightState = FLIGHT_STATE_DESCENT;
+						condition_counter = 0;
+						printf("[FLIGHT] APOGEE DETECTED\n");
+
+						DeployParachute();
+					}
+				} else {
+					condition_counter = 0;
+				}
+				break;
+
+			case FLIGHT_STATE_DESCENT:
+				// Transition when altitude and velocity are below thresholds
+				if (current_alt < LANDING_ALT_THRESH && v3d < LANDING_VEL_THRESH) {
+					condition_counter++;
+					if (condition_counter >= (REQUIRED_CONFIRMATIONS * 2)) {   // Wait longer to confirm landing
+						CurrentFlightState = FLIGHT_STATE_LANDED;
+						condition_counter = 0;
+						printf("[FLIGHT] LANDING DETECTED\n");
+					}
+				} else {
+					condition_counter = 0;
+				}
+				break;
+
+			case FLIGHT_STATE_LANDED:
+				break;
+		}
+	}
+}
+
+
+
+void DeployParachute() {
+	PARA_DEPLOY_ON
+	vTaskDelay(pdMS_TO_TICKS(2000));
+	PARA_DEPLOY_OFF
+}
 
 
 
@@ -1207,6 +1336,9 @@ int main(void) {
 	LAMBDA62TxSemphr = xSemaphoreCreateBinary();
 	if (LAMBDA62TxSemphr == NULL) { Error_Handler(); }
 
+	DataReadySemphr = xSemaphoreCreateBinary();
+	if (DataReadySemphr == NULL) { Error_Handler(); }
+
 
 	// Create tasks
     xTaskCreate(ReadIncomingLAMBDA80, "LAMBDA80-Receive", 1024, NULL, 4, &LAMBDA80RxTaskNotif);
@@ -1223,7 +1355,8 @@ int main(void) {
 
     xTaskCreate(LogDataTask, "Log-Data", 1024, NULL, 3, &LogDataTaskNotif);
 
-    xTaskCreate(SensorFusionTask, "Fuse-Data", 1024, NULL, 1, NULL);
+    xTaskCreate(SensorFusionTask, "Fuse-Data", 1024, NULL, 1, &FusionTaskHandle);
+    xTaskCreate(FlightControlTask, "Flight-Control", 1024, NULL, 4, NULL);
 
 
     // Set up periodic polling of MAX-M10S module (twice expected data rate)

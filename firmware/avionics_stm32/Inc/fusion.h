@@ -126,5 +126,8 @@ void LatLonToMeters(float lat, float lon, float *meters_north, float *meters_eas
 // Expose state
 extern float32_t HF_STATE[4];
 
+// Export navigation frame acceleration for flight state machine
+extern float32_t NAV_ACCEL[3];
+
 
 #endif /* FUSION_H_ */

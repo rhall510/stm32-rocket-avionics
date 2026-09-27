@@ -1,8 +1,0 @@
-#ifndef PARACHUTE_CONTROL_H_
-#define PARACHUTE_CONTROL_H_
-
-
-
-
-
-#endif /* PARACHUTE_CONTROL_H_ */
