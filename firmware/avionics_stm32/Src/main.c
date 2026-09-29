@@ -928,6 +928,9 @@ TMState HandleStateTelemetryCmd(NetPacket* resp) {
 		sendpkt.type = NET_MTYPE_TELEMETRY_DATA;
 		sendpkt.payloadlen = 44;
 
+		// Suspend scheduler to prevent torn float reads
+		taskENTER_CRITICAL();
+
 		memcpy(sendpkt.payload, &HF_STATE[0], sizeof(float));
 		memcpy(sendpkt.payload + 4, &HF_STATE[1], sizeof(float));
 		memcpy(sendpkt.payload + 8, &VF_STATE[0], sizeof(float));
@@ -943,6 +946,7 @@ TMState HandleStateTelemetryCmd(NetPacket* resp) {
 		memcpy(sendpkt.payload + 36, &bmp_buff[BMP_FIFO_READNUM - 1].Temp, sizeof(float));
 		memcpy(sendpkt.payload + 40, &bmp_buff[BMP_FIFO_READNUM - 1].Press, sizeof(float));
 
+		taskEXIT_CRITICAL();
 
 		len = ConstructNetPacket(buff, NET_PACKET_MAXLEN, &sendpkt);
 
@@ -1190,7 +1194,7 @@ void FlightControlTask(void *param) {
 		float v3d;
 		arm_sqrt_f32(v3d_sq, &v3d);
 
-		float a3d_sq = (NAV_ACCEL[0] * NAV_ACCEL[0]) + (NAV_ACCEL[1] * NAV_ACCEL[1]) + ((NAV_ACCEL[2] + 9.80665) * (NAV_ACCEL[2] + 9.80665));
+		float a3d_sq = (NAV_ACCEL[0] * NAV_ACCEL[0]) + (NAV_ACCEL[1] * NAV_ACCEL[1]) + ((NAV_ACCEL[2] + 9.80665f) * (NAV_ACCEL[2] + 9.80665f));
 		float a3d;
 		arm_sqrt_f32(a3d_sq, &a3d);
 

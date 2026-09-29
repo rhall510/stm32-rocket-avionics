@@ -762,7 +762,7 @@ TMState HandleStateTelemetryCmd(USBPacket* pkt, NetPacket* resp) {
 		}
 
 		if (xQueueReceive(RadioResponseQueue, resp, pdMS_TO_TICKS(2000)) != pdPASS) {
-			// Send warning if no packets received in a full second
+			// Send warning if no packets received in a full 2 seconds
 			USBPacket nack;
 			nack.type = USB_MTYPE_INFO;
 			nack.payloadlen = 2;
@@ -779,7 +779,7 @@ TMState HandleStateTelemetryCmd(USBPacket* pkt, NetPacket* resp) {
 		// Relay packet contents to host
 		USBPacket relay;
 		relay.type = USB_MTYPE_TELEMETRY_DATA;
-		relay.payloadlen = 44;
+		relay.payloadlen = resp->payloadlen;
 
 		for (int i = 0; i < relay.payloadlen; i++) {
 			relay.payload[i] = resp->payload[i];

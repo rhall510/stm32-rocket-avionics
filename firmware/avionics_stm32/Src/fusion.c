@@ -287,10 +287,16 @@ void OF_NewGyrData(SensorData *data, float dt) {
 
 	float qmag;
 	arm_sqrt_f32(q_upd[0]*q_upd[0] + q_upd[1]*q_upd[1] + q_upd[2]*q_upd[2] + q_upd[3]*q_upd[3], &qmag);
+
+	// Protect against interrupts during state update
+	taskENTER_CRITICAL();
+
 	OF_STATE[0] = q_upd[0] / qmag;
 	OF_STATE[1] = q_upd[1] / qmag;
 	OF_STATE[2] = q_upd[2] / qmag;
 	OF_STATE[3] = q_upd[3] / qmag;
+
+	taskEXIT_CRITICAL();
 
 
 	// Build the state transition matrix
@@ -426,10 +432,16 @@ static void OF_MeasurementTaken(float *act_vec, float *exp_vec, arm_matrix_insta
 
     float qmag;
     arm_sqrt_f32(q_upd[0]*q_upd[0] + q_upd[1]*q_upd[1] + q_upd[2]*q_upd[2] + q_upd[3]*q_upd[3], &qmag);
+
+	// Protect against interrupts during state update
+	taskENTER_CRITICAL();
+
     OF_STATE[0] = q_upd[0] / qmag;
     OF_STATE[1] = q_upd[1] / qmag;
     OF_STATE[2] = q_upd[2] / qmag;
     OF_STATE[3] = q_upd[3] / qmag;
+
+    taskEXIT_CRITICAL();
 
     // Shrink uncertainty using Joseph form: P_new = (I - KH) * P * (I - KH)^T + K * R * K^T
     float KH[9];
@@ -604,8 +616,14 @@ void VF_NewAccData(SensorData *data, float dt) {
     float B[2] = {0.5f * dt * dt, dt};
 
     // Predict new state
+	// Protect against interrupts during state update
+	taskENTER_CRITICAL();
+
     VF_STATE[0] = X_pred[0] + (B[0] * a_nav[2]);
     VF_STATE[1] = X_pred[1] + (B[1] * a_nav[2]);
+
+    taskEXIT_CRITICAL();
+
 
     // Covariance prediction (P = F*P*F^T + Q)
     // Dynamically calculate vertical kinematic process noise
@@ -684,8 +702,14 @@ void VF_NewPressData(SensorData *data) {
 
     // Correct the state
     float y = measured_alt - VF_STATE[0];
+
+	// Protect against interrupts during state update
+	taskENTER_CRITICAL();
+
     VF_STATE[0] += K[0] * y;
     VF_STATE[1] += K[1] * y;
+
+    taskEXIT_CRITICAL();
 
     // Shrink the uncertainty using Joseph form  P_new = (I - KH)*P*(I - KH)^T + K*R*K^T
     float KH[4];
@@ -803,8 +827,13 @@ void VF_NewGPSData(SensorData *data) {
     arm_mat_init_f32(&Ky_Mat, 2, 1, Ky);
     arm_mat_mult_f32(&K_Mat, &Y_Mat, &Ky_Mat);
 
+	// Protect against interrupts during state update
+	taskENTER_CRITICAL();
+
     VF_STATE[0] += Ky[0];
     VF_STATE[1] += Ky[1];
+
+    taskEXIT_CRITICAL();
 
     // Shrink the uncertainty using Joseph form  P_new = (I - KH)*P*(I - KH)^T + K*Q*K^T
     float KH[4];
@@ -953,9 +982,14 @@ void HF_NewAccData(SensorData *data, float dt) {
     GetLinearAcceleration(OF_STATE, a_comp, a_nav);
 
     // Update NAV_ACCEL
+	// Protect against interrupts during state update
+	taskENTER_CRITICAL();
+
     NAV_ACCEL[0] = a_nav[0];
 	NAV_ACCEL[1] = a_nav[1];
 	NAV_ACCEL[2] = a_nav[2];
+
+	taskEXIT_CRITICAL();
 
 
     // State prediction (manual to save matrix operations)
@@ -966,10 +1000,16 @@ void HF_NewAccData(SensorData *data, float dt) {
     float new_n_vel = HF_STATE[2] + (dt * a_nav[0]);
     float new_e_vel = HF_STATE[3] + (dt * a_nav[1]);
 
+	// Protect against interrupts during state update
+	taskENTER_CRITICAL();
+
     HF_STATE[0] = new_n_pos;
     HF_STATE[1] = new_e_pos;
     HF_STATE[2] = new_n_vel;
     HF_STATE[3] = new_e_vel;
+
+    taskEXIT_CRITICAL();
+
 
     // Dynamically calculate horizontal kinematic process noise
     float F[16] = {1.0f, 0.0f, dt,   0.0f,
@@ -1054,9 +1094,14 @@ void HF_NewGPSData(SensorData *data) {
     arm_mat_init_f32(&Ky_Mat, 4, 1, Ky);
     arm_mat_mult_f32(&K_Mat, &Y_Mat, &Ky_Mat);
 
+	// Protect against interrupts during state update
+	taskENTER_CRITICAL();
+
     for (int i = 0; i < 4; i++) {
         HF_STATE[i] += Ky[i];
     }
+
+    taskEXIT_CRITICAL();
 
 
     // Shrink uncertainty using Joseph form  P_new = (I - K)*P*(I - K)^T + K*R*K^T

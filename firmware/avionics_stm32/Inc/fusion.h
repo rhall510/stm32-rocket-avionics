@@ -6,6 +6,8 @@
 #include "arm_math.h"
 #include <math.h>
 #include <stdbool.h>
+#include "FreeRTOS.h"
+#include "task.h"
 
 
 // Angle converters
