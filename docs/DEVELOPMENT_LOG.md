@@ -5,6 +5,63 @@
 Regular detailed progress logs will be written here. Most recent at the top.
 
 ---
+### October 1st 2026
+
+The avionics part of the project is essentially complete (except for one remaining bug which I'm working to fix currently)! Here is a breakdown of the progress made since the last update:
+
+#### Data integration algorithm
+
+I started by prototyping the data integration algorithms needed to transform the raw data from sensors into a live position estimate in python. I decided to go with a 3 Kalman filter approach which each handle different parts of the tracking. These are:
+- A Multiplicative Extended Kalman Filter (MEKF) for integrating gyroscope, accelerometer, and magnetometer data into an orientation estimate.
+- A 2D standard Kalman filter for integrating accelerometer and GPS data into a horizontal position and velocity estimate.
+- A 1D standard Kalman filter for integrating accelerometer, barometer, and GPS data into a vertical position and velocity estimate.
+
+I used raw data recorded in multiple test runs of moving the avionics unit around in different ways to test the accuracy of these filters and tune parameters to get the best results. In the end I managed to get a fairly accurate result for the total position and orientation estimate which, while not perfect, did track my movements in the tests quite well.
+
+#### Data integration results from a walk test
+
+![Data integration plots](./images/avionics_field_data_integrated.png)
+
+The plots above show the results of applying these filters to the raw data aquired from a test where I walked around a track approximately 200m in length holding the avionics unit and occasionally performing other movements like rotating the unit or moving it up and down rapidly.
+
+The vertical filter is the most accurate as the frequent low noise pressure readings can easily keep the position estimate in check to prevent accelerometer drift while the GPS prevents long term drift as ambient pressure changes slowly. This tracks the actual altitude very precisely and can capture small movements of less than a meter well.
+
+The orientation filter is also good though it does suffer from some drift over longer periods of constant movement as during these periods the accelerometer cannot be used as a second reference vector to dampen gyroscope drift. Over the timescales expected for a model rocket flight (1-2 mins) this drift will likely not be enough to cause major issues, especially as the rocket is expected to rotate during flight which will help distribute the magnetic vectors drift correction across all axes of rotation.
+
+The horizontal filter is the least accurate part of the system and does pose some potential problems for an actual rocket flight. The main reason for this is due to the unforgiving nature of relying mostly on the accelerometer for dead reckoning between GPS updates. There is rapid accumulation of accelerometer drift due to noise and errors in the orientation estimate leaking acceleration into the hoirizontal axes which causes a spiky looking trajectory on the horizontal plane. The drift gets substantially worse when there is rapid rotation of the avionics unit which is likely due to the fact that the rotation of the unit imparts some centrifugal force on the accelerometers which are not centered. When GPS is active however it is able to contain this drift very well and it is still able to maintain an accurate estimate of horizontal position, with possible drift of a few meters from the actual position. In an actual rocket flight which covers much larger distances than these shorter walk tests errors of this scale will be hardly noticeable.
+
+However, GPS lock is likely to be lost during the boost phase of flight due to the high acceleration which then poses a risk of severe drift between the time GPS lock is lost and regained. Currently I plan to combat this using the network of ranging nodes planned for later in the project. These ranging nodes act as a second measurement of both vertical and horizontal position and therefore can be integrated into the Kalman filters. Ranging position estimates will be more accurate the closer the rocket is to the ground and should still work perfectly during the boost phase. Therefore, I can use the position estimate provided by the ranging nodes to correct position while the rocket is low to the ground and GPS lock is lost, then later in flight when the rocket is higher up and GPS lock is regained it can start using GPS again. In this way the two measurements cover each others weaknesses and allows a position measurement to be obtained throughout the flight to prevent drift.
+
+
+#### Live telemetry on the avionics unit
+
+So with the data integration algorithm fully prototyped I then translated it over to the avionics unit so it could run in real time. I used the CMSIS-DSP library to handle most of the matrix operations for it's high efficiency and manually coded helper functions for quaternion operations as in the prototype. I then expanded the network functions to add commands that control the telemetry output of the avionics unit via the controller node. First the home position command must be sent which instructs the avionics unit to collect samples from the barometer and GPS to set the position it is at currently as the reference position to measure displacement from. This must be done first and the unit will refuse to start telemetry without first setting the home position as a safety check. Once this is done another command can be sent to start telemetry collection which will instruct the avionics unit to wipe previously stored flight data and start up all sensors. It will then integrate all received data and periodically send back it's current estimate of position, velocity, orientation, temperature, and pressure to the controller node. The controller can then relay this data to the host PC which runs a script to display the data live.
+
+#### Live telemetry test showing good tracking interrupted periodically by large erroneous spikes
+
+![Live telemetry test](./images/live_telemetry_test1.gif)
+
+The GIF above shows the actual live data received from the avionics unit during a test where I walked it along the same track as the previous test. The telemetry shows it follows the track very well overall but there are clear spikes in the data which appear to happen at random. Looking at the raw data reveals that these erroneous values appear in all the data types (position, velocity, orientation, temp/press) and they appear more often when the avionics unit was further from the controlling node. In addition, the raw data downloaded from the test does not show these spikes and the estimates for all data cleanly return to the real values immediately after each spike. Therefore, it is very likely these errors are being introduced in the transmission of the data from the avionics unit to the controlling node, rather than an issue with the data or integration algorithm itself. Currently I think this is likely due to the fact that the controlling node relays all packets without checking for CRC errors beforehand. I plan to add this check and run another test to see if this fixes the error ASAP.
+
+Other than that issue however, the live telemetry link works perfectly!
+
+
+#### Flight state machine
+
+To support the parachute deployment logic a state machine was implemented to track the current stage of flight the eventual model rocket is in. It consists of 5 states with the following transition rules:
+
+- PAD STATE: Transition to boost state when velocity and altitude are above thresholds
+- BOOST STATE: Transition to coast state when acceleration (ignoring gravity) drops below threshold
+- COAST STATE: Transition to descent state when vertical velocity goes negative
+- DESCENT STATE: Transition to landed state when altitude and velocity are below thresholds
+- LANDED STATE: No transition
+
+The transition from coast to descent state triggers the parachute deployment logic.
+
+I have not currently tested this state machine but I plan to as soon as possible. I would like to get a drone and attach the avionics unit to it to be able to collect data on larger and faster movements more similar to what might be expected for a model rocket launch.
+
+
+---
 ### July 17th 2026
 
 The data calibration stage has been completed successfully! I have written 3 python scripts which take in the raw binary data downloaded from the avionics unit and use it to calibrate the magnetometer, both accelerometers, and the gyroscope.

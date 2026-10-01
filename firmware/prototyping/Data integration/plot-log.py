@@ -35,6 +35,8 @@ def body_to_plot_frame(verts, R):
 
 # --- Data Parser ---
 def load_data(filepath):
+    index = 0
+
     data = {
         'time': [], 'x': [], 'y': [], 'z': [],
         'vx': [], 'vy': [], 'vz': [],
@@ -90,6 +92,12 @@ def load_data(filepath):
                                 data['press'].append(vals[10])
                                 
                                 fallback_time = packet_time + 0.05
+
+                                index = index + 1
+
+                                with open("splitlog.csv", "a") as splitlogf:
+                                    valstring = f"{vals}"[1:-1]
+                                    splitlogf.write(f"{index},{valstring}\n")
                             except Exception:
                                 pass
     except FileNotFoundError:
@@ -100,7 +108,7 @@ def load_data(filepath):
         data[k] = np.array(data[k])
     return data
 
-data = load_data("log.csv")
+data = load_data("log2.csv")
 if len(data['time']) == 0:
     print("No telemetry data found in log.csv!")
     sys.exit()
@@ -191,7 +199,7 @@ def get_valid_min_max(arr):
     if len(arr_clean) < 5:
         return arr_clean.min(), arr_clean.max()
         
-    q25, q75 = np.percentile(arr_clean, [25, 75])
+    q25, q75 = np.percentile(arr_clean, [5, 95])
     iqr = q75 - q25
     
     if iqr == 0:

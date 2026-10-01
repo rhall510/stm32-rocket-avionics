@@ -1,8 +1,8 @@
 # STM32-based rocket avionics unit and active tracking ground station
 
-![Status](https://img.shields.io/badge/Status-Early_development-yellow) ![License](https://img.shields.io/badge/License-MIT-blue)
+![Status](https://img.shields.io/badge/Status-Mid_development-yellow) ![License](https://img.shields.io/badge/License-MIT-blue)
 
-> **⚠️ NOTE: This project is currently in early active development.**
+> **⚠️ NOTE: This project is currently in active development.**
 > See the [project plan](docs/PROJECT_PLAN.md) for a detailed roadmap and the [development log](docs/DEVELOPMENT_LOG.md) for regular progress updates.
 
 ---
@@ -89,7 +89,7 @@ flowchart TB
 Goals from the [project plan](docs/PROJECT_PLAN.md) that are currently being worked on:
 
 ##### 2\. Avionics unit
-* [ ] Write and test calibration routines for sensors (magnetometer and accelerometers).
-* [ ] Write a sensor fusion and data integration algorithm to accurately track position over time (on PC).
+* [ ] Implement and test parachute deployment logic.
+* [ ] Final field tests of full avionics unit.
 
 *For an up to date breakdown of progress, check the [development log](docs/DEVELOPMENT_LOG.md).*
